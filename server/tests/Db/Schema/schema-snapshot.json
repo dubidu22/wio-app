@@ -63,6 +63,30 @@
             "ck_customers_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'"
         ]
     },
+    "device_tokens": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "user_id char(36) ascii ascii_bin NOT NULL",
+            "token_hash char(64) ascii ascii_bin NOT NULL",
+            "device_name varchar(100) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "created_at datetime(3) NOT NULL",
+            "last_used_at datetime(3) NOT NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_device_tokens_user (workspace_id, user_id)",
+            "uq_device_tokens_token_hash UNIQUE (token_hash)"
+        ],
+        "foreign_keys": [
+            "fk_device_tokens_user (workspace_id, user_id) -> users (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_device_tokens_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_device_tokens_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_device_tokens_token_hash: `token_hash` regexp '^[0-9a-f]{64}$'"
+        ]
+    },
     "entity_labels": {
         "columns": [
             "id char(36) ascii ascii_bin NOT NULL",
@@ -631,6 +655,22 @@
         "foreign_keys": [],
         "checks": []
     },
+    "sign_in_failures": {
+        "columns": [
+            "id bigint(20) unsigned NOT NULL",
+            "email_hash char(64) ascii ascii_bin NOT NULL",
+            "ip_hash char(64) ascii ascii_bin NOT NULL",
+            "failed_at datetime(3) NOT NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_sign_in_failures_email (email_hash, failed_at)",
+            "ix_sign_in_failures_failed_at (failed_at)",
+            "ix_sign_in_failures_ip (ip_hash, failed_at)"
+        ],
+        "foreign_keys": [],
+        "checks": []
+    },
     "sign_offs": {
         "columns": [
             "id char(36) ascii ascii_bin NOT NULL",
@@ -733,6 +773,22 @@
             "ck_time_blocks_order: `ended_at` is null or `ended_at` >= `started_at`"
         ]
     },
+    "user_passwords": {
+        "columns": [
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "user_id char(36) ascii ascii_bin NOT NULL",
+            "password_hash varchar(255) ascii ascii_bin NOT NULL",
+            "changed_at datetime(3) NOT NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (workspace_id, user_id)"
+        ],
+        "foreign_keys": [
+            "fk_user_passwords_user (workspace_id, user_id) -> users (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_user_passwords_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": []
+    },
     "users": {
         "columns": [
             "id char(36) ascii ascii_bin NOT NULL",
@@ -753,6 +809,7 @@
         ],
         "indexes": [
             "PRIMARY UNIQUE (id)",
+            "ix_users_email_key (email_key)",
             "ix_users_revision (workspace_id, revision)",
             "uq_users_customer_scope UNIQUE (workspace_id, customer_id, id)",
             "uq_users_email UNIQUE (workspace_id, email_key, alive)",

@@ -6,7 +6,9 @@ includes:
 parameters:
     level: max
     paths:
+        - bin/create-owner
         - bin/migrate
+        - bin/set-owner-password
         - public
         - src
         - tests

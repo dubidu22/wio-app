@@ -6,6 +6,7 @@ namespace Wio\Tests\Api;
 
 use League\OpenAPIValidation\PSR7\Exception\NoPath;
 use League\OpenAPIValidation\PSR7\Exception\ValidationFailed;
+use League\OpenAPIValidation\PSR7\OperationAddress;
 use League\OpenAPIValidation\PSR7\ResponseValidator;
 use League\OpenAPIValidation\PSR7\ServerRequestValidator;
 use League\OpenAPIValidation\PSR7\ValidatorBuilder;
@@ -36,9 +37,12 @@ abstract class ContractTestCase extends TestCase
         return App::create();
     }
 
-    final protected function request(string $method, string $uri): ServerRequestInterface
+    /**
+     * @param array<string, string> $serverParams for example REMOTE_ADDR
+     */
+    final protected function request(string $method, string $uri, array $serverParams = []): ServerRequestInterface
     {
-        return (new ServerRequestFactory())->createServerRequest($method, $uri);
+        return (new ServerRequestFactory())->createServerRequest($method, $uri, $serverParams);
     }
 
     /**
@@ -62,6 +66,38 @@ abstract class ContractTestCase extends TestCase
         $responseValidator->validate($address, $response);
 
         return $response;
+    }
+
+    /**
+     * Sends a request that breaks the contract on purpose (a missing token, a
+     * closed body with an unknown field) to an operation the contract has,
+     * and returns the response validated against that operation. Fails if
+     * the request is valid, so this cannot be used to skip validation.
+     */
+    final protected function sendInvalid(ServerRequestInterface $request, string $operationId): ResponseInterface
+    {
+        [$requestValidator, $responseValidator] = self::validators();
+        self::assertContains(
+            $operationId,
+            $this->declaredOperations(),
+            "This test calls {$operationId} without declaring #[Operation('{$operationId}')]",
+        );
+        $route = array_search($operationId, Contract::operations(), true);
+        self::assertIsString($route, "The contract has no operation {$operationId}");
+        [$method, $path] = explode(' ', $route, 2);
+
+        try {
+            $requestValidator->validate($request);
+        } catch (NoPath $e) {
+            self::fail('The contract has no such request at all; use sendOutsideContract(): ' . $e->getMessage());
+        } catch (ValidationFailed) {
+            $response = $this->app()->handle($request);
+            $responseValidator->validate(new OperationAddress($path, strtolower($method)), $response);
+
+            return $response;
+        }
+
+        self::fail("The request to {$operationId} is valid; use send()");
     }
 
     /**

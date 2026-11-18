@@ -1,0 +1,42 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Creates a workspace and its owner (D-115). The password is read from
+// standard input, never from the command line:
+//
+//   php bin/create-owner --workspace-name="…" --plan=professional \
+//       --email=owner@example.org [--display-name="…"] < password.txt
+//
+// At a terminal it asks twice with echo off. Prints only the new ids.
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Wio\Ops\CreateOwner;
+use Wio\Ops\OpsException;
+use Wio\Ops\PasswordPrompt;
+use Wio\Services;
+
+$options = getopt('', ['workspace-name:', 'plan:', 'email:', 'display-name:']);
+$text = static fn(string $name): ?string => is_string($options[$name] ?? null) ? $options[$name] : null;
+$email = $text('email');
+$plan = $text('plan');
+if ($email === null || $plan === null) {
+    fwrite(STDERR, 'Usage: php bin/create-owner --workspace-name=NAME --plan=personal|professional --email=EMAIL [--display-name=NAME] < password' . PHP_EOL);
+    exit(2);
+}
+
+try {
+    $services = Services::fromEnvironment();
+    $created = (new CreateOwner($services->sql(), $services->clock, $services->hasher()))
+        ->run($text('workspace-name') ?? '', $plan, $email, $text('display-name'), PasswordPrompt::standardInput()->read());
+} catch (OpsException $e) {
+    fwrite(STDERR, $e->getMessage() . PHP_EOL);
+    exit(1);
+} catch (Throwable $e) {
+    fwrite(STDERR, 'Failed: ' . $e::class . PHP_EOL);
+    exit(1);
+}
+
+fwrite(STDOUT, 'workspace_id ' . $created['workspace_id'] . PHP_EOL . 'user_id ' . $created['user_id'] . PHP_EOL);

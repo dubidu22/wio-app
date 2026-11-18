@@ -33,3 +33,4 @@ Versioned SQL migrations for MariaDB (D-38). Lane `lane:api`; every change here 
 | JSON | `LONGTEXT` with `CHECK (JSON_VALID(…))` | D-53 |
 | No triggers, routines or events | Rules such as append-only `place_history` live in the server code and its tests | D-54 |
 | MariaDB version | Only features of 10.5 and older | D-57 |
+| Server-only tables | Never synced, no common fields or revision: `schema_migrations`, `workspace_counters`, `user_passwords`, `device_tokens`, `sign_in_failures`. All but `schema_migrations` and `sign_in_failures` (failures for e-mails that may not exist) belong to a workspace and follow the composite foreign keys | D-52, D-109, D-110, D-113 |

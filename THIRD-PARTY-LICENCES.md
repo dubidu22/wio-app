@@ -45,6 +45,7 @@ Banned: SSPL, non-commercial, proprietary, GPL-2.0-only, other licences incompat
 | `slim/slim` | 4.15.3 | MIT | HTTP framework (D-37) |
 | `slim/psr7` | 1.8.1 | MIT | PSR-7 messages for Slim |
 | Transitive: `nikic/fast-route` | 1.3.1 | BSD-3-Clause | Router used by Slim |
+| `psr/clock` | 1.0.0 | MIT | Clock interface; tests freeze time (D-120) |
 | Transitive: `psr/*`, `fig/http-message-util`, `ralouphie/getallheaders` | see `server/composer.lock` | MIT | Interfaces and helpers used by Slim |
 
 ## Development and CI only (not shipped)

@@ -10,6 +10,8 @@
         "ext-mbstring": "*",
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
+        "ext-sodium": "*",
+        "psr/clock": "^1.0",
         "slim/psr7": "^1",
         "slim/slim": "^4"
     },
