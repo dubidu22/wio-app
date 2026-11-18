@@ -9,7 +9,7 @@ import 'package:wio_app/data/ids.dart';
 import '../support/test_data.dart';
 
 void main() {
-  test('schema v1 creates the six tables', () async {
+  test('schema v2 creates the nine tables', () async {
     final db = memoryDatabase();
     addTearDown(db.close);
     final rows = await db
@@ -22,9 +22,12 @@ void main() {
       'customers',
       'jobs',
       'outbox',
+      'rejected_changes',
       'rooms',
+      'server_records',
       'sites',
       'sync_state',
+      'uploads',
     ]);
   });
 

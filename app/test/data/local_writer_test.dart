@@ -192,4 +192,40 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test('delete and restore queue their op with no fields (D-192)', () async {
+    await seedTestData(db);
+    await writer.delete(entity: 'rooms', id: TestIds.keller);
+    var room = await (db.select(
+      db.rooms,
+    )..where((r) => r.id.equals(TestIds.keller))).getSingle();
+    expect(room.deletedAt, now.toIso8601String());
+    await writer.restore(entity: 'rooms', id: TestIds.keller);
+    room = await (db.select(
+      db.rooms,
+    )..where((r) => r.id.equals(TestIds.keller))).getSingle();
+    expect(room.deletedAt, isNull);
+    final pending = await writer.pending();
+    expect(pending.map((c) => c.op), <String>['delete', 'restore']);
+    expect(pending.every((c) => c.fields.isEmpty), isTrue);
+    expect(pending.every((c) => c.baseRevision == 1), isTrue);
+  });
+
+  test('write queues an upsert', () async {
+    await seedTestData(db);
+    await writer.write(
+      entity: 'rooms',
+      id: TestIds.keller,
+      fields: <String, Object?>{'name': 'Keller'},
+    );
+    expect((await writer.pending()).single.op, 'upsert');
+  });
+
+  test('delete of an unknown record is refused', () async {
+    await expectLater(
+      writer.delete(entity: 'rooms', id: 'nope'),
+      throwsArgumentError,
+    );
+    expect(await writer.pending(), isEmpty);
+  });
 }

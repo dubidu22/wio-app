@@ -6,7 +6,19 @@ part 'database.g.dart';
 
 /// The app's local database (D-36, D-64). Schema changes are numbered steps
 /// with a committed schema dump and a migration test (D-65).
-@DriftDatabase(tables: <Type>[Customers, Sites, Rooms, Jobs, Outbox, SyncState])
+@DriftDatabase(
+  tables: <Type>[
+    Customers,
+    Sites,
+    Rooms,
+    Jobs,
+    Outbox,
+    SyncState,
+    ServerRecords,
+    RejectedChanges,
+    Uploads,
+  ],
+)
 class WioDatabase extends _$WioDatabase {
   WioDatabase(super.executor, {this.onFirstCreate});
 
@@ -16,7 +28,7 @@ class WioDatabase extends _$WioDatabase {
   final Future<void> Function()? onFirstCreate;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -28,6 +40,16 @@ class WioDatabase extends _$WioDatabase {
     // recreated: the outbox may hold changes the server has never seen, so
     // the database fails to open and the screens show the error (D-65).
     onUpgrade: (m, from, to) async {
+      if (from == 1 && to == 2) {
+        // v2 (D-192): the outbox op, the server copies, the rejected list
+        // and the upload queue. Existing outbox rows become upserts, which
+        // is what they are.
+        await m.addColumn(outbox, outbox.op);
+        await m.createTable(serverRecords);
+        await m.createTable(rejectedChanges);
+        await m.createTable(uploads);
+        return;
+      }
       throw StateError('No migration from local schema $from to $to.');
     },
   );
