@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../auth/sign_in_screen.dart';
 import '../customers/customer_screen.dart';
 import '../jobs/job_list_screen.dart';
+import '../sync/rejected_screen.dart';
 import '../update/update_required_screen.dart';
 
 /// Path of the sign-in screen (D-126).
@@ -24,6 +25,10 @@ GoRouter buildRouter({String initialLocation = '/'}) {
           GoRoute(
             path: 'anmelden',
             builder: (context, state) => const SignInScreen(),
+          ),
+          GoRoute(
+            path: 'nicht-gesendet',
+            builder: (context, state) => const RejectedScreen(),
           ),
           GoRoute(
             path: 'aktualisieren',

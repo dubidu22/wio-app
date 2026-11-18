@@ -146,3 +146,37 @@ Future<void> seedTestData(WioDatabase db) async {
     ]);
   });
 }
+
+/// Test data plus two changes the server refused (D-197): a renamed
+/// customer (permission) and a new customer whose number existed already
+/// (duplicate, re-pointed).
+Future<void> seedWithRejected(WioDatabase db) async {
+  await seedTestData(db);
+  await db.batch((b) {
+    b.insertAll(db.rejectedChanges, <RejectedChangesCompanion>[
+      RejectedChangesCompanion.insert(
+        changeId: '01970000-0000-7000-8000-0000000000e1',
+        entity: 'customers',
+        entityId: TestIds.frauMuster,
+        op: 'upsert',
+        fields: '{"name":"Frau Muster-Probe","contact":"{}"}',
+        deviceTime: '2026-11-19T08:00:00.000Z',
+        reason: 'permission',
+        rejectedAt: '2026-11-19T08:05:00.000Z',
+      ),
+      RejectedChangesCompanion.insert(
+        changeId: '01970000-0000-7000-8000-0000000000e2',
+        entity: 'customers',
+        entityId: '01970000-0000-7000-8000-0000000000c9',
+        op: 'upsert',
+        fields:
+            '{"workspace_id":"${TestIds.workspace}","name":"Familie B.",'
+            '"external_ref":"K-17"}',
+        deviceTime: '2026-11-19T08:01:00.000Z',
+        reason: 'duplicate',
+        existingId: const Value<String?>(TestIds.familieBeispiel),
+        rejectedAt: '2026-11-19T08:04:00.000Z',
+      ),
+    ]);
+  });
+}

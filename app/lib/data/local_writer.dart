@@ -11,6 +11,7 @@ class OutboxChange {
     required this.changeId,
     required this.entity,
     required this.entityId,
+    this.op = 'upsert',
     required this.fields,
     required this.baseRevision,
     required this.deviceTime,
@@ -19,6 +20,9 @@ class OutboxChange {
   final String changeId;
   final String entity;
   final String entityId;
+
+  /// One of the contract's ops (D-176, D-192).
+  final String op;
   final Map<String, Object?> fields;
   final int? baseRevision;
   final String deviceTime;
@@ -147,6 +151,60 @@ class LocalWriter {
     });
   }
 
+  /// Deletes record [id] of [entity]: a tombstone, never a removal, so
+  /// [restore] can undo it (UX rule 10, D-176). Returns the change id.
+  Future<String> delete({required String entity, required String id}) =>
+      _tombstone(entity, id, deleted: true);
+
+  /// Undoes a delete of record [id] of [entity] (D-97). Returns the change id.
+  Future<String> restore({required String entity, required String id}) =>
+      _tombstone(entity, id, deleted: false);
+
+  Future<String> _tombstone(String entity, String id, {required bool deleted}) {
+    final table = _tables[entity];
+    if (table == null) {
+      throw ArgumentError.value(entity, 'entity', 'not a synced table');
+    }
+    final tables = <TableInfo<Table, Object?>>{table};
+    return _db.transaction(() async {
+      final current = await _db
+          .customSelect(
+            'SELECT "revision" FROM "$entity" WHERE "id" = ?',
+            variables: <Variable<Object>>[Variable<String>(id)],
+            readsFrom: tables,
+          )
+          .getSingleOrNull();
+      if (current == null) {
+        throw ArgumentError.value(id, 'id', 'no such record in $entity');
+      }
+      final now = _clock().toUtc().toIso8601String();
+      await _db.customUpdate(
+        'UPDATE "$entity" SET "deleted_at" = ? WHERE "id" = ?',
+        variables: <Variable<Object>>[
+          Variable<String>(deleted ? now : null),
+          Variable<String>(id),
+        ],
+        updates: tables,
+        updateKind: UpdateKind.update,
+      );
+      final changeId = _changeIds();
+      await _db
+          .into(_db.outbox)
+          .insert(
+            OutboxCompanion.insert(
+              changeId: changeId,
+              entity: entity,
+              entityId: id,
+              op: Value<String>(deleted ? 'delete' : 'restore'),
+              fields: '{}',
+              baseRevision: Value<int?>(current.read<int?>('revision')),
+              deviceTime: now,
+            ),
+          );
+      return changeId;
+    });
+  }
+
   /// The oldest unconfirmed changes, in the order they were made.
   Future<List<OutboxChange>> pending({int limit = maxPageSize}) async {
     if (limit < 1 || limit > maxPageSize) {
@@ -164,6 +222,7 @@ class LocalWriter {
           changeId: row.changeId,
           entity: row.entity,
           entityId: row.entityId,
+          op: row.op,
           fields: (jsonDecode(row.fields) as Map<String, Object?>),
           baseRevision: row.baseRevision,
           deviceTime: row.deviceTime,

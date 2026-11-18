@@ -280,5 +280,204 @@
   "updateHint": "Diese App-Version ist zu alt. Neue Daten werden erst nach dem Update gesendet.",
   "@updateHint": {
     "description": "Hint at the top of the job list while the app is too old; replaces the signed-out hint (D-155)."
+  },
+  "syncAllSent": "Alles gesendet.",
+  "@syncAllSent": {
+    "description": "Sync status line: the outbox is empty (D-203)."
+  },
+  "syncPending": "{count, plural, =1{1 Änderung wartet auf das Senden.} other{{count} Änderungen warten auf das Senden.}}",
+  "@syncPending": {
+    "description": "Sync status line: unsent changes (D-203).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncRunning": "Wird gesendet …",
+  "@syncRunning": {
+    "description": "Sync status line while a run is going (D-203)."
+  },
+  "syncOffline": "Keine Verbindung. Wird später gesendet.",
+  "@syncOffline": {
+    "description": "Sync status line after a run without an answer; it retries by itself (D-201, D-203)."
+  },
+  "rejectedHint": "{count, plural, =1{1 Änderung wurde nicht übernommen.} other{{count} Änderungen wurden nicht übernommen.}}",
+  "@rejectedHint": {
+    "description": "Job-list hint while refused changes are listed (D-197).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rejectedOpen": "Ansehen",
+  "@rejectedOpen": {
+    "description": "Button of the refused-changes hint; opens Nicht gesendet (D-197)."
+  },
+  "rejectedTitle": "Nicht gesendet",
+  "@rejectedTitle": {
+    "description": "Title of the list of refused changes (D-197)."
+  },
+  "rejectedEmpty": "Alles übernommen. Hier ist nichts mehr offen.",
+  "@rejectedEmpty": {
+    "description": "Shown when the list of refused changes is empty."
+  },
+  "rejectedRecord": "{kind}: {name}",
+  "@rejectedRecord": {
+    "description": "Which record a refused change is about.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "rejectedUnnamed": "ohne Namen",
+  "@rejectedUnnamed": {
+    "description": "Name of a record that has none."
+  },
+  "entityCustomer": "Kunde",
+  "@entityCustomer": {
+    "description": "Record kind: customers."
+  },
+  "entitySite": "Adresse",
+  "@entitySite": {
+    "description": "Record kind: sites."
+  },
+  "entityRoom": "Raum",
+  "@entityRoom": {
+    "description": "Record kind: rooms."
+  },
+  "entityJob": "Auftrag",
+  "@entityJob": {
+    "description": "Record kind: jobs."
+  },
+  "entityOther": "Eintrag",
+  "@entityOther": {
+    "description": "Record kind without its own word yet."
+  },
+  "rejectedCreated": "Neu angelegt",
+  "@rejectedCreated": {
+    "description": "What a refused change did: created the record."
+  },
+  "rejectedDeletedOp": "Gelöscht",
+  "@rejectedDeletedOp": {
+    "description": "What a refused change did: deleted the record."
+  },
+  "rejectedRestoredOp": "Wiederhergestellt",
+  "@rejectedRestoredOp": {
+    "description": "What a refused change did: restored the record."
+  },
+  "rejectedChanged": "Geändert: {fields}",
+  "@rejectedChanged": {
+    "description": "What a refused change did: changed these fields.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldName": "Name",
+  "@fieldName": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldContact": "Kontakt",
+  "@fieldContact": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldExternalRef": "Kundennummer",
+  "@fieldExternalRef": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldAddress": "Adresse",
+  "@fieldAddress": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldOutline": "Grundriss",
+  "@fieldOutline": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldHeight": "Raumhöhe",
+  "@fieldHeight": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldDate": "Datum",
+  "@fieldDate": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldAgreedMinutes": "Vereinbarte Zeit",
+  "@fieldAgreedMinutes": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldReportSent": "Bericht gesendet",
+  "@fieldReportSent": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldCustomer": "Kunde",
+  "@fieldCustomer": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldSite": "Adresse",
+  "@fieldSite": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldOther": "weitere Angaben",
+  "@fieldOther": {
+    "description": "Fields without their own word yet."
+  },
+  "rejectedPermission": "Dafür fehlt die Berechtigung.",
+  "@rejectedPermission": {
+    "description": "Reason permission (D-197)."
+  },
+  "rejectedDeleted": "Der Eintrag wurde inzwischen gelöscht.",
+  "@rejectedDeleted": {
+    "description": "Reason deleted (D-197)."
+  },
+  "rejectedDuplicate": "Gab es schon. Mit dem vorhandenen Eintrag verbunden.",
+  "@rejectedDuplicate": {
+    "description": "Reason duplicate on a new record, re-pointed to the existing one (D-198)."
+  },
+  "rejectedDuplicateValue": "Diesen Wert hat schon ein anderer Eintrag.",
+  "@rejectedDuplicateValue": {
+    "description": "Reason duplicate on a change of an existing record (D-198)."
+  },
+  "rejectedInvalid": "Der Server konnte die Änderung nicht übernehmen.",
+  "@rejectedInvalid": {
+    "description": "Reason invalid (D-197, D-199)."
+  },
+  "rejectedNotFound": "Den Eintrag gibt es auf dem Server nicht.",
+  "@rejectedNotFound": {
+    "description": "Reason not_found (D-197)."
+  },
+  "rejectedTooLarge": "Die Änderung ist zu groß zum Senden.",
+  "@rejectedTooLarge": {
+    "description": "Local reason too_large (D-199)."
+  },
+  "rejectedOther": "Der Server hat die Änderung abgelehnt.",
+  "@rejectedOther": {
+    "description": "Any other or unknown reason (D-96)."
+  },
+  "rejectedRetry": "Noch einmal senden",
+  "@rejectedRetry": {
+    "description": "Sends a refused change again as a new change (D-172, D-197)."
+  },
+  "rejectedRetried": "Wird noch einmal gesendet.",
+  "@rejectedRetried": {
+    "description": "Note after Noch einmal senden."
+  },
+  "rejectedDiscard": "Verwerfen",
+  "@rejectedDiscard": {
+    "description": "Removes a refused change from the list (D-197)."
+  },
+  "rejectedDiscarded": "Verworfen.",
+  "@rejectedDiscarded": {
+    "description": "Note after Verwerfen, with Rückgängig."
+  },
+  "undo": "Rückgängig",
+  "@undo": {
+    "description": "Undo button in a note (UX rule 10)."
   }
 }

@@ -4,7 +4,7 @@
 //
 import 'package:drift/drift.dart';
 
-class Customers extends Table with TableInfo {
+class Customers extends Table with TableInfo<Customers, CustomersData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -119,8 +119,54 @@ class Customers extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  CustomersData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CustomersData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      ),
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      ),
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      ),
+      contact: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}contact'],
+      ),
+      externalRef: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}external_ref'],
+      ),
+    );
   }
 
   @override
@@ -134,7 +180,394 @@ class Customers extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class Sites extends Table with TableInfo {
+class CustomersData extends DataClass implements Insertable<CustomersData> {
+  final String id;
+  final String workspaceId;
+  final String? createdAt;
+  final String? createdBy;
+  final String? updatedAt;
+  final String? updatedBy;
+  final int? revision;
+  final String? deletedAt;
+  final String? name;
+  final String? contact;
+  final String? externalRef;
+  const CustomersData({
+    required this.id,
+    required this.workspaceId,
+    this.createdAt,
+    this.createdBy,
+    this.updatedAt,
+    this.updatedBy,
+    this.revision,
+    this.deletedAt,
+    this.name,
+    this.contact,
+    this.externalRef,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<String>(createdAt);
+    }
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    if (!nullToAbsent || updatedBy != null) {
+      map['updated_by'] = Variable<String>(updatedBy);
+    }
+    if (!nullToAbsent || revision != null) {
+      map['revision'] = Variable<int>(revision);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<String>(deletedAt);
+    }
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
+    if (!nullToAbsent || contact != null) {
+      map['contact'] = Variable<String>(contact);
+    }
+    if (!nullToAbsent || externalRef != null) {
+      map['external_ref'] = Variable<String>(externalRef);
+    }
+    return map;
+  }
+
+  CustomersCompanion toCompanion(bool nullToAbsent) {
+    return CustomersCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      updatedBy: updatedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedBy),
+      revision: revision == null && nullToAbsent
+          ? const Value.absent()
+          : Value(revision),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      contact: contact == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contact),
+      externalRef: externalRef == null && nullToAbsent
+          ? const Value.absent()
+          : Value(externalRef),
+    );
+  }
+
+  factory CustomersData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CustomersData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      createdAt: serializer.fromJson<String?>(json['createdAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+      updatedBy: serializer.fromJson<String?>(json['updatedBy']),
+      revision: serializer.fromJson<int?>(json['revision']),
+      deletedAt: serializer.fromJson<String?>(json['deletedAt']),
+      name: serializer.fromJson<String?>(json['name']),
+      contact: serializer.fromJson<String?>(json['contact']),
+      externalRef: serializer.fromJson<String?>(json['externalRef']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'createdAt': serializer.toJson<String?>(createdAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+      'updatedBy': serializer.toJson<String?>(updatedBy),
+      'revision': serializer.toJson<int?>(revision),
+      'deletedAt': serializer.toJson<String?>(deletedAt),
+      'name': serializer.toJson<String?>(name),
+      'contact': serializer.toJson<String?>(contact),
+      'externalRef': serializer.toJson<String?>(externalRef),
+    };
+  }
+
+  CustomersData copyWith({
+    String? id,
+    String? workspaceId,
+    Value<String?> createdAt = const Value.absent(),
+    Value<String?> createdBy = const Value.absent(),
+    Value<String?> updatedAt = const Value.absent(),
+    Value<String?> updatedBy = const Value.absent(),
+    Value<int?> revision = const Value.absent(),
+    Value<String?> deletedAt = const Value.absent(),
+    Value<String?> name = const Value.absent(),
+    Value<String?> contact = const Value.absent(),
+    Value<String?> externalRef = const Value.absent(),
+  }) => CustomersData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    createdAt: createdAt.present ? createdAt.value : this.createdAt,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    updatedBy: updatedBy.present ? updatedBy.value : this.updatedBy,
+    revision: revision.present ? revision.value : this.revision,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    name: name.present ? name.value : this.name,
+    contact: contact.present ? contact.value : this.contact,
+    externalRef: externalRef.present ? externalRef.value : this.externalRef,
+  );
+  CustomersData copyWithCompanion(CustomersCompanion data) {
+    return CustomersData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      name: data.name.present ? data.name.value : this.name,
+      contact: data.contact.present ? data.contact.value : this.contact,
+      externalRef: data.externalRef.present
+          ? data.externalRef.value
+          : this.externalRef,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomersData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('name: $name, ')
+          ..write('contact: $contact, ')
+          ..write('externalRef: $externalRef')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    createdAt,
+    createdBy,
+    updatedAt,
+    updatedBy,
+    revision,
+    deletedAt,
+    name,
+    contact,
+    externalRef,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CustomersData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedAt == this.updatedAt &&
+          other.updatedBy == this.updatedBy &&
+          other.revision == this.revision &&
+          other.deletedAt == this.deletedAt &&
+          other.name == this.name &&
+          other.contact == this.contact &&
+          other.externalRef == this.externalRef);
+}
+
+class CustomersCompanion extends UpdateCompanion<CustomersData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String?> createdAt;
+  final Value<String?> createdBy;
+  final Value<String?> updatedAt;
+  final Value<String?> updatedBy;
+  final Value<int?> revision;
+  final Value<String?> deletedAt;
+  final Value<String?> name;
+  final Value<String?> contact;
+  final Value<String?> externalRef;
+  final Value<int> rowid;
+  const CustomersCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.name = const Value.absent(),
+    this.contact = const Value.absent(),
+    this.externalRef = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CustomersCompanion.insert({
+    required String id,
+    required String workspaceId,
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.name = const Value.absent(),
+    this.contact = const Value.absent(),
+    this.externalRef = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId);
+  static Insertable<CustomersData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedAt,
+    Expression<String>? updatedBy,
+    Expression<int>? revision,
+    Expression<String>? deletedAt,
+    Expression<String>? name,
+    Expression<String>? contact,
+    Expression<String>? externalRef,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (revision != null) 'revision': revision,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (name != null) 'name': name,
+      if (contact != null) 'contact': contact,
+      if (externalRef != null) 'external_ref': externalRef,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CustomersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String?>? createdAt,
+    Value<String?>? createdBy,
+    Value<String?>? updatedAt,
+    Value<String?>? updatedBy,
+    Value<int?>? revision,
+    Value<String?>? deletedAt,
+    Value<String?>? name,
+    Value<String?>? contact,
+    Value<String?>? externalRef,
+    Value<int>? rowid,
+  }) {
+    return CustomersCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      updatedBy: updatedBy ?? this.updatedBy,
+      revision: revision ?? this.revision,
+      deletedAt: deletedAt ?? this.deletedAt,
+      name: name ?? this.name,
+      contact: contact ?? this.contact,
+      externalRef: externalRef ?? this.externalRef,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<String>(deletedAt.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (contact.present) {
+      map['contact'] = Variable<String>(contact.value);
+    }
+    if (externalRef.present) {
+      map['external_ref'] = Variable<String>(externalRef.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomersCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('name: $name, ')
+          ..write('contact: $contact, ')
+          ..write('externalRef: $externalRef, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Sites extends Table with TableInfo<Sites, SitesData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -249,8 +682,54 @@ class Sites extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  SitesData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SitesData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      ),
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      ),
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      customerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}customer_id'],
+      ),
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      ),
+      address: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address'],
+      ),
+    );
   }
 
   @override
@@ -264,7 +743,394 @@ class Sites extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class Rooms extends Table with TableInfo {
+class SitesData extends DataClass implements Insertable<SitesData> {
+  final String id;
+  final String workspaceId;
+  final String? createdAt;
+  final String? createdBy;
+  final String? updatedAt;
+  final String? updatedBy;
+  final int? revision;
+  final String? deletedAt;
+  final String? customerId;
+  final String? name;
+  final String? address;
+  const SitesData({
+    required this.id,
+    required this.workspaceId,
+    this.createdAt,
+    this.createdBy,
+    this.updatedAt,
+    this.updatedBy,
+    this.revision,
+    this.deletedAt,
+    this.customerId,
+    this.name,
+    this.address,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<String>(createdAt);
+    }
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    if (!nullToAbsent || updatedBy != null) {
+      map['updated_by'] = Variable<String>(updatedBy);
+    }
+    if (!nullToAbsent || revision != null) {
+      map['revision'] = Variable<int>(revision);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<String>(deletedAt);
+    }
+    if (!nullToAbsent || customerId != null) {
+      map['customer_id'] = Variable<String>(customerId);
+    }
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
+    if (!nullToAbsent || address != null) {
+      map['address'] = Variable<String>(address);
+    }
+    return map;
+  }
+
+  SitesCompanion toCompanion(bool nullToAbsent) {
+    return SitesCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      updatedBy: updatedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedBy),
+      revision: revision == null && nullToAbsent
+          ? const Value.absent()
+          : Value(revision),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      customerId: customerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customerId),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      address: address == null && nullToAbsent
+          ? const Value.absent()
+          : Value(address),
+    );
+  }
+
+  factory SitesData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SitesData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      createdAt: serializer.fromJson<String?>(json['createdAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+      updatedBy: serializer.fromJson<String?>(json['updatedBy']),
+      revision: serializer.fromJson<int?>(json['revision']),
+      deletedAt: serializer.fromJson<String?>(json['deletedAt']),
+      customerId: serializer.fromJson<String?>(json['customerId']),
+      name: serializer.fromJson<String?>(json['name']),
+      address: serializer.fromJson<String?>(json['address']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'createdAt': serializer.toJson<String?>(createdAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+      'updatedBy': serializer.toJson<String?>(updatedBy),
+      'revision': serializer.toJson<int?>(revision),
+      'deletedAt': serializer.toJson<String?>(deletedAt),
+      'customerId': serializer.toJson<String?>(customerId),
+      'name': serializer.toJson<String?>(name),
+      'address': serializer.toJson<String?>(address),
+    };
+  }
+
+  SitesData copyWith({
+    String? id,
+    String? workspaceId,
+    Value<String?> createdAt = const Value.absent(),
+    Value<String?> createdBy = const Value.absent(),
+    Value<String?> updatedAt = const Value.absent(),
+    Value<String?> updatedBy = const Value.absent(),
+    Value<int?> revision = const Value.absent(),
+    Value<String?> deletedAt = const Value.absent(),
+    Value<String?> customerId = const Value.absent(),
+    Value<String?> name = const Value.absent(),
+    Value<String?> address = const Value.absent(),
+  }) => SitesData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    createdAt: createdAt.present ? createdAt.value : this.createdAt,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    updatedBy: updatedBy.present ? updatedBy.value : this.updatedBy,
+    revision: revision.present ? revision.value : this.revision,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    customerId: customerId.present ? customerId.value : this.customerId,
+    name: name.present ? name.value : this.name,
+    address: address.present ? address.value : this.address,
+  );
+  SitesData copyWithCompanion(SitesCompanion data) {
+    return SitesData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      customerId: data.customerId.present
+          ? data.customerId.value
+          : this.customerId,
+      name: data.name.present ? data.name.value : this.name,
+      address: data.address.present ? data.address.value : this.address,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SitesData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('customerId: $customerId, ')
+          ..write('name: $name, ')
+          ..write('address: $address')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    createdAt,
+    createdBy,
+    updatedAt,
+    updatedBy,
+    revision,
+    deletedAt,
+    customerId,
+    name,
+    address,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SitesData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedAt == this.updatedAt &&
+          other.updatedBy == this.updatedBy &&
+          other.revision == this.revision &&
+          other.deletedAt == this.deletedAt &&
+          other.customerId == this.customerId &&
+          other.name == this.name &&
+          other.address == this.address);
+}
+
+class SitesCompanion extends UpdateCompanion<SitesData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String?> createdAt;
+  final Value<String?> createdBy;
+  final Value<String?> updatedAt;
+  final Value<String?> updatedBy;
+  final Value<int?> revision;
+  final Value<String?> deletedAt;
+  final Value<String?> customerId;
+  final Value<String?> name;
+  final Value<String?> address;
+  final Value<int> rowid;
+  const SitesCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.customerId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.address = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SitesCompanion.insert({
+    required String id,
+    required String workspaceId,
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.customerId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.address = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId);
+  static Insertable<SitesData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedAt,
+    Expression<String>? updatedBy,
+    Expression<int>? revision,
+    Expression<String>? deletedAt,
+    Expression<String>? customerId,
+    Expression<String>? name,
+    Expression<String>? address,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (revision != null) 'revision': revision,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (customerId != null) 'customer_id': customerId,
+      if (name != null) 'name': name,
+      if (address != null) 'address': address,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SitesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String?>? createdAt,
+    Value<String?>? createdBy,
+    Value<String?>? updatedAt,
+    Value<String?>? updatedBy,
+    Value<int?>? revision,
+    Value<String?>? deletedAt,
+    Value<String?>? customerId,
+    Value<String?>? name,
+    Value<String?>? address,
+    Value<int>? rowid,
+  }) {
+    return SitesCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      updatedBy: updatedBy ?? this.updatedBy,
+      revision: revision ?? this.revision,
+      deletedAt: deletedAt ?? this.deletedAt,
+      customerId: customerId ?? this.customerId,
+      name: name ?? this.name,
+      address: address ?? this.address,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<String>(deletedAt.value);
+    }
+    if (customerId.present) {
+      map['customer_id'] = Variable<String>(customerId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (address.present) {
+      map['address'] = Variable<String>(address.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SitesCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('customerId: $customerId, ')
+          ..write('name: $name, ')
+          ..write('address: $address, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Rooms extends Table with TableInfo<Rooms, RoomsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -397,8 +1263,62 @@ class Rooms extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  RoomsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RoomsData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      ),
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      ),
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      customerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}customer_id'],
+      ),
+      siteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}site_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      ),
+      outline: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}outline'],
+      ),
+      heightCm: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}height_cm'],
+      ),
+    );
   }
 
   @override
@@ -412,7 +1332,445 @@ class Rooms extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class Jobs extends Table with TableInfo {
+class RoomsData extends DataClass implements Insertable<RoomsData> {
+  final String id;
+  final String workspaceId;
+  final String? createdAt;
+  final String? createdBy;
+  final String? updatedAt;
+  final String? updatedBy;
+  final int? revision;
+  final String? deletedAt;
+  final String? customerId;
+  final String siteId;
+  final String? name;
+  final String? outline;
+  final int? heightCm;
+  const RoomsData({
+    required this.id,
+    required this.workspaceId,
+    this.createdAt,
+    this.createdBy,
+    this.updatedAt,
+    this.updatedBy,
+    this.revision,
+    this.deletedAt,
+    this.customerId,
+    required this.siteId,
+    this.name,
+    this.outline,
+    this.heightCm,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<String>(createdAt);
+    }
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    if (!nullToAbsent || updatedBy != null) {
+      map['updated_by'] = Variable<String>(updatedBy);
+    }
+    if (!nullToAbsent || revision != null) {
+      map['revision'] = Variable<int>(revision);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<String>(deletedAt);
+    }
+    if (!nullToAbsent || customerId != null) {
+      map['customer_id'] = Variable<String>(customerId);
+    }
+    map['site_id'] = Variable<String>(siteId);
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
+    if (!nullToAbsent || outline != null) {
+      map['outline'] = Variable<String>(outline);
+    }
+    if (!nullToAbsent || heightCm != null) {
+      map['height_cm'] = Variable<int>(heightCm);
+    }
+    return map;
+  }
+
+  RoomsCompanion toCompanion(bool nullToAbsent) {
+    return RoomsCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      updatedBy: updatedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedBy),
+      revision: revision == null && nullToAbsent
+          ? const Value.absent()
+          : Value(revision),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      customerId: customerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customerId),
+      siteId: Value(siteId),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      outline: outline == null && nullToAbsent
+          ? const Value.absent()
+          : Value(outline),
+      heightCm: heightCm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(heightCm),
+    );
+  }
+
+  factory RoomsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RoomsData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      createdAt: serializer.fromJson<String?>(json['createdAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+      updatedBy: serializer.fromJson<String?>(json['updatedBy']),
+      revision: serializer.fromJson<int?>(json['revision']),
+      deletedAt: serializer.fromJson<String?>(json['deletedAt']),
+      customerId: serializer.fromJson<String?>(json['customerId']),
+      siteId: serializer.fromJson<String>(json['siteId']),
+      name: serializer.fromJson<String?>(json['name']),
+      outline: serializer.fromJson<String?>(json['outline']),
+      heightCm: serializer.fromJson<int?>(json['heightCm']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'createdAt': serializer.toJson<String?>(createdAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+      'updatedBy': serializer.toJson<String?>(updatedBy),
+      'revision': serializer.toJson<int?>(revision),
+      'deletedAt': serializer.toJson<String?>(deletedAt),
+      'customerId': serializer.toJson<String?>(customerId),
+      'siteId': serializer.toJson<String>(siteId),
+      'name': serializer.toJson<String?>(name),
+      'outline': serializer.toJson<String?>(outline),
+      'heightCm': serializer.toJson<int?>(heightCm),
+    };
+  }
+
+  RoomsData copyWith({
+    String? id,
+    String? workspaceId,
+    Value<String?> createdAt = const Value.absent(),
+    Value<String?> createdBy = const Value.absent(),
+    Value<String?> updatedAt = const Value.absent(),
+    Value<String?> updatedBy = const Value.absent(),
+    Value<int?> revision = const Value.absent(),
+    Value<String?> deletedAt = const Value.absent(),
+    Value<String?> customerId = const Value.absent(),
+    String? siteId,
+    Value<String?> name = const Value.absent(),
+    Value<String?> outline = const Value.absent(),
+    Value<int?> heightCm = const Value.absent(),
+  }) => RoomsData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    createdAt: createdAt.present ? createdAt.value : this.createdAt,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    updatedBy: updatedBy.present ? updatedBy.value : this.updatedBy,
+    revision: revision.present ? revision.value : this.revision,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    customerId: customerId.present ? customerId.value : this.customerId,
+    siteId: siteId ?? this.siteId,
+    name: name.present ? name.value : this.name,
+    outline: outline.present ? outline.value : this.outline,
+    heightCm: heightCm.present ? heightCm.value : this.heightCm,
+  );
+  RoomsData copyWithCompanion(RoomsCompanion data) {
+    return RoomsData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      customerId: data.customerId.present
+          ? data.customerId.value
+          : this.customerId,
+      siteId: data.siteId.present ? data.siteId.value : this.siteId,
+      name: data.name.present ? data.name.value : this.name,
+      outline: data.outline.present ? data.outline.value : this.outline,
+      heightCm: data.heightCm.present ? data.heightCm.value : this.heightCm,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoomsData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('customerId: $customerId, ')
+          ..write('siteId: $siteId, ')
+          ..write('name: $name, ')
+          ..write('outline: $outline, ')
+          ..write('heightCm: $heightCm')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    createdAt,
+    createdBy,
+    updatedAt,
+    updatedBy,
+    revision,
+    deletedAt,
+    customerId,
+    siteId,
+    name,
+    outline,
+    heightCm,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoomsData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedAt == this.updatedAt &&
+          other.updatedBy == this.updatedBy &&
+          other.revision == this.revision &&
+          other.deletedAt == this.deletedAt &&
+          other.customerId == this.customerId &&
+          other.siteId == this.siteId &&
+          other.name == this.name &&
+          other.outline == this.outline &&
+          other.heightCm == this.heightCm);
+}
+
+class RoomsCompanion extends UpdateCompanion<RoomsData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String?> createdAt;
+  final Value<String?> createdBy;
+  final Value<String?> updatedAt;
+  final Value<String?> updatedBy;
+  final Value<int?> revision;
+  final Value<String?> deletedAt;
+  final Value<String?> customerId;
+  final Value<String> siteId;
+  final Value<String?> name;
+  final Value<String?> outline;
+  final Value<int?> heightCm;
+  final Value<int> rowid;
+  const RoomsCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.customerId = const Value.absent(),
+    this.siteId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.outline = const Value.absent(),
+    this.heightCm = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RoomsCompanion.insert({
+    required String id,
+    required String workspaceId,
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.customerId = const Value.absent(),
+    required String siteId,
+    this.name = const Value.absent(),
+    this.outline = const Value.absent(),
+    this.heightCm = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       siteId = Value(siteId);
+  static Insertable<RoomsData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedAt,
+    Expression<String>? updatedBy,
+    Expression<int>? revision,
+    Expression<String>? deletedAt,
+    Expression<String>? customerId,
+    Expression<String>? siteId,
+    Expression<String>? name,
+    Expression<String>? outline,
+    Expression<int>? heightCm,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (revision != null) 'revision': revision,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (customerId != null) 'customer_id': customerId,
+      if (siteId != null) 'site_id': siteId,
+      if (name != null) 'name': name,
+      if (outline != null) 'outline': outline,
+      if (heightCm != null) 'height_cm': heightCm,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RoomsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String?>? createdAt,
+    Value<String?>? createdBy,
+    Value<String?>? updatedAt,
+    Value<String?>? updatedBy,
+    Value<int?>? revision,
+    Value<String?>? deletedAt,
+    Value<String?>? customerId,
+    Value<String>? siteId,
+    Value<String?>? name,
+    Value<String?>? outline,
+    Value<int?>? heightCm,
+    Value<int>? rowid,
+  }) {
+    return RoomsCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      updatedBy: updatedBy ?? this.updatedBy,
+      revision: revision ?? this.revision,
+      deletedAt: deletedAt ?? this.deletedAt,
+      customerId: customerId ?? this.customerId,
+      siteId: siteId ?? this.siteId,
+      name: name ?? this.name,
+      outline: outline ?? this.outline,
+      heightCm: heightCm ?? this.heightCm,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<String>(deletedAt.value);
+    }
+    if (customerId.present) {
+      map['customer_id'] = Variable<String>(customerId.value);
+    }
+    if (siteId.present) {
+      map['site_id'] = Variable<String>(siteId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (outline.present) {
+      map['outline'] = Variable<String>(outline.value);
+    }
+    if (heightCm.present) {
+      map['height_cm'] = Variable<int>(heightCm.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoomsCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('customerId: $customerId, ')
+          ..write('siteId: $siteId, ')
+          ..write('name: $name, ')
+          ..write('outline: $outline, ')
+          ..write('heightCm: $heightCm, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Jobs extends Table with TableInfo<Jobs, JobsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -536,8 +1894,58 @@ class Jobs extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  JobsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return JobsData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      ),
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      ),
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      customerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}customer_id'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date'],
+      )!,
+      agreedMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}agreed_minutes'],
+      ),
+      reportSentAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}report_sent_at'],
+      ),
+    );
   }
 
   @override
@@ -551,7 +1959,423 @@ class Jobs extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class Outbox extends Table with TableInfo {
+class JobsData extends DataClass implements Insertable<JobsData> {
+  final String id;
+  final String workspaceId;
+  final String? createdAt;
+  final String? createdBy;
+  final String? updatedAt;
+  final String? updatedBy;
+  final int? revision;
+  final String? deletedAt;
+  final String customerId;
+  final String date;
+  final int? agreedMinutes;
+  final String? reportSentAt;
+  const JobsData({
+    required this.id,
+    required this.workspaceId,
+    this.createdAt,
+    this.createdBy,
+    this.updatedAt,
+    this.updatedBy,
+    this.revision,
+    this.deletedAt,
+    required this.customerId,
+    required this.date,
+    this.agreedMinutes,
+    this.reportSentAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<String>(createdAt);
+    }
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    if (!nullToAbsent || updatedBy != null) {
+      map['updated_by'] = Variable<String>(updatedBy);
+    }
+    if (!nullToAbsent || revision != null) {
+      map['revision'] = Variable<int>(revision);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<String>(deletedAt);
+    }
+    map['customer_id'] = Variable<String>(customerId);
+    map['date'] = Variable<String>(date);
+    if (!nullToAbsent || agreedMinutes != null) {
+      map['agreed_minutes'] = Variable<int>(agreedMinutes);
+    }
+    if (!nullToAbsent || reportSentAt != null) {
+      map['report_sent_at'] = Variable<String>(reportSentAt);
+    }
+    return map;
+  }
+
+  JobsCompanion toCompanion(bool nullToAbsent) {
+    return JobsCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      updatedBy: updatedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedBy),
+      revision: revision == null && nullToAbsent
+          ? const Value.absent()
+          : Value(revision),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      customerId: Value(customerId),
+      date: Value(date),
+      agreedMinutes: agreedMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(agreedMinutes),
+      reportSentAt: reportSentAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reportSentAt),
+    );
+  }
+
+  factory JobsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return JobsData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      createdAt: serializer.fromJson<String?>(json['createdAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+      updatedBy: serializer.fromJson<String?>(json['updatedBy']),
+      revision: serializer.fromJson<int?>(json['revision']),
+      deletedAt: serializer.fromJson<String?>(json['deletedAt']),
+      customerId: serializer.fromJson<String>(json['customerId']),
+      date: serializer.fromJson<String>(json['date']),
+      agreedMinutes: serializer.fromJson<int?>(json['agreedMinutes']),
+      reportSentAt: serializer.fromJson<String?>(json['reportSentAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'createdAt': serializer.toJson<String?>(createdAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+      'updatedBy': serializer.toJson<String?>(updatedBy),
+      'revision': serializer.toJson<int?>(revision),
+      'deletedAt': serializer.toJson<String?>(deletedAt),
+      'customerId': serializer.toJson<String>(customerId),
+      'date': serializer.toJson<String>(date),
+      'agreedMinutes': serializer.toJson<int?>(agreedMinutes),
+      'reportSentAt': serializer.toJson<String?>(reportSentAt),
+    };
+  }
+
+  JobsData copyWith({
+    String? id,
+    String? workspaceId,
+    Value<String?> createdAt = const Value.absent(),
+    Value<String?> createdBy = const Value.absent(),
+    Value<String?> updatedAt = const Value.absent(),
+    Value<String?> updatedBy = const Value.absent(),
+    Value<int?> revision = const Value.absent(),
+    Value<String?> deletedAt = const Value.absent(),
+    String? customerId,
+    String? date,
+    Value<int?> agreedMinutes = const Value.absent(),
+    Value<String?> reportSentAt = const Value.absent(),
+  }) => JobsData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    createdAt: createdAt.present ? createdAt.value : this.createdAt,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    updatedBy: updatedBy.present ? updatedBy.value : this.updatedBy,
+    revision: revision.present ? revision.value : this.revision,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    customerId: customerId ?? this.customerId,
+    date: date ?? this.date,
+    agreedMinutes: agreedMinutes.present
+        ? agreedMinutes.value
+        : this.agreedMinutes,
+    reportSentAt: reportSentAt.present ? reportSentAt.value : this.reportSentAt,
+  );
+  JobsData copyWithCompanion(JobsCompanion data) {
+    return JobsData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      customerId: data.customerId.present
+          ? data.customerId.value
+          : this.customerId,
+      date: data.date.present ? data.date.value : this.date,
+      agreedMinutes: data.agreedMinutes.present
+          ? data.agreedMinutes.value
+          : this.agreedMinutes,
+      reportSentAt: data.reportSentAt.present
+          ? data.reportSentAt.value
+          : this.reportSentAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JobsData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('customerId: $customerId, ')
+          ..write('date: $date, ')
+          ..write('agreedMinutes: $agreedMinutes, ')
+          ..write('reportSentAt: $reportSentAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    createdAt,
+    createdBy,
+    updatedAt,
+    updatedBy,
+    revision,
+    deletedAt,
+    customerId,
+    date,
+    agreedMinutes,
+    reportSentAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is JobsData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedAt == this.updatedAt &&
+          other.updatedBy == this.updatedBy &&
+          other.revision == this.revision &&
+          other.deletedAt == this.deletedAt &&
+          other.customerId == this.customerId &&
+          other.date == this.date &&
+          other.agreedMinutes == this.agreedMinutes &&
+          other.reportSentAt == this.reportSentAt);
+}
+
+class JobsCompanion extends UpdateCompanion<JobsData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String?> createdAt;
+  final Value<String?> createdBy;
+  final Value<String?> updatedAt;
+  final Value<String?> updatedBy;
+  final Value<int?> revision;
+  final Value<String?> deletedAt;
+  final Value<String> customerId;
+  final Value<String> date;
+  final Value<int?> agreedMinutes;
+  final Value<String?> reportSentAt;
+  final Value<int> rowid;
+  const JobsCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.customerId = const Value.absent(),
+    this.date = const Value.absent(),
+    this.agreedMinutes = const Value.absent(),
+    this.reportSentAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  JobsCompanion.insert({
+    required String id,
+    required String workspaceId,
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    required String customerId,
+    required String date,
+    this.agreedMinutes = const Value.absent(),
+    this.reportSentAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       customerId = Value(customerId),
+       date = Value(date);
+  static Insertable<JobsData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedAt,
+    Expression<String>? updatedBy,
+    Expression<int>? revision,
+    Expression<String>? deletedAt,
+    Expression<String>? customerId,
+    Expression<String>? date,
+    Expression<int>? agreedMinutes,
+    Expression<String>? reportSentAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (revision != null) 'revision': revision,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (customerId != null) 'customer_id': customerId,
+      if (date != null) 'date': date,
+      if (agreedMinutes != null) 'agreed_minutes': agreedMinutes,
+      if (reportSentAt != null) 'report_sent_at': reportSentAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  JobsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String?>? createdAt,
+    Value<String?>? createdBy,
+    Value<String?>? updatedAt,
+    Value<String?>? updatedBy,
+    Value<int?>? revision,
+    Value<String?>? deletedAt,
+    Value<String>? customerId,
+    Value<String>? date,
+    Value<int?>? agreedMinutes,
+    Value<String?>? reportSentAt,
+    Value<int>? rowid,
+  }) {
+    return JobsCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      updatedBy: updatedBy ?? this.updatedBy,
+      revision: revision ?? this.revision,
+      deletedAt: deletedAt ?? this.deletedAt,
+      customerId: customerId ?? this.customerId,
+      date: date ?? this.date,
+      agreedMinutes: agreedMinutes ?? this.agreedMinutes,
+      reportSentAt: reportSentAt ?? this.reportSentAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<String>(deletedAt.value);
+    }
+    if (customerId.present) {
+      map['customer_id'] = Variable<String>(customerId.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (agreedMinutes.present) {
+      map['agreed_minutes'] = Variable<int>(agreedMinutes.value);
+    }
+    if (reportSentAt.present) {
+      map['report_sent_at'] = Variable<String>(reportSentAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JobsCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('customerId: $customerId, ')
+          ..write('date: $date, ')
+          ..write('agreedMinutes: $agreedMinutes, ')
+          ..write('reportSentAt: $reportSentAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Outbox extends Table with TableInfo<Outbox, OutboxData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -631,8 +2455,38 @@ class Outbox extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {seq};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  OutboxData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OutboxData(
+      seq: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seq'],
+      )!,
+      changeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}change_id'],
+      )!,
+      entity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      fields: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fields'],
+      )!,
+      baseRevision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}base_revision'],
+      ),
+      deviceTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_time'],
+      )!,
+    );
   }
 
   @override
@@ -644,7 +2498,264 @@ class Outbox extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class SyncState extends Table with TableInfo {
+class OutboxData extends DataClass implements Insertable<OutboxData> {
+  final int seq;
+  final String changeId;
+  final String entity;
+  final String entityId;
+  final String fields;
+  final int? baseRevision;
+  final String deviceTime;
+  const OutboxData({
+    required this.seq,
+    required this.changeId,
+    required this.entity,
+    required this.entityId,
+    required this.fields,
+    this.baseRevision,
+    required this.deviceTime,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['seq'] = Variable<int>(seq);
+    map['change_id'] = Variable<String>(changeId);
+    map['entity'] = Variable<String>(entity);
+    map['entity_id'] = Variable<String>(entityId);
+    map['fields'] = Variable<String>(fields);
+    if (!nullToAbsent || baseRevision != null) {
+      map['base_revision'] = Variable<int>(baseRevision);
+    }
+    map['device_time'] = Variable<String>(deviceTime);
+    return map;
+  }
+
+  OutboxCompanion toCompanion(bool nullToAbsent) {
+    return OutboxCompanion(
+      seq: Value(seq),
+      changeId: Value(changeId),
+      entity: Value(entity),
+      entityId: Value(entityId),
+      fields: Value(fields),
+      baseRevision: baseRevision == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseRevision),
+      deviceTime: Value(deviceTime),
+    );
+  }
+
+  factory OutboxData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OutboxData(
+      seq: serializer.fromJson<int>(json['seq']),
+      changeId: serializer.fromJson<String>(json['changeId']),
+      entity: serializer.fromJson<String>(json['entity']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      fields: serializer.fromJson<String>(json['fields']),
+      baseRevision: serializer.fromJson<int?>(json['baseRevision']),
+      deviceTime: serializer.fromJson<String>(json['deviceTime']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'seq': serializer.toJson<int>(seq),
+      'changeId': serializer.toJson<String>(changeId),
+      'entity': serializer.toJson<String>(entity),
+      'entityId': serializer.toJson<String>(entityId),
+      'fields': serializer.toJson<String>(fields),
+      'baseRevision': serializer.toJson<int?>(baseRevision),
+      'deviceTime': serializer.toJson<String>(deviceTime),
+    };
+  }
+
+  OutboxData copyWith({
+    int? seq,
+    String? changeId,
+    String? entity,
+    String? entityId,
+    String? fields,
+    Value<int?> baseRevision = const Value.absent(),
+    String? deviceTime,
+  }) => OutboxData(
+    seq: seq ?? this.seq,
+    changeId: changeId ?? this.changeId,
+    entity: entity ?? this.entity,
+    entityId: entityId ?? this.entityId,
+    fields: fields ?? this.fields,
+    baseRevision: baseRevision.present ? baseRevision.value : this.baseRevision,
+    deviceTime: deviceTime ?? this.deviceTime,
+  );
+  OutboxData copyWithCompanion(OutboxCompanion data) {
+    return OutboxData(
+      seq: data.seq.present ? data.seq.value : this.seq,
+      changeId: data.changeId.present ? data.changeId.value : this.changeId,
+      entity: data.entity.present ? data.entity.value : this.entity,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      fields: data.fields.present ? data.fields.value : this.fields,
+      baseRevision: data.baseRevision.present
+          ? data.baseRevision.value
+          : this.baseRevision,
+      deviceTime: data.deviceTime.present
+          ? data.deviceTime.value
+          : this.deviceTime,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OutboxData(')
+          ..write('seq: $seq, ')
+          ..write('changeId: $changeId, ')
+          ..write('entity: $entity, ')
+          ..write('entityId: $entityId, ')
+          ..write('fields: $fields, ')
+          ..write('baseRevision: $baseRevision, ')
+          ..write('deviceTime: $deviceTime')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    seq,
+    changeId,
+    entity,
+    entityId,
+    fields,
+    baseRevision,
+    deviceTime,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OutboxData &&
+          other.seq == this.seq &&
+          other.changeId == this.changeId &&
+          other.entity == this.entity &&
+          other.entityId == this.entityId &&
+          other.fields == this.fields &&
+          other.baseRevision == this.baseRevision &&
+          other.deviceTime == this.deviceTime);
+}
+
+class OutboxCompanion extends UpdateCompanion<OutboxData> {
+  final Value<int> seq;
+  final Value<String> changeId;
+  final Value<String> entity;
+  final Value<String> entityId;
+  final Value<String> fields;
+  final Value<int?> baseRevision;
+  final Value<String> deviceTime;
+  const OutboxCompanion({
+    this.seq = const Value.absent(),
+    this.changeId = const Value.absent(),
+    this.entity = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.fields = const Value.absent(),
+    this.baseRevision = const Value.absent(),
+    this.deviceTime = const Value.absent(),
+  });
+  OutboxCompanion.insert({
+    this.seq = const Value.absent(),
+    required String changeId,
+    required String entity,
+    required String entityId,
+    required String fields,
+    this.baseRevision = const Value.absent(),
+    required String deviceTime,
+  }) : changeId = Value(changeId),
+       entity = Value(entity),
+       entityId = Value(entityId),
+       fields = Value(fields),
+       deviceTime = Value(deviceTime);
+  static Insertable<OutboxData> custom({
+    Expression<int>? seq,
+    Expression<String>? changeId,
+    Expression<String>? entity,
+    Expression<String>? entityId,
+    Expression<String>? fields,
+    Expression<int>? baseRevision,
+    Expression<String>? deviceTime,
+  }) {
+    return RawValuesInsertable({
+      if (seq != null) 'seq': seq,
+      if (changeId != null) 'change_id': changeId,
+      if (entity != null) 'entity': entity,
+      if (entityId != null) 'entity_id': entityId,
+      if (fields != null) 'fields': fields,
+      if (baseRevision != null) 'base_revision': baseRevision,
+      if (deviceTime != null) 'device_time': deviceTime,
+    });
+  }
+
+  OutboxCompanion copyWith({
+    Value<int>? seq,
+    Value<String>? changeId,
+    Value<String>? entity,
+    Value<String>? entityId,
+    Value<String>? fields,
+    Value<int?>? baseRevision,
+    Value<String>? deviceTime,
+  }) {
+    return OutboxCompanion(
+      seq: seq ?? this.seq,
+      changeId: changeId ?? this.changeId,
+      entity: entity ?? this.entity,
+      entityId: entityId ?? this.entityId,
+      fields: fields ?? this.fields,
+      baseRevision: baseRevision ?? this.baseRevision,
+      deviceTime: deviceTime ?? this.deviceTime,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (seq.present) {
+      map['seq'] = Variable<int>(seq.value);
+    }
+    if (changeId.present) {
+      map['change_id'] = Variable<String>(changeId.value);
+    }
+    if (entity.present) {
+      map['entity'] = Variable<String>(entity.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (fields.present) {
+      map['fields'] = Variable<String>(fields.value);
+    }
+    if (baseRevision.present) {
+      map['base_revision'] = Variable<int>(baseRevision.value);
+    }
+    if (deviceTime.present) {
+      map['device_time'] = Variable<String>(deviceTime.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OutboxCompanion(')
+          ..write('seq: $seq, ')
+          ..write('changeId: $changeId, ')
+          ..write('entity: $entity, ')
+          ..write('entityId: $entityId, ')
+          ..write('fields: $fields, ')
+          ..write('baseRevision: $baseRevision, ')
+          ..write('deviceTime: $deviceTime')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class SyncState extends Table with TableInfo<SyncState, SyncStateData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -675,8 +2786,18 @@ class SyncState extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {workspaceId};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  SyncStateData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncStateData(
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      lastRevision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_revision'],
+      )!,
+    );
   }
 
   @override
@@ -688,6 +2809,144 @@ class SyncState extends Table with TableInfo {
   List<String> get customConstraints => const ['PRIMARY KEY(workspace_id)'];
   @override
   bool get dontWriteConstraints => true;
+}
+
+class SyncStateData extends DataClass implements Insertable<SyncStateData> {
+  final String workspaceId;
+  final int lastRevision;
+  const SyncStateData({required this.workspaceId, required this.lastRevision});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['last_revision'] = Variable<int>(lastRevision);
+    return map;
+  }
+
+  SyncStateCompanion toCompanion(bool nullToAbsent) {
+    return SyncStateCompanion(
+      workspaceId: Value(workspaceId),
+      lastRevision: Value(lastRevision),
+    );
+  }
+
+  factory SyncStateData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncStateData(
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      lastRevision: serializer.fromJson<int>(json['lastRevision']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'lastRevision': serializer.toJson<int>(lastRevision),
+    };
+  }
+
+  SyncStateData copyWith({String? workspaceId, int? lastRevision}) =>
+      SyncStateData(
+        workspaceId: workspaceId ?? this.workspaceId,
+        lastRevision: lastRevision ?? this.lastRevision,
+      );
+  SyncStateData copyWithCompanion(SyncStateCompanion data) {
+    return SyncStateData(
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      lastRevision: data.lastRevision.present
+          ? data.lastRevision.value
+          : this.lastRevision,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncStateData(')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('lastRevision: $lastRevision')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(workspaceId, lastRevision);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncStateData &&
+          other.workspaceId == this.workspaceId &&
+          other.lastRevision == this.lastRevision);
+}
+
+class SyncStateCompanion extends UpdateCompanion<SyncStateData> {
+  final Value<String> workspaceId;
+  final Value<int> lastRevision;
+  final Value<int> rowid;
+  const SyncStateCompanion({
+    this.workspaceId = const Value.absent(),
+    this.lastRevision = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncStateCompanion.insert({
+    required String workspaceId,
+    required int lastRevision,
+    this.rowid = const Value.absent(),
+  }) : workspaceId = Value(workspaceId),
+       lastRevision = Value(lastRevision);
+  static Insertable<SyncStateData> custom({
+    Expression<String>? workspaceId,
+    Expression<int>? lastRevision,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (lastRevision != null) 'last_revision': lastRevision,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncStateCompanion copyWith({
+    Value<String>? workspaceId,
+    Value<int>? lastRevision,
+    Value<int>? rowid,
+  }) {
+    return SyncStateCompanion(
+      workspaceId: workspaceId ?? this.workspaceId,
+      lastRevision: lastRevision ?? this.lastRevision,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (lastRevision.present) {
+      map['last_revision'] = Variable<int>(lastRevision.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncStateCompanion(')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('lastRevision: $lastRevision, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
 }
 
 class DatabaseAtV1 extends GeneratedDatabase {
