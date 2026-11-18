@@ -19,13 +19,21 @@
 | Derived columns are left out: generated columns (`alive`, `no_customer`), `name_key`, `email_key`, and the `workspace_counters` table | The database makes generated columns; the loader makes the rest as the server does (`Wio\Schema\NameKey`, highest revision per workspace) |
 | Times are ISO-8601 UTC with milliseconds (`2026-11-02T08:01:00.000Z`); dates are `YYYY-MM-DD` | The form sync carries; the loader converts to `DATETIME(3)` |
 | JSON columns (`contact`, `outline`, `levels`) are nested JSON | Readable; the loader encodes them |
-| Ids are `01990000-0000-7000-8000-TTTTNNNNNNNN`: `TTTT` is the table number below, `NNNNNNNN` the row number | Readable in dumps and test failures; never collides with other test ids (D-79) |
+| Ids are `01990000-0000-7000-8000-TTTTNNNNNNNN`: `TTTT` is the table code below (the table number in hexadecimal), `NNNNNNNN` the row number in hexadecimal | Readable in dumps and test failures; never collides with other test ids (D-79) |
 | Revisions run from 1 per workspace in insert order; a later change (a tombstone) gets a higher one | Sync tests can pull "since revision n" (D-52) |
-| E-mails end in `@example.org`; `contact` holds an e-mail only, no phone number; every address has the postal code `00000` | Never real data, checked by the test (D-81) |
-| An entry's place equals the `to_` place of its newest `place_history` row, and every move starts where the last one ended | Every place change writes history (KB data-model.md) |
-| `rooms.outline` is a list of `{"x_cm", "y_cm"}` corners, clockwise from the top left | Provisional, the planning lane may change it in M4 (D-83) |
+| E-mails end in `@example.org`; `contact` holds an e-mail only, no phone number; every address has the postal code `00000`; no string anywhere holds another `@` address or a phone-like run of digits | Never real data, checked by the test (D-81) |
+| An entry's place equals the `to_` place of its newest `place_history` row, and every move starts where the last one ended. An entry placed when it was created has its first history row at the entry's `created_at`; a later move is no later than the entry's `updated_at` | Every place change writes history in the same transaction (KB data-model.md) |
+| `rooms.outline` is a list of `{"x_cm", "y_cm"}` corners, clockwise from the top left. `openings.wall_index` counts from 0: wall *i* runs from corner *i* to corner *i*+1, and the last wall runs back to corner 0 | Provisional, the planning lane may change both in M4 (D-83) |
 
-Table numbers: 1 workspaces, 2 users, 3 customers, 4 sites, 5 rooms, 6 openings, 7 fixtures, 8 labels, 9 property keys, 10 entries, 11 place history, 12 entity labels, 13 entity properties, 14 notes, 15 jobs. The next table takes 16.
+| Table | Code | Table | Code | Table | Code |
+| --- | --- | --- | --- | --- | --- |
+| workspaces | `0001` | openings | `0006` | place_history | `000b` |
+| users | `0002` | fixtures | `0007` | entity_labels | `000c` |
+| customers | `0003` | labels | `0008` | entity_properties | `000d` |
+| sites | `0004` | property_keys | `0009` | notes | `000e` |
+| rooms | `0005` | entries | `000a` | jobs | `000f` |
+
+The next table takes 16, code `0010`.
 
 ## Changing it
 

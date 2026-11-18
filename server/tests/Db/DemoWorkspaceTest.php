@@ -143,6 +143,30 @@ final class DemoWorkspaceTest extends SchemaTestCase
         }
     }
 
+    public function testNoStringLooksLikeRealContactData(): void
+    {
+        foreach ($this->demo->order as $table) {
+            foreach ($this->demo->rows($table) as $index => $row) {
+                $strings = [];
+                array_walk_recursive($row, static function (mixed $value) use (&$strings): void {
+                    if (is_string($value)) {
+                        $strings[] = $value;
+                    }
+                });
+                foreach ($strings as $value) {
+                    $what = sprintf('%s row %d: "%s"', $table, $index, $value);
+                    if (str_contains($value, '@')) {
+                        self::assertMatchesRegularExpression('/^[a-z0-9.]+@example\.org$/', $value, $what);
+                    }
+                    if (preg_match('/^\d{4}-\d{2}-\d{2}(T[0-9:.]+Z)?$/', $value) !== 1
+                        && preg_match('/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/', $value) !== 1) {
+                        self::assertDoesNotMatchRegularExpression('/\+?\d[\d \/()-]{5,}\d/', $value, $what . ' looks like a phone number');
+                    }
+                }
+            }
+        }
+    }
+
     public function testEveryEntrysPlaceMatchesItsNewestHistoryRow(): void
     {
         $history = [];
@@ -153,6 +177,13 @@ final class DemoWorkspaceTest extends SchemaTestCase
         foreach ($this->demo->rows('entries') as $entry) {
             $rows = $history[$this->string($entry, 'id')] ?? [];
             usort($rows, fn(array $a, array $b): int => $this->string($a, 'moved_at') <=> $this->string($b, 'moved_at'));
+            if ($rows !== []) {
+                $what = $this->string($entry, 'id');
+                $first = $this->string($rows[0], 'moved_at');
+                $newest = $this->string($rows[count($rows) - 1], 'moved_at');
+                self::assertGreaterThanOrEqual($this->string($entry, 'created_at'), $first, $what . ': moved before it existed');
+                self::assertLessThanOrEqual($this->string($entry, 'updated_at'), $newest, $what . ': moved after its last update');
+            }
             $previous = array_fill_keys(self::PLACE, null);
             foreach ($rows as $row) {
                 self::assertSame($entry['customer_id'], $row['customer_id']);
