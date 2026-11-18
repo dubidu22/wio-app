@@ -1,0 +1,8 @@
+{
+  "type": "about:blank",
+  "title": "Update the app",
+  "status": 426,
+  "detail": "This app version is no longer supported. Update the app; data on the device is kept.",
+  "code": "upgrade_required",
+  "minimum_app_version": "2.0.0"
+}

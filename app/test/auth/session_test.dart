@@ -199,6 +199,8 @@ void main() {
       'maintenance': FakeAnswer.problem(503, 'maintenance'),
       'a 401 with another code': FakeAnswer.problem(401, 'something_else'),
       'a 500': FakeAnswer.problem(500, 'internal'),
+      // An app too old for the server keeps its session and data (D-148).
+      'upgrade required': FakeAnswer.problem(426, 'upgrade_required'),
     };
     for (final MapEntry(key: name, value: answer) in keep.entries) {
       testWidgets('$name keeps the session', (tester) async {

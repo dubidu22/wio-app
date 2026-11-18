@@ -42,31 +42,54 @@ class AuthApi {
 
   /// Sign in with e-mail and password and get a device token
   /// Creates one device token for this device. When the e-mail and password match users in more than one workspace and no `workspace_id` is given, the answer is 409 with the workspaces to choose from (only after the password matched).
+  /// [wioAppVersion] Version of the app that sends the request (D-140), from its build. Only major.minor.patch is compared; +build is ignored (D-141). Missing: accepted. Malformed: 400 `invalid_request`. Below the server's minimum: 426 `upgrade_required` (D-142).
   _i7.Future<_i8.TonikResult<_i9.SignInResponse, _i10.Response>> signIn({
     required _i11.SignInRequest body,
+    _i7.String? wioAppVersion,
     _i8.TonikCancellation? cancellation,
-  }) async => this._signIn(body: body, cancellation: cancellation);
+  }) async => this._signIn(
+    body: body,
+    wioAppVersion: wioAppVersion,
+    cancellation: cancellation,
+  );
 
   /// Revoke the calling device token
+  /// [wioAppVersion] Version of the app that sends the request (D-140), from its build. Only major.minor.patch is compared; +build is ignored (D-141). Missing: accepted. Malformed: 400 `invalid_request`. Below the server's minimum: 426 `upgrade_required` (D-142).
   _i7.Future<_i8.TonikResult<_i12.SignOutResponse, _i10.Response>> signOut({
+    _i7.String? wioAppVersion,
     _i8.TonikCancellation? cancellation,
-  }) async => this._signOut(cancellation: cancellation);
+  }) async =>
+      this._signOut(wioAppVersion: wioAppVersion, cancellation: cancellation);
 
   /// The signed-in user and workspace of this token
+  /// [wioAppVersion] Version of the app that sends the request (D-140), from its build. Only major.minor.patch is compared; +build is ignored (D-141). Missing: accepted. Malformed: 400 `invalid_request`. Below the server's minimum: 426 `upgrade_required` (D-142).
   _i7.Future<_i8.TonikResult<_i13.GetMeResponse, _i10.Response>> getMe({
+    _i7.String? wioAppVersion,
     _i8.TonikCancellation? cancellation,
-  }) async => this._getMe(cancellation: cancellation);
+  }) async =>
+      this._getMe(wioAppVersion: wioAppVersion, cancellation: cancellation);
 
   /// The devices signed in as this user
+  /// [wioAppVersion] Version of the app that sends the request (D-140), from its build. Only major.minor.patch is compared; +build is ignored (D-141). Missing: accepted. Malformed: 400 `invalid_request`. Below the server's minimum: 426 `upgrade_required` (D-142).
   _i7.Future<_i8.TonikResult<_i14.ListDevicesResponse, _i10.Response>>
-  listDevices({_i8.TonikCancellation? cancellation}) async =>
-      this._listDevices(cancellation: cancellation);
+  listDevices({
+    _i7.String? wioAppVersion,
+    _i8.TonikCancellation? cancellation,
+  }) async => this._listDevices(
+    wioAppVersion: wioAppVersion,
+    cancellation: cancellation,
+  );
 
   /// Sign out another device of this user
+  /// [wioAppVersion] Version of the app that sends the request (D-140), from its build. Only major.minor.patch is compared; +build is ignored (D-141). Missing: accepted. Malformed: 400 `invalid_request`. Below the server's minimum: 426 `upgrade_required` (D-142).
   _i7.Future<_i8.TonikResult<_i15.RevokeDeviceResponse, _i10.Response>>
   revokeDevice({
     required _i7.String deviceId,
+    _i7.String? wioAppVersion,
     _i8.TonikCancellation? cancellation,
-  }) async =>
-      this._revokeDevice(deviceId: deviceId, cancellation: cancellation);
+  }) async => this._revokeDevice(
+    deviceId: deviceId,
+    wioAppVersion: wioAppVersion,
+    cancellation: cancellation,
+  );
 }

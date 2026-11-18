@@ -43,6 +43,22 @@ class SignOutResponse401 extends SignOutResponse {
 }
 
 @_i1.immutable
+class SignOutResponse426 extends SignOutResponse {
+  const SignOutResponse426({required this.body});
+
+  final _i3.Problem body;
+
+  @_i2.override
+  _i2.bool operator ==(_i2.Object other) {
+    if (_i2.identical(this, other)) return true;
+    return other is SignOutResponse426 && other.body == this.body;
+  }
+
+  @_i2.override
+  _i2.int get hashCode => this.body.hashCode;
+}
+
+@_i1.immutable
 class SignOutResponse503 extends SignOutResponse {
   const SignOutResponse503({required this.body});
 

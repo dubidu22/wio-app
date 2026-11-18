@@ -92,7 +92,7 @@ void main() {
     for (final (status, code) in [
       (500, 'internal'),
       (429, 'too_many_attempts'),
-      (426, 'some_future_code'),
+      (502, 'some_future_code'),
     ]) {
       test('$status $code', () async {
         final result = await syncAnswering(
@@ -106,6 +106,45 @@ void main() {
         expect((response as SyncPullResponseDefault).body.code, code);
       });
     }
+  });
+
+  test(
+    '426 upgrade_required arrives typed, with the minimum (D-146)',
+    () async {
+      final result = await syncAnswering(
+        426,
+        readExample('response.Problem.upgrade-required.json'),
+      ).syncPull(since: 42);
+      final response =
+          (result as TonikSuccess<SyncPullResponse, http.Response>).value;
+      expect(response, isA<SyncPullResponse426>());
+      final body = (response as SyncPullResponse426).body;
+      expect(body.code, 'upgrade_required');
+      expect(body.minimumAppVersion, '2.0.0');
+    },
+  );
+
+  test('the generated client sends no version header unless asked', () async {
+    final sent = <http.BaseRequest>[];
+    final api = SystemApi(
+      CustomServer(
+        baseUrl: 'https://api.example.org',
+        serverConfig: ServerConfig<http.Client>.client(
+          MockClient((request) async {
+            sent.add(request);
+            return http.Response(
+              '{"status":"ok"}',
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }),
+        ),
+      ),
+    );
+    await api.getHealth();
+    await api.getHealth(wioAppVersion: '1.2.3+4');
+    expect(sent.first.headers.containsKey('Wio-App-Version'), isFalse);
+    expect(sent.last.headers['Wio-App-Version'], '1.2.3+4');
   });
 
   test('410 resync_required tells the app to pull again from 0 (F4)', () async {

@@ -21,6 +21,10 @@ The contract is OpenAPI **3.0.3**, written so that it means the same in 3.1. `se
 4. A breaking change needs a new path and a decision in the KB.
 5. Integers that grow (`revision`, byte counts) declare `maximum: 9007199254740991`, because a Dart `int` on the web is a JavaScript number.
 
+## App version (D-140 to D-146)
+
+Every operation takes the optional header `Wio-App-Version` (`components/parameters/WioAppVersion`) and lists `426` (`components/responses/UpgradeRequired`); `ContractSubsetTest` enforces both. The app sets the header once in its HTTP client from the build, never per call. The server compares `major.minor.patch` with its minimum (`server/src/AppVersion/MinimumAppVersion.php`, D-145) before auth: no header passes, a malformed one gets `400 invalid_request`, an older one gets `426 upgrade_required` with `minimum_app_version`. The app then asks the user to update, stops syncing and keeps its local data.
+
 ## Record schemas (D-95)
 
 Each synced table of the database has one record schema (`Room`, `Entry`, …). `ContractSchemaTest` compares them with `server/tests/Db/Schema/schema-snapshot.json`. A migration that adds a column therefore also changes this file in the same PR.

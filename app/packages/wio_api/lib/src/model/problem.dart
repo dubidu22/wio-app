@@ -10,7 +10,7 @@ import 'package:meta/meta.dart' as _i2;
 import 'package:tonik_util/tonik_util.dart' as _i1;
 import 'package:wio_api/src/model/workspace_ref.dart' as _i4;
 
-/// RFC 9457 problem details (D-98). `code` is an open string; documented values: invalid_request, token_invalid, invalid_credentials, workspace_choice_required, too_many_attempts, too_many_changes, payload_too_large, offset_mismatch, hash_mismatch, maintenance, not_found, method_not_allowed, resync_required (410 on pull: drop pulled records, keep the outbox, pull from 0), internal. Apps treat an unknown code as a server error.
+/// RFC 9457 problem details (D-98). `code` is an open string; documented values: invalid_request, token_invalid, invalid_credentials, workspace_choice_required, too_many_attempts, too_many_changes, payload_too_large, offset_mismatch, hash_mismatch, maintenance, not_found, method_not_allowed, resync_required (410 on pull: drop pulled records, keep the outbox, pull from 0), upgrade_required (426: update the app; local data stays), internal. Apps treat an unknown code as a server error.
 @_i2.immutable
 class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
   const Problem({
@@ -21,6 +21,7 @@ class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
     this.detail,
     this.workspaces,
     this.receivedBytes,
+    this.minimumAppVersion,
   });
 
   factory Problem.fromSimple(
@@ -50,6 +51,9 @@ class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
       receivedBytes: _$map[r'received_bytes'].decodeJsonNullableInt(
         context: r'Problem.received_bytes',
       ),
+      minimumAppVersion: _$map[r'minimum_app_version'].decodeJsonNullableString(
+        context: r'Problem.minimum_app_version',
+      ),
     );
   }
 
@@ -76,6 +80,9 @@ class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
   /// Only with `offset_mismatch`.
   final _i3.int? receivedBytes;
 
+  /// Only with `upgrade_required`; the oldest version the server serves.
+  final _i3.String? minimumAppVersion;
+
   @_i3.override
   _i3.Object? toJson() => {
     r'type': this.$type,
@@ -86,6 +93,8 @@ class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
     if (this.workspaces != null)
       r'workspaces': this.workspaces?.map((e) => e.toJson()).toList(),
     if (this.receivedBytes != null) r'received_bytes': this.receivedBytes,
+    if (this.minimumAppVersion != null)
+      r'minimum_app_version': this.minimumAppVersion,
   };
 
   Problem Function({
@@ -96,6 +105,7 @@ class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
     _i3.String? code,
     _i3.List<_i4.WorkspaceRef>? workspaces,
     _i3.int? receivedBytes,
+    _i3.String? minimumAppVersion,
   })
   get copyWith {
     const _i3.Object _sentinel = _i3.Object();
@@ -107,6 +117,7 @@ class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
       _i3.String? code,
       _i3.Object? workspaces = _sentinel,
       _i3.Object? receivedBytes = _sentinel,
+      _i3.Object? minimumAppVersion = _sentinel,
     }) => Problem(
       $type: $type ?? this.$type,
       title: title ?? this.title,
@@ -121,6 +132,9 @@ class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
       receivedBytes: _i3.identical(receivedBytes, _sentinel)
           ? this.receivedBytes
           : (receivedBytes as _i3.int?),
+      minimumAppVersion: _i3.identical(minimumAppVersion, _sentinel)
+          ? this.minimumAppVersion
+          : (minimumAppVersion as _i3.String?),
     );
   }
 
@@ -135,7 +149,8 @@ class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
         other.detail == this.detail &&
         other.code == this.code &&
         _$deepEquals.equals(other.workspaces, this.workspaces) &&
-        other.receivedBytes == this.receivedBytes;
+        other.receivedBytes == this.receivedBytes &&
+        other.minimumAppVersion == this.minimumAppVersion;
   }
 
   @_i3.override
@@ -149,6 +164,7 @@ class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
       this.code,
       deepEquals.hash(this.workspaces),
       this.receivedBytes,
+      this.minimumAppVersion,
     ]);
   }
 

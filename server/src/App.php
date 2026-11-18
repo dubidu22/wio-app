@@ -7,6 +7,7 @@ namespace Wio;
 use Psr\Container\ContainerInterface;
 use Slim\App as SlimApp;
 use Slim\Factory\AppFactory;
+use Wio\AppVersion\AppVersionMiddleware;
 use Wio\Auth\AuthMiddleware;
 use Wio\Http\Auth\ListDevicesAction;
 use Wio\Http\Auth\MeAction;
@@ -20,7 +21,8 @@ use Wio\Http\ProblemErrorHandler;
  * Builds the HTTP application. Routes follow api/openapi.yaml, the only
  * contract between the app and the server (INV-02). Every route except the
  * contract's public operations (`security: []`) goes through the auth
- * middleware (D-112).
+ * middleware (D-112); every route goes through the app-version check first
+ * (D-142).
  */
 final class App
 {
@@ -31,6 +33,9 @@ final class App
     {
         $services ??= Services::fromEnvironment();
         $app = AppFactory::create();
+        // Runs after routing and before every route's own middleware, so an
+        // old app learns "update" before "token invalid" (D-142).
+        $app->add(new AppVersionMiddleware($services->minimumAppVersion, $app->getResponseFactory()));
         $app->addRoutingMiddleware();
         $app->addErrorMiddleware(false, false, false)
             ->setDefaultErrorHandler(new ProblemErrorHandler($app->getResponseFactory(), $services->log));

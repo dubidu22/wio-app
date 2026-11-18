@@ -32,6 +32,9 @@ abstract class DatabaseTestCase extends ContractTestCase
     /** @var list<string> lines the app logged, instead of PHP's error log */
     protected array $logged = [];
 
+    /** The server's minimum app version in this test (D-145). */
+    protected ?string $minimumAppVersion = null;
+
     public static function setUpBeforeClass(): void
     {
         MigratedDatabase::migrate();
@@ -61,6 +64,7 @@ abstract class DatabaseTestCase extends ContractTestCase
             function (string $line): void {
                 $this->logged[] = $line;
             },
+            $this->minimumAppVersion,
         );
     }
 
@@ -72,7 +76,7 @@ abstract class DatabaseTestCase extends ContractTestCase
     /**
      * @param array<string, mixed>|null $body
      */
-    protected function call(string $method, string $uri, ?array $body = null, ?string $token = null, string $ip = self::IP): ServerRequestInterface
+    protected function call(string $method, string $uri, ?array $body = null, ?string $token = null, string $ip = self::IP, ?string $appVersion = null): ServerRequestInterface
     {
         $request = $this->request($method, $uri, ['REMOTE_ADDR' => $ip]);
         if ($body !== null) {
@@ -82,6 +86,9 @@ abstract class DatabaseTestCase extends ContractTestCase
         }
         if ($token !== null) {
             $request = $request->withHeader('Authorization', 'Bearer ' . $token);
+        }
+        if ($appVersion !== null) {
+            $request = $request->withHeader('Wio-App-Version', $appVersion);
         }
 
         return $request;

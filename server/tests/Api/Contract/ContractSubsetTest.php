@@ -88,6 +88,32 @@ final class ContractSubsetTest extends TestCase
         }
     }
 
+    public function testEveryOperationTakesTheAppVersionHeaderAndLists426(): void
+    {
+        foreach (Contract::map(Contract::document()['paths'] ?? null) as $path => $item) {
+            foreach (Contract::map($item) as $method => $operation) {
+                $operation = Contract::map($operation);
+                $parameters = \is_array($operation['parameters'] ?? null) ? $operation['parameters'] : [];
+                self::assertContains(
+                    ['$ref' => '#/components/parameters/WioAppVersion'],
+                    $parameters,
+                    "{$method} {$path}: needs the Wio-App-Version header parameter (D-140)",
+                );
+                $upgrade = null;
+                foreach (Contract::map($operation['responses'] ?? null) as $status => $response) {
+                    if ("{$status}" === '426') {
+                        $upgrade = $response;
+                    }
+                }
+                self::assertSame(
+                    ['$ref' => '#/components/responses/UpgradeRequired'],
+                    $upgrade,
+                    "{$method} {$path}: needs '426': \$ref '#/components/responses/UpgradeRequired' (D-146)",
+                );
+            }
+        }
+    }
+
     public function testRequestSchemasAreClosedAndResponseSchemasOpen(): void
     {
         $requests = $this->reachable($this->bodySchemaRefs('requestBody'));

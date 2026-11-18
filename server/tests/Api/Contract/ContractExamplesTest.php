@@ -29,6 +29,7 @@ final class ContractExamplesTest extends TestCase
         'request.PushRequest.unknown-op' => 'op',
         'request.PushRequest.wrong-field-type' => 'height_cm',
         'request.SignInRequest.unknown-field' => 'remember_me',
+        'response.Problem.minimum-app-version-with-build' => 'minimum_app_version',
         'response.PullResult.revision-above-2-53' => 'last_revision',
     ];
 
