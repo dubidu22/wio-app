@@ -98,5 +98,124 @@
   "loadFailed": "Die gespeicherten Daten konnten nicht gelesen werden. Bitte die App nicht deinstallieren, sonst gehen sie verloren.",
   "@loadFailed": {
     "description": "Shown when the local database cannot be opened or read (D-65); the data must not be deleted."
+  },
+  "signInTitle": "Anmelden",
+  "@signInTitle": {
+    "description": "Title of the owner sign-in screen (D-126)."
+  },
+  "signInButton": "Anmelden",
+  "@signInButton": {
+    "description": "Main button that signs in; also the button on the job list when signed out (D-126, D-130)."
+  },
+  "signInSending": "Anmelden …",
+  "@signInSending": {
+    "description": "Main button text while the sign-in request runs."
+  },
+  "signInEmail": "E-Mail",
+  "@signInEmail": {
+    "description": "Label of the e-mail field on the sign-in screen."
+  },
+  "signInPassword": "Passwort",
+  "@signInPassword": {
+    "description": "Label of the password field on the sign-in screen."
+  },
+  "signInShowPassword": "Passwort zeigen",
+  "@signInShowPassword": {
+    "description": "Button that shows the typed password."
+  },
+  "signInHidePassword": "Passwort verbergen",
+  "@signInHidePassword": {
+    "description": "Button that hides the typed password again."
+  },
+  "signInDevice": "Dieses Gerät: {name}",
+  "@signInDevice": {
+    "description": "Device name sent with sign-in, shown as text (D-125).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "signInChooseWorkspace": "Für welchen Betrieb?",
+  "@signInChooseWorkspace": {
+    "description": "Heading above one button per workspace after 409 (D-127)."
+  },
+  "unnamedWorkspace": "Betrieb ohne Namen",
+  "@unnamedWorkspace": {
+    "description": "Shown instead of a workspace's name when it has none."
+  },
+  "signInEmptyFields": "Bitte E-Mail und Passwort eingeben.",
+  "@signInEmptyFields": {
+    "description": "Shown when Anmelden is tapped with an empty field; nothing is sent."
+  },
+  "signInInvalidCredentials": "E-Mail oder Passwort stimmt nicht.",
+  "@signInInvalidCredentials": {
+    "description": "Problem code invalid_credentials (D-128)."
+  },
+  "signInTooManyAttempts": "{minutes, plural, =1{Zu viele Versuche. Bitte warte noch 1 Minute.} other{Zu viele Versuche. Bitte warte noch {minutes} Minuten.}}",
+  "@signInTooManyAttempts": {
+    "description": "Problem code too_many_attempts with the wait from Retry-After, counted down (D-128).",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "signInMaintenance": "Der Server wird gerade aktualisiert. Bitte versuch es in ein paar Minuten noch einmal.",
+  "@signInMaintenance": {
+    "description": "Problem code maintenance (503) (D-128)."
+  },
+  "signInNoConnection": "Keine Verbindung zum Server. Prüfe das Netz und tippe noch einmal auf Anmelden.",
+  "@signInNoConnection": {
+    "description": "No signal, timeout or no answer (D-128)."
+  },
+  "signInInvalidRequest": "Bitte prüfe die E-Mail-Adresse.",
+  "@signInInvalidRequest": {
+    "description": "Problem code invalid_request (D-128)."
+  },
+  "signInServerError": "Der Server hat einen Fehler gemeldet. Bitte versuch es später noch einmal.",
+  "@signInServerError": {
+    "description": "Any other or unknown problem code (D-128)."
+  },
+  "signInNoServer": "Für diese App ist kein Server eingestellt.",
+  "@signInNoServer": {
+    "description": "Developer builds without WIO_API_URL (D-133)."
+  },
+  "signInOtherWorkspace": "Auf diesem Gerät liegen Daten eines anderen Betriebs. Melde dich mit diesem Betrieb an.",
+  "@signInOtherWorkspace": {
+    "description": "Sign-in answered with another workspace than the device's data (D-131)."
+  },
+  "signedOutHint": "Nicht angemeldet. Neue Daten werden erst nach der Anmeldung gesendet.",
+  "@signedOutHint": {
+    "description": "Hint at the top of the job list when signed out (D-130)."
+  },
+  "signedInAs": "Angemeldet als {name} bei {workspace}",
+  "@signedInAs": {
+    "description": "Line above Abmelden at the end of the job list (D-132).",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "workspace": {
+        "type": "String"
+      }
+    }
+  },
+  "signedInAt": "Angemeldet bei {workspace}",
+  "@signedInAt": {
+    "description": "Same line when the user has no display name.",
+    "placeholders": {
+      "workspace": {
+        "type": "String"
+      }
+    }
+  },
+  "signOut": "Abmelden",
+  "@signOut": {
+    "description": "Button at the end of the job list that signs out (D-132)."
+  },
+  "signedOut": "Abgemeldet.",
+  "@signedOut": {
+    "description": "Short note after Abmelden."
   }
 }

@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/app.dart';
+import 'package:wio_app/auth/session_provider.dart';
+import 'package:wio_app/auth/token_store.dart';
 import 'package:wio_app/data/database.dart';
 import 'package:wio_app/l10n/app_localizations.dart';
 import 'package:wio_app/shell/providers.dart';
 
+import 'fake_api.dart';
 import 'test_data.dart';
 
 /// Phone size used by goldens and screenshots in PRs (CLAUDE.md: 390 x 844).
@@ -33,7 +36,9 @@ Future<void> pumpScreen(WidgetTester tester, Widget screen) async {
 const Size tabletSize = Size(820, 1180);
 
 /// Pumps the whole app at [location] over [db], with a fixed clock and a
-/// link opener that opens nothing (D-68). Clears the tree at the end so
+/// link opener that opens nothing (D-68). Signed in with the example session
+/// unless [store] says otherwise; the API is [api] or a fake server that
+/// answers with the example files, never the network. Clears the tree at the end so
 /// drift's stream timers finish inside the test.
 Future<void> pumpWioApp(
   WidgetTester tester, {
@@ -44,6 +49,9 @@ Future<void> pumpWioApp(
   DateTime? now,
   DateTime Function()? clock,
   LinkOpener? opener,
+  TokenStore? store,
+  FakeApi? api,
+  String deviceName = 'Testtelefon',
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -61,6 +69,12 @@ Future<void> pumpWioApp(
         databaseProvider.overrideWithValue(db),
         clockProvider.overrideWithValue(clock ?? () => fixedNow),
         linkOpenerProvider.overrideWithValue(opener ?? (uri) async => false),
+        tokenStoreProvider.overrideWithValue(
+          store ?? FakeTokenStore(exampleSession()),
+        ),
+        apiBaseUrlProvider.overrideWithValue(fakeApiBase),
+        httpClientProvider.overrideWithValue((api ?? FakeApi()).client),
+        deviceNameProvider.overrideWithValue(() async => deviceName),
       ],
       child: WioApp(initialLocation: location),
     ),

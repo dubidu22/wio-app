@@ -14,7 +14,7 @@ Banned: SSPL, non-commercial, proprietary, GPL-2.0-only, other licences incompat
 | `intl` | 0.20.3 | BSD-3-Clause | Localisation (ARB files) |
 | `wio_api` (`app/packages/wio_api/`, generated from `api/openapi.yaml`) | 1.0.0 | AGPL-3.0-only (this project) | Generated API client, the app's only way to the server (D-91, INV-02) |
 | `tonik_util` | 0.11.1 | MIT | Runtime of the generated client |
-| Transitive: `http` | 1.6.0 | BSD-3-Clause | HTTP transport of the generated client |
+| `http` | 1.6.0 | BSD-3-Clause | HTTP transport of the generated client; the app's `AuthClient` adds the device token (D-133) |
 | Transitive: `big_decimal` | 0.7.0 | MIT | Decimal values in the generated client |
 | Transitive: `charset` | 2.0.1 | Apache-2.0 | Text decoding in `tonik_util` |
 | Material Icons font (`MaterialIcons-Regular.otf`, bundled by `uses-material-design: true`, tree-shaken in release builds) | from the Flutter 3.50.0 SDK | Apache-2.0 | Icons used by Material widgets (for example the back arrow) |
@@ -30,6 +30,10 @@ Banned: SSPL, non-commercial, proprietary, GPL-2.0-only, other licences incompat
 | `url_launcher` | 6.3.3 | BSD-3-Clause | Opens the source code in the browser (D-73) |
 | `path_provider` | 2.1.6 | BSD-3-Clause | Application Support folder for the database (D-72) |
 | `uuid` | 4.6.0 | MIT | UUID v7 made on the device (D-67) |
+| `flutter_secure_storage` | 11.2.0 | BSD-3-Clause | Device token in the Android Keystore and the iOS keychain (D-121) |
+| `device_info_plus` | 13.3.0 | BSD-3-Clause | Device name sent with sign-in (D-125) |
+| `web` | 1.1.2 | BSD-3-Clause | The web build keeps the session in sessionStorage (D-123) |
+| Transitive: `flutter_secure_storage_darwin`, `_linux`, `_platform_interface`, `_web`, `_windows`; `device_info_plus_platform_interface`; `win32`, `win32_registry`, `ffi_leak_tracker` | see `app/pubspec.lock` | BSD-3-Clause | Platform parts of the two packages above |
 | Transitive: `state_notifier` | 1.0.0 | MIT | Used by `riverpod` |
 | Transitive: `sqlite3_flutter_libs`, `sqlcipher_flutter_libs` | 0.6.0+eol, 0.7.0+eol | MIT | Empty end-of-life packages named by `drift_flutter`; no native code |
 | Transitive: platform packages of `url_launcher` and `path_provider`; `jni`, `jni_flutter`, `jni_util`, `objective_c` (used by `path_provider`); `meta`, `collection`, `async`, `stack_trace` and other Dart team packages | see `app/pubspec.lock` | BSD-3-Clause | Used by the packages above |

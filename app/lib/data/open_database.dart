@@ -10,7 +10,9 @@ import 'database.dart';
 /// Web: SQLite compiled to WebAssembly from `web/sqlite3.wasm`, run in
 /// `web/drift_worker.js`, stored in the browser (D-70). Nothing is loaded
 /// from another host.
-WioDatabase openWioDatabase() {
+///
+/// [onFirstCreate] runs once when the database is new (D-122).
+WioDatabase openWioDatabase({Future<void> Function()? onFirstCreate}) {
   return WioDatabase(
     driftDatabase(
       name: 'wio',
@@ -22,5 +24,6 @@ WioDatabase openWioDatabase() {
         driftWorker: Uri.parse('drift_worker.js'),
       ),
     ),
+    onFirstCreate: onFirstCreate,
   );
 }

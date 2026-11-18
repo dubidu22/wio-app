@@ -15,6 +15,7 @@ class CatalogScreen {
 /// file named *_screen.dart is missing here. The golden tests render the
 /// same screens.
 const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
+  'lib/auth/sign_in_screen.dart': CatalogScreen('/anmelden'),
   'lib/jobs/job_list_screen.dart': CatalogScreen('/'),
   'lib/customers/customer_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}',

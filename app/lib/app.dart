@@ -1,7 +1,12 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'auth/session_provider.dart';
 import 'l10n/app_localizations.dart';
+import 'shell/providers.dart';
 import 'shell/router.dart';
 
 /// Font bundled with the app (D-40); no platform loads fonts from a CDN.
@@ -44,23 +49,55 @@ ThemeData wioTheme() {
 
 /// Root widget. German is the first and, for now, only locale (D-23).
 /// Needs a ProviderScope above it (see main.dart).
-class WioApp extends StatefulWidget {
+///
+/// At start nothing waits for the network (D-129): the job list shows local
+/// data at once, getMe checks a stored token in the background, and a fresh
+/// install with no local data and no session opens "Anmelden" (D-130).
+class WioApp extends ConsumerStatefulWidget {
   const WioApp({super.key, this.initialLocation = '/'});
 
   /// Where the app opens; tests start on other screens.
   final String initialLocation;
 
   @override
-  State<WioApp> createState() => _WioAppState();
+  ConsumerState<WioApp> createState() => _WioAppState();
 }
 
-class _WioAppState extends State<WioApp> {
+class _WioAppState extends ConsumerState<WioApp> {
   late final GoRouter _router = buildRouter(
     initialLocation: widget.initialLocation,
   );
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(
+      onResume: () =>
+          unawaited(ref.read(sessionProvider.notifier).checkIfStale()),
+    );
+    unawaited(_start());
+  }
+
+  Future<void> _start() async {
+    try {
+      final session = await ref.read(sessionProvider.future);
+      if (!mounted) return;
+      if (session != null) {
+        await ref.read(sessionProvider.notifier).check();
+      } else if (widget.initialLocation == '/' &&
+          await isLocalDatabaseEmpty(ref.read(databaseProvider)) &&
+          mounted) {
+        _router.go(signInLocation);
+      }
+    } on Object {
+      // The job list shows a database error itself (D-65).
+    }
+  }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _router.dispose();
     super.dispose();
   }
