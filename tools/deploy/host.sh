@@ -236,6 +236,17 @@ case "$command" in
     exit "$status"
     ;;
 
+  remove-file)
+    # remove-file ROOT WORKSPACE SHA256: deletes the smoke test's file (S7),
+    # complete or partial, from shared/files.
+    workspace="${1:?workspace}"
+    sha="${2:?sha256}"
+    [[ "$workspace" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] || fail "not a workspace id: $workspace"
+    [[ "$sha" =~ ^[0-9a-f]{64}$ ]] || fail "not a sha256: $sha"
+    rm -f -- "$root/shared/files/$workspace/$sha" "$root/shared/files/$workspace/$sha".*.part
+    echo "S7 test file removed"
+    ;;
+
   ip-check)
     # ip-check ROOT EMAIL: S4 of plan 010. The failed sign-in for EMAIL must
     # have stored the hash of the address this SSH connection comes from;

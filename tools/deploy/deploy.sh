@@ -81,8 +81,17 @@ config_file() {
 smoke() {
   local args=("$WIO_API_URL" "$environment")
   # Called as `if ! smoke`, where set -e does not apply: every step returns.
+  local report status=0
+  report="$(mktemp)"
   WIO_WEB_ORIGIN="${WIO_WEB_ORIGIN:-}" WIO_SMOKE_EMAIL="$smoke_email" WIO_SMOKE_PASSWORD="${WIO_SMOKE_PASSWORD:-}" \
-    "$here/smoke.sh" "${args[@]}" || return 1
+    WIO_SMOKE_REPORT="$report" "$here/smoke.sh" "${args[@]}" || status=$?
+  # The S7 test file never stays in the store.
+  if [[ -s "$report" ]]; then
+    # shellcheck disable=SC2046 # two words: workspace id and sha256
+    host remove-file $(cat "$report") || status=1
+  fi
+  rm -f -- "$report"
+  [[ "$status" == 0 ]] || return 1
   if [[ "$environment" == staging ]]; then
     local probe
     probe="rauchtest-$(date +%s)-$RANDOM@example.org"

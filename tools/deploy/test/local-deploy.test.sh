@@ -72,7 +72,8 @@ export WIO_DB_HOST="${WIO_TEST_DB_HOST:-127.0.0.1}"
 export WIO_DB_NAME="${WIO_TEST_DB_NAME:?}" WIO_DB_USER="${WIO_TEST_DB_USER:?}" WIO_DB_PASSWORD="${WIO_TEST_DB_PASSWORD:?}"
 export WIO_SMOKE_PASSWORD="local-test-password-$RANDOM$RANDOM"
 export WIO_KEEP_RELEASES=3
-# The test's PHP server answers from 127.0.0.1.
+# The test's PHP server answers from 127.0.0.1 and has no body limit.
+export WIO_SMOKE_SKIP_BODY_CAP=1
 unset WIO_WEB_ORIGIN
 
 failures=0
@@ -124,6 +125,9 @@ check "tarball removed after unpack" 0 "$(find "$root/incoming" -type f | wc -l)
 log_has "H2 printed" "H2 argon2id hash" "$work/deploy-aaaaaaa.log"
 log_has "S3 sign-in and getMe" "S3 GET /auth/me with the token: 200 owner" "$work/deploy-aaaaaaa.log"
 log_has "S4" "S4 REMOTE_ADDR is the client address" "$work/deploy-aaaaaaa.log"
+log_has "S7 two-chunk upload" "S7 two-chunk upload: 202, state 4194304, 200 complete" "$work/deploy-aaaaaaa.log"
+log_has "S7 file removed" "S7 test file removed" "$work/deploy-aaaaaaa.log"
+check "no file left in the store (the store's .lock stays)" 0 "$(find "$root/shared/files" -type f ! -name .lock | wc -l)"
 
 echo "== 2 second deploy switches and remembers the previous release"
 status=0; run_deploy bbbbbbb "$work/good.tar.gz" || status=$?

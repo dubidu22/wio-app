@@ -7,6 +7,10 @@
 #
 # Environment: WIO_SMOKE_EMAIL and WIO_SMOKE_PASSWORD (staging, D-162);
 # WIO_WEB_ORIGIN (optional, D-163): when set, its preflight must be allowed.
+# WIO_SMOKE_REPORT (optional): file that gets "<workspace id> <sha256>" of the
+# test file S7 stored, so deploy.sh can delete it on the host.
+# WIO_SMOKE_SKIP_BODY_CAP=1 (local test only): PHP's built-in server has no
+# request body limit, so S5b cannot pass there.
 # curl checks TLS certificates; no check passes on an invalid certificate.
 set -euo pipefail
 
@@ -61,6 +65,37 @@ sign_in() {
   request POST /auth/sign-in -H 'Content-Type: application/json' --data-binary "@$work/sign-in.json"
 }
 
+# S7 (staging, D-186, D-207): a file of 4 MiB + 4 KiB in two chunks: 202
+# after the first, the state shows it, 200 and complete after the second.
+upload_two_chunks() {
+  local token="$1" workspace="$2" total=4198400 first=4194304 sha
+  head -c "$total" /dev/urandom > "$work/file"
+  sha="$(sha256sum "$work/file" | cut -d' ' -f1)"
+  head -c "$first" "$work/file" > "$work/chunk1"
+  tail -c "+$((first + 1))" "$work/file" > "$work/chunk2"
+  if [[ -n "${WIO_SMOKE_REPORT:-}" && -n "$workspace" ]]; then
+    echo "$workspace $sha" > "$WIO_SMOKE_REPORT"
+  fi
+  request PUT "/files/$sha" -H "Authorization: Bearer $token" -H 'Content-Type: application/octet-stream' \
+    -H "Content-Range: bytes 0-$((first - 1))/$total" --data-binary "@$work/chunk1"
+  if [[ "$status" != 202 || "$(jq -r '.received_bytes' "$work/body" 2> /dev/null)" != "$first" ]]; then
+    fail "S7 first chunk: status $status $(head -c 200 "$work/body")"
+    return
+  fi
+  request GET "/files/$sha/state" -H "Authorization: Bearer $token"
+  if [[ "$status" != 200 || "$(jq -r '.received_bytes' "$work/body" 2> /dev/null)" != "$first" ]]; then
+    fail "S7 state after the first chunk: status $status $(head -c 200 "$work/body")"
+    return
+  fi
+  request PUT "/files/$sha" -H "Authorization: Bearer $token" -H 'Content-Type: application/octet-stream' \
+    -H "Content-Range: bytes $first-$((total - 1))/$total" --data-binary "@$work/chunk2"
+  if [[ "$status" == 200 && "$(jq -r '.complete' "$work/body" 2> /dev/null)" == true ]]; then
+    pass "S7 two-chunk upload: 202, state $first, 200 complete"
+  else
+    fail "S7 second chunk: status $status $(head -c 200 "$work/body")"
+  fi
+}
+
 case "$mode" in
   failed-sign-in)
     email="${3:?email}"
@@ -110,6 +145,8 @@ if [[ "$mode" == staging ]]; then
       else
         fail "S3 GET /auth/me with the token: status $status (Authorization header lost?)"
       fi
+      workspace="$(jq -r '.workspace.id // empty' "$work/body" 2> /dev/null || true)"
+      upload_two_chunks "$token" "$workspace"
       request POST /auth/sign-out -H "Authorization: Bearer $token"
       if [[ "$status" == 204 ]]; then
         pass "S3 sign-out: 204"
@@ -126,6 +163,19 @@ head -c 4194304 /dev/zero > "$work/chunk"
 request PUT /smoke/chunk -H 'Content-Type: application/octet-stream' \
   -H 'Content-Range: bytes 0-4194303/4194304' --data-binary "@$work/chunk"
 expect_problem "S5 PUT 4 MiB with Content-Range" 404 not_found
+
+# S5b: a body above the 5 MiB cap ends with 413 (.htaccess LimitRequestBody).
+if [[ "${WIO_SMOKE_SKIP_BODY_CAP:-}" == 1 ]]; then
+  echo "skip  S5b body cap (local test: no Apache)"
+else
+  head -c 6291456 /dev/zero > "$work/big"
+  request PUT /smoke/chunk -H 'Content-Type: application/octet-stream' --data-binary "@$work/big"
+  if [[ "$status" == 413 ]]; then
+    pass "S5b PUT 6 MiB: 413"
+  else
+    fail "S5b PUT 6 MiB: status $status, expected 413 (body cap missing)"
+  fi
+fi
 
 # S6: CORS (D-163). A foreign origin never gets CORS headers; the web
 # origin, when configured, gets Wio-App-Version in the allowed headers.
