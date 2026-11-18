@@ -15,4 +15,4 @@ Outside contributions need a signed contributor licence agreement (CLA) before t
 
 ## Licence of contributions
 
-By contributing you agree that your contribution is licensed under `AGPL-3.0-only`, and, once the CLA exists, under its terms.
+By contributing you agree that your contribution is licensed under `AGPL-3.0-only`. Once the CLA exists, outside contributions are accepted only after it is signed.

@@ -14,3 +14,6 @@ Thumbs.db
 *.p12
 *.jks
 *.keystore
+*.p8
+*.mobileprovision
+key.properties

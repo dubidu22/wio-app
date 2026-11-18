@@ -8,7 +8,7 @@
 
 ## Risk
 
-<!-- Critical paths touched (schema, migrations, sync, api/openapi.yaml, auth, permissions, data leaving device or server, goldens, release/deploy workflows, privacy texts, LICENSE)? -->
+<!-- Critical paths touched (schema, migrations, sync, api/openapi.yaml, auth, roles, permissions, data leaving device or server, goldens, release/store/deploy workflows, privacy texts, LICENSE)? New dependencies, assets, models or samples: name each one's licence. -->
 
 ## Out of scope
 
