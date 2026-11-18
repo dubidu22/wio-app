@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:tonik_util/tonik_util.dart';
@@ -71,6 +72,7 @@ class SignInState {
 typedef _Deps = ({
   String apiBase,
   SessionNotifier sessions,
+  Session? previous,
   http.Client httpClient,
   WioDatabase db,
 });
@@ -146,6 +148,7 @@ class SignInController extends Notifier<SignInState> {
     final deps = (
       apiBase: ref.read(apiBaseUrlProvider),
       sessions: ref.read(sessionProvider.notifier),
+      previous: ref.read(sessionProvider).value,
       httpClient: ref.read(httpClientProvider),
       db: ref.read(databaseProvider),
     );
@@ -165,6 +168,7 @@ class SignInController extends Notifier<SignInState> {
           )
           .timeout(requestTimeout);
     } on Object {
+      _password = '';
       if (!ref.mounted) return;
       _fail(SignInMessage.noConnection);
       return;
@@ -173,7 +177,10 @@ class SignInController extends Notifier<SignInState> {
       await _signedIn(body, deps);
       return;
     }
-    if (!ref.mounted) return;
+    if (!ref.mounted) {
+      _password = '';
+      return;
+    }
     switch (result) {
       case TonikSuccess(value: SignInResponse200()):
         break;
@@ -208,18 +215,21 @@ class SignInController extends Notifier<SignInState> {
     }
   }
 
+  /// Any answer but the 409 choice ends the attempt: the password is
+  /// forgotten (D-127) and the screen returns to the fields with the message.
   void _fail(SignInMessage message) {
-    state = SignInState(message: message, workspaces: state.workspaces);
+    _password = '';
+    state = SignInState(message: message);
   }
 
   void _tooMany(int? retryAfterSeconds) {
     final wait = retryAfterSeconds != null && retryAfterSeconds > 0
         ? Duration(seconds: retryAfterSeconds)
         : defaultRetryWait;
+    _password = '';
     state = SignInState(
       message: SignInMessage.tooManyAttempts,
       retryAt: ref.read(clockProvider)().add(wait),
-      workspaces: state.workspaces,
     );
   }
 
@@ -244,8 +254,18 @@ class SignInController extends Notifier<SignInState> {
     }
     // Kept even when the screen closed meanwhile: the owner asked for it.
     await deps.sessions.signedIn(session);
+    // Signing in again (for example from an /anmelden link on the web)
+    // replaces the old session; its token is revoked, not left valid.
+    final previous = deps.previous;
+    if (previous != null && previous.token != session.token) {
+      revokeToken(previous, deps.httpClient);
+    }
     if (ref.mounted) state = const SignInState(done: true);
   }
+
+  /// Whether the controller still holds a password; for tests (D-127).
+  @visibleForTesting
+  bool get holdsPassword => _password.isNotEmpty;
 
   void _forgetCredentials() {
     _email = '';
@@ -256,7 +276,7 @@ class SignInController extends Notifier<SignInState> {
 /// Revokes a token the device will not keep (D-131). Runs to the end on its
 /// own, whatever happens to the screen that started it.
 void revokeToken(Session session, http.Client httpClient) {
-  final api = buildAuthApi(session.apiBase, httpClient, () => session.token);
+  final api = buildAuthApi(session.apiBase, httpClient, () => session);
   unawaited(
     api
         .signOut()

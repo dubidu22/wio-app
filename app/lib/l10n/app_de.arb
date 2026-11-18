@@ -217,5 +217,9 @@
   "signedOut": "Abgemeldet.",
   "@signedOut": {
     "description": "Short note after Abmelden."
+  },
+  "signOutSending": "Abmelden …",
+  "@signOutSending": {
+    "description": "Abmelden button text while signing out; taps are ignored meanwhile (D-75, D-132)."
   }
 }

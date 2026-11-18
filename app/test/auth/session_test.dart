@@ -1,5 +1,7 @@
 // Session, start, sign-out and token storage (plan 035, tests 6 to 9, 11,
 // 12, 14). No real network; the fake server answers from api/examples/.
+import 'dart:async';
+
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -85,7 +87,8 @@ void main() {
   group('AuthClient (D-133)', () {
     test('adds the bearer to every request but sign-in', () async {
       final api = FakeApi();
-      final auth = buildAuthApi(fakeApiBase, api.client, () => 'wio_abc');
+      final session = exampleSession(token: 'wio_abc');
+      final auth = buildAuthApi(fakeApiBase, api.client, () => session);
       await auth.getMe();
       await auth.signOut();
       await auth.signIn(
@@ -110,6 +113,46 @@ void main() {
       final api = FakeApi();
       await buildAuthApi(fakeApiBase, api.client, () => null).getMe();
       expect(api.to('/auth/me').single.headers['Authorization'], isNull);
+    });
+
+    // Review PR 37, finding 1: a token goes only to the server it came from.
+    test('sends no token to a server other than the session\'s', () async {
+      for (final other in <String>[
+        'https://staging.example.org',
+        'https://api.example.org.other.net',
+        'http://api.example.org',
+        'https://api.example.org:8443',
+      ]) {
+        final api = FakeApi();
+        final session = exampleSession(token: 'wio_abc');
+        await buildAuthApi(other, api.client, () => session).getMe();
+        expect(
+          api.to('/auth/me').single.headers['Authorization'],
+          isNull,
+          reason: other,
+        );
+      }
+    });
+
+    test('isUnderBase compares origin and path, not a string prefix', () {
+      const base = 'https://example.org/api';
+      expect(
+        isUnderBase(Uri.parse('https://example.org/api/auth/me'), base),
+        isTrue,
+      );
+      expect(isUnderBase(Uri.parse('https://EXAMPLE.org/api'), base), isTrue);
+      expect(
+        isUnderBase(Uri.parse('https://example.org/apix/auth/me'), base),
+        isFalse,
+      );
+      expect(
+        isUnderBase(Uri.parse('https://example.org/auth/me'), base),
+        isFalse,
+      );
+      expect(
+        isUnderBase(Uri.parse('https://example.org/x'), 'not a url'),
+        isFalse,
+      );
     });
   });
 
@@ -176,6 +219,28 @@ void main() {
     }
   });
 
+  testWidgets('a session of another server is dropped at start', (
+    tester,
+  ) async {
+    final db = await seededWithOutbox();
+    addTearDown(db.close);
+    final before = await countRows(db);
+    final fromStaging = Session.tryDecode(
+      exampleSession().encode().replaceAll(
+        fakeApiBase,
+        'https://staging.example.org',
+      ),
+    )!;
+    final store = FakeTokenStore(fromStaging);
+    final api = FakeApi();
+    await pumpWioApp(tester, db: db, store: store, api: api);
+    expect(store.session, isNull);
+    expect(store.deletes, 1);
+    expect(api.requests, isEmpty);
+    expect(find.text(signedOutHint), findsOneWidget);
+    expect(await countRows(db), before);
+  });
+
   group('signed out at start (D-130)', () {
     testWidgets('a fresh install opens Anmelden', (tester) async {
       final db = memoryDatabase();
@@ -208,6 +273,29 @@ void main() {
   });
 
   group('Abmelden (D-132)', () {
+    testWidgets('shows Abmelden … and ignores a second tap', (tester) async {
+      final db = memoryDatabase();
+      addTearDown(db.close);
+      await seedTestData(db);
+      final later = Completer<FakeAnswer>();
+      final store = FakeTokenStore(exampleSession());
+      final api = FakeApi(<String, Object>{'POST /auth/sign-out': later});
+      await pumpWioApp(tester, db: db, store: store, api: api);
+      await scrollTo(tester, find.text('Abmelden'));
+
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Abmelden'));
+      await tester.pump();
+      expect(find.text('Abmelden …'), findsOneWidget);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Abmelden …'));
+      await tester.pump();
+
+      later.complete(const FakeAnswer(204));
+      await tester.pumpAndSettle();
+      expect(api.to('/auth/sign-out'), hasLength(1));
+      expect(find.text('Abgemeldet.'), findsOneWidget);
+      expect(store.session, isNull);
+    });
+
     final answers = <String, Object>{
       '204': const FakeAnswer(204),
       '401': FakeAnswer.problem(401, 'token_invalid'),
@@ -262,6 +350,7 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           tokenStoreProvider.overrideWithValue(store),
+          apiBaseUrlProvider.overrideWithValue(fakeApiBase),
         ],
       );
       addTearDown(container.dispose);
@@ -278,6 +367,7 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           tokenStoreProvider.overrideWithValue(store),
+          apiBaseUrlProvider.overrideWithValue(fakeApiBase),
         ],
       );
       addTearDown(container.dispose);

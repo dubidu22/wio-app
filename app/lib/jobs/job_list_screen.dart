@@ -144,16 +144,34 @@ class _SignedOutHint extends StatelessWidget {
 }
 
 /// "Angemeldet als … bei …" and "Abmelden" at the end of the list (D-132).
-class _SignOutFooter extends ConsumerWidget {
+/// While signing out the button says "Abmelden …" and ignores taps (D-75).
+class _SignOutFooter extends ConsumerStatefulWidget {
   const _SignOutFooter({required this.session});
 
   final Session session;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SignOutFooter> createState() => _SignOutFooterState();
+}
+
+class _SignOutFooterState extends ConsumerState<_SignOutFooter> {
+  bool _busy = false;
+
+  Future<void> _signOut() async {
+    if (_busy) return;
+    setState(() => _busy = true);
     final l10n = AppLocalizations.of(context);
-    final workspace = session.workspace.name ?? l10n.unnamedWorkspace;
-    final name = session.user.displayName;
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(sessionProvider.notifier).signOut();
+    messenger.showSnackBar(SnackBar(content: Text(l10n.signedOut)));
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final workspace = widget.session.workspace.name ?? l10n.unnamedWorkspace;
+    final name = widget.session.user.displayName;
     return Padding(
       padding: const EdgeInsets.only(top: 32),
       child: Column(
@@ -165,12 +183,8 @@ class _SignOutFooter extends ConsumerWidget {
                 : l10n.signedInAs(name, workspace),
           ),
           OutlinedButton(
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              await ref.read(sessionProvider.notifier).signOut();
-              messenger.showSnackBar(SnackBar(content: Text(l10n.signedOut)));
-            },
-            child: Text(l10n.signOut),
+            onPressed: _signOut,
+            child: Text(_busy ? l10n.signOutSending : l10n.signOut),
           ),
         ],
       ),

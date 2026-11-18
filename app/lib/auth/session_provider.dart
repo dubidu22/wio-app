@@ -53,7 +53,7 @@ final authApiProvider = Provider<AuthApi?>((ref) {
   return buildAuthApi(
     base,
     ref.watch(httpClientProvider),
-    () => ref.read(sessionProvider).value?.token,
+    () => ref.read(sessionProvider).value,
   );
 });
 
@@ -70,7 +70,16 @@ class SessionNotifier extends AsyncNotifier<Session?> {
     // Opening the database first runs its first-start step, which deletes a
     // session left in the iOS keychain by an earlier install (D-122).
     await ref.read(databaseProvider).customSelect('SELECT 1').get();
-    return ref.read(tokenStoreProvider).read();
+    final store = ref.read(tokenStoreProvider);
+    final session = await store.read();
+    // A token belongs to the server that issued it. A build pointed at
+    // another server (for example staging installed over production) drops
+    // it instead of sending it there; local data stays.
+    if (session != null && session.apiBase != ref.read(apiBaseUrlProvider)) {
+      await store.delete();
+      return null;
+    }
+    return session;
   }
 
   /// Keeps a new session after sign-in.

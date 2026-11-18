@@ -3,8 +3,11 @@
 // scripted problem+json.
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:wio_app/auth/sign_in_controller.dart';
+import 'package:wio_app/auth/sign_in_screen.dart';
 import 'package:wio_app/data/database.dart';
 
 import '../support/fake_api.dart';
@@ -42,6 +45,10 @@ Future<(FakeApi, FakeTokenStore, WioDatabase)> openSignIn(
   );
   return (fake, store, database);
 }
+
+SignInController controllerOf(WidgetTester tester) =>
+    ProviderScope.containerOf(tester.element(find.byType(SignInScreen)))
+        .read(signInControllerProvider.notifier);
 
 Future<void> fillAndSubmit(WidgetTester tester) async {
   await tester.enterText(emailField, ' $email ');
@@ -428,6 +435,89 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(store.session, isNotNull);
+  });
+
+  // Review PR 37, finding 4: the password is kept only for the workspace
+  // step (D-127).
+  group('the controller forgets the password', () {
+    final answers = <String, Object>{
+      '401': FakeAnswer.problem(401, 'invalid_credentials'),
+      '429': FakeAnswer.problem(429, 'too_many_attempts'),
+      '503': FakeAnswer.problem(503, 'maintenance'),
+      'no signal': noSignal,
+    };
+    for (final MapEntry(key: name, value: answer) in answers.entries) {
+      testWidgets('after $name', (tester) async {
+        await openSignIn(
+          tester,
+          api: FakeApi(<String, Object>{'POST /auth/sign-in': answer}),
+        );
+        await fillAndSubmit(tester);
+        expect(controllerOf(tester).holdsPassword, isFalse);
+      });
+    }
+
+    testWidgets('but keeps it for the 409 workspace step', (tester) async {
+      await openSignIn(
+        tester,
+        api: FakeApi(<String, Object>{
+          'POST /auth/sign-in': FakeAnswer(
+            409,
+            apiExample('response.Problem.workspace-choice.json'),
+          ),
+        }),
+      );
+      await fillAndSubmit(tester);
+      expect(controllerOf(tester).holdsPassword, isTrue);
+    });
+
+    testWidgets('a failure in the workspace step returns to the fields', (
+      tester,
+    ) async {
+      await openSignIn(
+        tester,
+        api: FakeApi(<String, Object>{
+          'POST /auth/sign-in': <Object>[
+            FakeAnswer(
+              409,
+              apiExample('response.Problem.workspace-choice.json'),
+            ),
+            noSignal,
+          ],
+        }),
+      );
+      await fillAndSubmit(tester);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Demo privat'));
+      await tester.pumpAndSettle();
+      expect(controllerOf(tester).holdsPassword, isFalse);
+      expect(find.text('Für welchen Betrieb?'), findsNothing);
+      expect(signInButton, findsOneWidget);
+    });
+  });
+
+  // Review PR 37, finding 5: signing in again revokes the old token.
+  testWidgets('signing in while signed in revokes the old token', (
+    tester,
+  ) async {
+    final db = memoryDatabase();
+    addTearDown(db.close);
+    final store = FakeTokenStore(exampleSession(token: 'wio_old-token'));
+    final api = FakeApi();
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: '/anmelden',
+      store: store,
+      api: api,
+    );
+    await fillAndSubmit(tester);
+
+    final newToken = apiExample('response.SignInResult.basic.json')['token'];
+    expect(store.session?.token, newToken);
+    expect(
+      api.to('/auth/sign-out').single.headers['Authorization'],
+      'Bearer wio_old-token',
+    );
   });
 
   group('UX rules in every state (rules 1 and 3)', () {
