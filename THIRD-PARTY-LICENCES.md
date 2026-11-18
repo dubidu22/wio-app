@@ -33,8 +33,9 @@ Banned: SSPL, non-commercial, proprietary, GPL-2.0-only, other licences incompat
 | `uuid` | 4.6.0 | MIT | UUID v7 made on the device (D-67) |
 | `flutter_secure_storage` | 11.2.0 | BSD-3-Clause | Device token in the Android Keystore and the iOS keychain (D-121) |
 | `device_info_plus` | 13.3.0 | BSD-3-Clause | Device name sent with sign-in (D-125) |
-| `web` | 1.1.2 | BSD-3-Clause | The web build keeps the session in sessionStorage (D-123) |
-| Transitive: `flutter_secure_storage_darwin`, `_linux`, `_platform_interface`, `_web`, `_windows`; `device_info_plus_platform_interface`; `win32`, `win32_registry`, `ffi_leak_tracker` | see `app/pubspec.lock` | BSD-3-Clause | Platform parts of the two packages above |
+| `web` | 1.1.2 | BSD-3-Clause | The web build keeps the session in sessionStorage (D-123) and reloads itself for an update (D-153) |
+| `package_info_plus` | 10.2.2 | BSD-3-Clause | Installed app version for the `Wio-App-Version` header and package name for the store link (D-150, D-153) |
+| Transitive: `flutter_secure_storage_darwin`, `_linux`, `_platform_interface`, `_web`, `_windows`; `device_info_plus_platform_interface`; `package_info_plus_platform_interface`; `win32`, `win32_registry`, `ffi_leak_tracker` | see `app/pubspec.lock` | BSD-3-Clause | Platform parts of the three packages above |
 | Transitive: `state_notifier` | 1.0.0 | MIT | Used by `riverpod` |
 | Transitive: `sqlite3_flutter_libs`, `sqlcipher_flutter_libs` | 0.6.0+eol, 0.7.0+eol | MIT | Empty end-of-life packages named by `drift_flutter`; no native code |
 | Transitive: platform packages of `url_launcher` and `path_provider`; `jni`, `jni_flutter`, `jni_util`, `objective_c` (used by `path_provider`); `meta`, `collection`, `async`, `stack_trace` and other Dart team packages | see `app/pubspec.lock` | BSD-3-Clause | Used by the packages above |

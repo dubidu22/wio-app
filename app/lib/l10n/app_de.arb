@@ -221,5 +221,64 @@
   "signOutSending": "Abmelden …",
   "@signOutSending": {
     "description": "Abmelden button text while signing out; taps are ignored meanwhile (D-75, D-132)."
+  },
+  "signInUpgradeRequired": "Diese App-Version ist zu alt. Bitte die App aktualisieren.",
+  "@signInUpgradeRequired": {
+    "description": "Problem code upgrade_required (426) on sign-in (D-152)."
+  },
+  "updateBarTitle": "App-Update",
+  "@updateBarTitle": {
+    "description": "Short app bar title of the update notice; the full title is the heading below it (D-154)."
+  },
+  "updateTitle": "Bitte die App aktualisieren",
+  "@updateTitle": {
+    "description": "Heading of the update notice (D-154)."
+  },
+  "updateText": "Diese App-Version ist zu alt für den Server. Bitte aktualisiere sie. Deine Daten auf diesem Gerät bleiben erhalten und werden nach dem Update gesendet.",
+  "@updateText": {
+    "description": "Main text of the update notice (D-154, D-156)."
+  },
+  "updateMinimum": "Nötig ist mindestens Version {version}.",
+  "@updateMinimum": {
+    "description": "Shown when the server named its minimum app version (D-154).",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateInstalled": "Installiert: {version}",
+  "@updateInstalled": {
+    "description": "The installed app version on the update notice (D-154).",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateButton": "App aktualisieren",
+  "@updateButton": {
+    "description": "Main button of the update notice and the job-list hint; opens the store or reloads the web app (D-153)."
+  },
+  "updateSearchPlay": "Suche bei Google Play nach „wio“.",
+  "@updateSearchPlay": {
+    "description": "Shown when the Play page of this build is not known (D-153)."
+  },
+  "updateSearchAppStore": "Suche im App Store nach „wio“.",
+  "@updateSearchAppStore": {
+    "description": "Shown while the build has no App Store id (D-153)."
+  },
+  "updateLinkFallback": "Die Seite ließ sich nicht öffnen. Die Adresse ist: {address}",
+  "@updateLinkFallback": {
+    "description": "Shown when nothing could open the store page (D-153).",
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "updateHint": "Diese App-Version ist zu alt. Neue Daten werden erst nach dem Update gesendet.",
+  "@updateHint": {
+    "description": "Hint at the top of the job list while the app is too old; replaces the signed-out hint (D-155)."
   }
 }
