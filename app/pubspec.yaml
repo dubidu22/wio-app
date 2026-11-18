@@ -22,6 +22,9 @@ dependencies:
   path_provider: ^2.1.6
   url_launcher: ^6.3.3
   uuid: ^4.6.0
+  # Generated API client, the app's only way to the server (INV-02, D-91).
+  wio_api:
+    path: packages/wio_api
 
 dev_dependencies:
   flutter_test:

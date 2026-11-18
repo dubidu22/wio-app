@@ -12,6 +12,11 @@ Banned: SSPL, non-commercial, proprietary, GPL-2.0-only, other licences incompat
 | `material_ui` | 1.11.1 | BSD-3-Clause | Material widgets (decoupled from the SDK in Flutter 3.50) |
 | Transitive: `cupertino_ui` | 1.1.7 | BSD-3-Clause | Cupertino localisations, part of `material_ui`'s delegate list |
 | `intl` | 0.20.3 | BSD-3-Clause | Localisation (ARB files) |
+| `wio_api` (`app/packages/wio_api/`, generated from `api/openapi.yaml`) | 1.0.0 | AGPL-3.0-only (this project) | Generated API client, the app's only way to the server (D-91, INV-02) |
+| `tonik_util` | 0.11.1 | MIT | Runtime of the generated client |
+| Transitive: `http` | 1.6.0 | BSD-3-Clause | HTTP transport of the generated client |
+| Transitive: `big_decimal` | 0.7.0 | MIT | Decimal values in the generated client |
+| Transitive: `charset` | 2.0.1 | Apache-2.0 | Text decoding in `tonik_util` |
 | Material Icons font (`MaterialIcons-Regular.otf`, bundled by `uses-material-design: true`, tree-shaken in release builds) | from the Flutter 3.50.0 SDK | Apache-2.0 | Icons used by Material widgets (for example the back arrow) |
 | Roboto font, Regular and Medium (`app/assets/fonts/`) | googlefonts/roboto `main` at 38062f4, v2 hinted | Apache-2.0 (text in `app/assets/fonts/LICENSE.txt`) | Bundled so no platform fetches fonts from a CDN (D-40) |
 | `flutter_riverpod`, `riverpod` | 3.5.0 | MIT | State management (D-36, D-68) |
