@@ -35,6 +35,11 @@ Banned: SSPL, non-commercial, proprietary, GPL-2.0-only, other licences incompat
 | `friendsofphp/php-cs-fixer` | 3.95.32 | MIT | PHP code style |
 | `php-parallel-lint/php-parallel-lint` | 1.4.0 | BSD-2-Clause | PHP syntax check |
 | `@redocly/cli` | 2.80.0 | MIT | OpenAPI lint (D-43) |
+| `league/openapi-psr7-validator` | 0.24 | MIT | Validates every API test request and response against `api/openapi.yaml` (D-93) |
+| `symfony/yaml` | 7.4.23 | MIT | Reads `api/openapi.yaml` in the contract tests |
+| Transitive: `devizzent/cebe-php-openapi`, `justinrainbow/json-schema`, `respect/validation`, `respect/stringifier`, `riverline/multipart-parser`, `psr/cache` | see `server/composer.lock` | MIT | Used by the OpenAPI validator |
+| Transitive: `marc-mabe/php-enum` | 4.7.2 | BSD-3-Clause | Used by `justinrainbow/json-schema` |
+| `tonik` (in `api/codegen/`, with its own lockfile) | 0.11.1 | MIT | Generates the Dart API client from `api/openapi.yaml` (D-91) |
 | `playwright` | 1.63.0 | Apache-2.0 | Web network check in headless Chromium (D-40) |
 | actionlint | 1.7.12 | MIT | Workflow lint (D-42) |
 | ShellCheck | runner's version | GPL-3.0-or-later | Shell script lint; a tool only, never linked or shipped |

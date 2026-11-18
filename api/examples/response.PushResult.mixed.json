@@ -1,0 +1,10 @@
+{
+  "results": [
+    {"change_id": "01990000-0000-7000-8000-009800000001", "status": "applied", "revision": 31},
+    {"change_id": "01990000-0000-7000-8000-009800000002", "status": "merged", "revision": 32},
+    {"change_id": "01990000-0000-7000-8000-009800000003", "status": "applied", "revision": 33, "reason": null, "existing_id": null, "detail": null},
+    {"change_id": "01990000-0000-7000-8000-009800000004", "status": "rejected", "reason": "duplicate", "existing_id": "01990000-0000-7000-8000-001200000005", "detail": "A live label already has this name."},
+    {"change_id": "01990000-0000-7000-8000-009800000005", "status": "rejected", "reason": "some_future_reason"}
+  ]
+}
+

@@ -1,0 +1,16 @@
+{
+  "changes": [
+    {
+      "change_id": "01990000-0000-7000-8000-009800000001",
+      "entity": "rooms",
+      "id": "01990000-0000-7000-8000-000700000004",
+      "op": "upsert",
+      "fields": {
+        "name": "X",
+        "height_cm": "tall"
+      },
+      "base_revision": null,
+      "device_time": "2026-11-18T17:20:00.000+01:00"
+    }
+  ]
+}

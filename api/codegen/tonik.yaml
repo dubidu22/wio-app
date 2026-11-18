@@ -1,0 +1,8 @@
+# tonik settings for the wio-app Dart client (D-91). Paths are relative to
+# this file's directory; api/generate-dart-client.sh runs tonik from here.
+spec: ../openapi.yaml
+outputDir: ../../app/packages
+packageName: wio_api
+logLevel: warn
+transport:
+  backend: http
