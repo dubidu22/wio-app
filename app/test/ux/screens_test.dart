@@ -3,9 +3,11 @@ library;
 
 import 'dart:io';
 
+import 'package:flutter/widgets.dart' show Size;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/pump.dart';
+import '../support/test_data.dart';
 import '../support/ux_guidelines.dart';
 import 'screen_catalog.dart';
 
@@ -22,9 +24,25 @@ void main() {
     expect(screenCatalog.keys.toSet(), equals(screenFiles));
   });
 
-  for (final entry in screenCatalog.entries) {
-    testWidgets('${entry.key} meets the UX rules', (tester) async {
-      await pumpScreen(tester, entry.value());
+  for (final MapEntry(key: file, value: screen) in screenCatalog.entries) {
+    for (final size in <Size>[phoneSize, tabletSize]) {
+      testWidgets('$file meets the UX rules at $size', (tester) async {
+        final db = memoryDatabase();
+        addTearDown(db.close);
+        await screen.seed(db);
+        await pumpWioApp(tester, db: db, location: screen.location, size: size);
+        await expectMeetsUxRules(tester);
+      });
+    }
+
+    // Text scales with the system font size (KB ux-rules.md); at twice the
+    // size nothing may overflow.
+    testWidgets('$file has no overflow at text scale 2', (tester) async {
+      final db = memoryDatabase();
+      addTearDown(db.close);
+      await screen.seed(db);
+      await pumpWioApp(tester, db: db, location: screen.location, textScale: 2);
+      expect(tester.takeException(), isNull);
       await expectMeetsUxRules(tester);
     });
   }

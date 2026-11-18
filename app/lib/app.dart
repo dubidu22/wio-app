@@ -1,7 +1,8 @@
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'l10n/app_localizations.dart';
-import 'start/start_screen.dart';
+import 'shell/router.dart';
 
 /// Font bundled with the app (D-40); no platform loads fonts from a CDN.
 const String wioFontFamily = 'Roboto';
@@ -16,27 +17,64 @@ const List<LocalizationsDelegate<Object?>> wioLocalizationsDelegates =
       ...GlobalMaterialLocalizations.delegates,
     ];
 
-/// The app's theme. Text uses the bundled font so screens and goldens match.
+/// Smallest touch target (UX rule 3).
+const Size wioMinTapTarget = Size(56, 56);
+
+/// The app's theme. Text uses the bundled font so screens and goldens match;
+/// every button is at least 56 x 56 (UX rule 3).
 ThemeData wioTheme() {
+  final buttonStyle = ButtonStyle(
+    minimumSize: const WidgetStatePropertyAll<Size>(wioMinTapTarget),
+    textStyle: const WidgetStatePropertyAll<TextStyle>(
+      TextStyle(
+        fontFamily: wioFontFamily,
+        fontSize: 18,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  );
   return ThemeData(
     colorSchemeSeed: const Color(0xFF2E5E4E),
     fontFamily: wioFontFamily,
+    textButtonTheme: TextButtonThemeData(style: buttonStyle),
+    outlinedButtonTheme: OutlinedButtonThemeData(style: buttonStyle),
+    filledButtonTheme: FilledButtonThemeData(style: buttonStyle),
   );
 }
 
 /// Root widget. German is the first and, for now, only locale (D-23).
-class WioApp extends StatelessWidget {
-  const WioApp({super.key});
+/// Needs a ProviderScope above it (see main.dart).
+class WioApp extends StatefulWidget {
+  const WioApp({super.key, this.initialLocation = '/'});
+
+  /// Where the app opens; tests start on other screens.
+  final String initialLocation;
+
+  @override
+  State<WioApp> createState() => _WioAppState();
+}
+
+class _WioAppState extends State<WioApp> {
+  late final GoRouter _router = buildRouter(
+    initialLocation: widget.initialLocation,
+  );
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       locale: const Locale('de'),
       localizationsDelegates: wioLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: wioTheme(),
-      home: const StartScreen(),
+      routerConfig: _router,
     );
   }
 }

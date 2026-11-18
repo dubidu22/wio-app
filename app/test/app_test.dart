@@ -1,14 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wio_app/app.dart';
+
+import 'support/pump.dart';
+import 'support/test_data.dart';
 
 void main() {
-  testWidgets('the app starts in German and shows the start screen text', (
+  testWidgets('the app starts in German on Aufträge with an empty database', (
     tester,
   ) async {
-    await tester.pumpWidget(const WioApp());
-    await tester.pumpAndSettle();
+    final db = memoryDatabase();
+    addTearDown(db.close);
+    await pumpWioApp(tester, db: db);
 
-    expect(find.text('wio'), findsOneWidget);
-    expect(find.text('Die neue App entsteht gerade.'), findsOneWidget);
+    expect(find.text('Aufträge'), findsOneWidget);
+    expect(find.text('Heute keine Aufträge.'), findsOneWidget);
+    expect(find.text('Keine kommenden Aufträge.'), findsOneWidget);
+  });
+
+  testWidgets('an unknown address shows the job list', (tester) async {
+    final db = memoryDatabase();
+    addTearDown(db.close);
+    await pumpWioApp(tester, db: db, location: '/no/such/page');
+
+    expect(find.text('Aufträge'), findsOneWidget);
   });
 }
