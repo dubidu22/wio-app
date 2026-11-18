@@ -33,6 +33,20 @@ lane:platform:
           - server/composer.json
           - server/composer.lock
 
+# The lock for a PR that spans api and app (LANE-03, D-32, D-101): at least
+# one api-side file AND at least one app-side file. The generated API client
+# under app/packages counts as app code (D-102); build config does not.
+lane:infra:
+  - all:
+      - changed-files:
+          - any-glob-to-any-file:
+              - server/**
+              - api/**
+          - any-glob-to-any-file:
+              - app/lib/**
+              - app/test/**
+              - app/packages/**
+
 risk:high:
   - changed-files:
       - any-glob-to-any-file:
