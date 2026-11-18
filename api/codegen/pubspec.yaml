@@ -1,0 +1,7 @@
+name: wio_api_codegen
+description: Pinned OpenAPI client generator for wio-app (D-91). Not shipped.
+publish_to: none
+environment:
+  sdk: ^3.14.0
+dev_dependencies:
+  tonik: 0.11.1

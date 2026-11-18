@@ -1,3 +1,8 @@
 # OpenAPI lint rules for api/openapi.yaml (D-43).
 extends:
   - recommended-strict
+rules:
+  # The record schemas of api/openapi.yaml (one per synced table) are used to
+  # check sync `fields` and by the generated client, not by operation $refs
+  # (plan 004, D-95).
+  no-unused-components: off
