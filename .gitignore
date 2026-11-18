@@ -1,0 +1,19 @@
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Local secrets and environment files: never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.p8
+*.mobileprovision
+key.properties
