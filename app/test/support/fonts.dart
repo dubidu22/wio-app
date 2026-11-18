@@ -15,4 +15,9 @@ Future<void> loadAppFonts() async {
     loader.addFont(rootBundle.load(asset));
   }
   await loader.load();
+  // The icon font that `uses-material-design: true` bundles, so icons in
+  // goldens are real glyphs (for example the arrow of "Zurück", D-74).
+  final icons = FontLoader('MaterialIcons')
+    ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+  await icons.load();
 }

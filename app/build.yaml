@@ -1,0 +1,11 @@
+# drift code generation (D-36, D-77). Generated files are committed.
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          databases:
+            wio: lib/data/database.dart
+          schema_dir: drift_schemas/
+          test_dir: test/drift/
+          store_date_time_values_as_text: true
