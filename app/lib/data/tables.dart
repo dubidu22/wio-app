@@ -56,6 +56,14 @@ class Jobs extends Table with SyncedColumns {
   TextColumn get reportSentAt => text().nullable()();
 }
 
+/// The ops of contract v1 (D-176); schema v2 adds the column (D-192).
+const List<String> outboxOps = <String>[
+  'upsert',
+  'delete',
+  'restore',
+  'move_entry',
+];
+
 /// Changes not yet confirmed by the server (KB sync.md, step 1; D-66).
 class Outbox extends Table {
   /// Insertion order; the order changes are pushed in.
@@ -63,6 +71,13 @@ class Outbox extends Table {
   TextColumn get changeId => text().unique()();
   TextColumn get entity => text()();
   TextColumn get entityId => text()();
+
+  /// What the change does; rows of schema v1 were all upserts. The check
+  /// names its own column, drift's documented form for a column check.
+  TextColumn get op => text()
+      .withDefault(const Constant<String>('upsert'))
+      // ignore: recursive_getters
+      .check(op.isIn(outboxOps))();
 
   /// The changed fields only, as a JSON object.
   TextColumn get fields => text()();
@@ -77,4 +92,59 @@ class SyncState extends Table {
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{workspaceId};
+}
+
+/// The last pulled state of every record, of every entity, exactly as the
+/// server sent it (D-193, D-194). Local rows are rebuilt from it plus the
+/// unsent changes in the outbox.
+class ServerRecords extends Table {
+  TextColumn get entity => text()();
+  TextColumn get id => text()();
+  IntColumn get revision => integer()();
+  TextColumn get deletedAt => text().nullable()();
+
+  /// The whole record as a JSON object.
+  TextColumn get fields => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{entity, id};
+}
+
+/// Changes the server refused, kept for the owner to see (D-197). Never
+/// sent again under the same change id (D-172).
+class RejectedChanges extends Table {
+  TextColumn get changeId => text()();
+  TextColumn get entity => text()();
+  TextColumn get entityId => text()();
+  TextColumn get op => text()();
+
+  /// The changed fields as a JSON object, as they were queued.
+  TextColumn get fields => text()();
+  TextColumn get deviceTime => text()();
+
+  /// The server's reason, or a local one (`too_large`) (D-199).
+  TextColumn get reason => text()();
+
+  /// With `duplicate`: the record that already held the value (D-198).
+  TextColumn get existingId => text().nullable()();
+  TextColumn get rejectedAt => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{changeId};
+}
+
+/// Files waiting to be uploaded (D-202); filled in PR 2 of #44.
+class Uploads extends Table {
+  TextColumn get sha256 => text()();
+
+  /// The app's own copy of the file.
+  TextColumn get path => text()();
+  IntColumn get size => integer()();
+  TextColumn get createdAt => text()();
+
+  /// Null while the upload is pending.
+  TextColumn get failedReason => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{sha256};
 }

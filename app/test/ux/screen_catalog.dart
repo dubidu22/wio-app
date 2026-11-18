@@ -20,5 +20,9 @@ const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
   'lib/customers/customer_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}',
   ),
+  'lib/sync/rejected_screen.dart': CatalogScreen(
+    '/nicht-gesendet',
+    seed: seedWithRejected,
+  ),
   'lib/update/update_required_screen.dart': CatalogScreen('/aktualisieren'),
 };

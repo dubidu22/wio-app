@@ -6,7 +6,7 @@ import 'generated/schema.dart';
 
 /// The local schema must match its committed dump (D-65). A new schema
 /// version adds a dump with `dart run drift_dev make-migrations`, and this
-/// file gains a step test from the previous version to the new one.
+/// migration_test.dart covers every step from an older version.
 void main() {
   late SchemaVerifier verifier;
 
@@ -14,10 +14,10 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('schema v1 matches drift_schemas/wio/drift_schema_v1.json', () async {
-    final schema = await verifier.schemaAt(1);
+  test('the current schema matches its dump', () async {
+    final schema = await verifier.schemaAt(2);
     final db = WioDatabase(schema.newConnection());
     addTearDown(db.close);
-    await verifier.migrateAndValidate(db, 1);
+    await verifier.migrateAndValidate(db, 2);
   });
 }

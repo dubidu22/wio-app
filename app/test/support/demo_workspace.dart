@@ -47,7 +47,13 @@ class DemoWorkspace {
   static const String defaultPath = '../tools/demo/demo-workspace.json';
 
   /// Local tables that never come from the server: they are not in the file.
-  static const Set<String> localOnlyTables = <String>{'outbox', 'sync_state'};
+  static const Set<String> localOnlyTables = <String>{
+    'outbox',
+    'sync_state',
+    'server_records',
+    'rejected_changes',
+    'uploads',
+  };
 
   /// Local columns the server does not have, per table. Empty today; a
   /// device-only column added by a local migration is listed here.
