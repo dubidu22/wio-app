@@ -1,0 +1,94 @@
+{
+  "@@locale": "de",
+  "appTitle": "Sprach-Test",
+  "startHeading": "Was soll getestet werden?",
+  "modeRecognizeOnly": "Nur erkennen",
+  "modeRecognizeOnlyHint": "Nur Text, keine Aufnahme. Zeigt, wie gut Deutsch erkannt wird.",
+  "modeParallelPlugin": "Gleichzeitig",
+  "modeParallelPluginHint": "Aufnahme und Text zur selben Zeit.",
+  "modeOneMic": "Gleichzeitig, eine Aufnahme",
+  "modeOneMicHint": "Ein Mikrofon für Aufnahme und Text. Ab Android 13.",
+  "modeRecordThenTranscribe": "Erst aufnehmen, dann erkennen",
+  "modeRecordThenTranscribeHint": "Erst die Aufnahme, danach der Text aus der Datei. Ab Android 13.",
+  "results": "Ergebnisse",
+  "sourceCode": "Quellcode",
+  "sourceCodeText": "Dieses Test-Programm ist freie Software unter der Lizenz AGPL-3.0. Der Quellcode steht hier:",
+  "close": "Schließen",
+  "back": "Zurück",
+  "speak": "Sprechen",
+  "stop": "Stopp",
+  "next": "Weiter",
+  "again": "Nochmal",
+  "checkAgain": "Nochmal prüfen",
+  "itemCounter": "Satz {number} von {total}",
+  "@itemCounter": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "freeNoteTitle": "Freie Notiz",
+  "freeNoteInstructions": "Etwa 45 Sekunden frei sprechen und dabei zweimal etwa 5 Sekunden Pause machen.",
+  "readAloud": "Bitte laut vorlesen:",
+  "listening": "Hört zu …",
+  "waitingForText": "Text wird erkannt …",
+  "transcript": "Erkannter Text",
+  "noTranscript": "Kein Text erkannt.",
+  "werLine": "Fehlerquote: {normalized} % (genau: {raw} %)",
+  "@werLine": {
+    "placeholders": {
+      "normalized": {
+        "type": "String"
+      },
+      "raw": {
+        "type": "String"
+      }
+    }
+  },
+  "timeToText": "Zeit bis zum Text: {ms} ms",
+  "@timeToText": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "recordingLine": "Aufnahme: {seconds} s, lautester Pegel {peak} dBFS",
+  "@recordingLine": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      },
+      "peak": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingSilent": "Die Aufnahme ist stumm.",
+  "noRecording": "In diesem Modus gibt es keine Aufnahme.",
+  "endedEarly": "Die Erkennung hat vor „Stopp“ von selbst aufgehört.",
+  "errorLine": "Fehler: {message}",
+  "@errorLine": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "guardChecking": "Prüfe die Spracherkennung auf dem Telefon …",
+  "guardNoOnDevice": "Auf diesem Telefon geht die Erkennung nicht ohne Internet. Deshalb startet dieser Test nicht.",
+  "guardGermanMissing": "Deutsch ist für die Erkennung ohne Internet noch nicht geladen.",
+  "loadGerman": "Deutsch laden",
+  "loadGermanHint": "Dafür kurz Internet einschalten. Danach wieder Flugmodus.",
+  "guardAndroidTooOld": "Dieser Modus braucht Android 13 oder neuer.",
+  "guardNotOnThisPlatform": "Dieser Modus ist auf diesem Telefon nicht gebaut.",
+  "micDenied": "Ohne Mikrofon geht der Test nicht. Bitte das Mikrofon erlauben.",
+  "resultsEmpty": "Noch keine Ergebnisse.",
+  "copyResults": "Ergebnis kopieren",
+  "copied": "Kopiert. Jetzt im Chat einfügen.",
+  "freeNoteShort": "Freie Notiz"
+}
