@@ -321,6 +321,71 @@ void main() {
         expect((await phone.customer(b))!.externalRef, 'K-2');
       },
     );
+    test(
+      'an edit of a new record to a taken value is not re-pointed (B1)',
+      () async {
+        final a = newUuidV7();
+        server.put('customers', a, <String, Object?>{
+          'name': 'A',
+          'external_ref': 'K-1',
+        });
+        final phone = Device(server, 'a');
+        await phone.engine.pull();
+        final x = await phone.newCustomer('X', externalRef: 'K-5');
+        await phone.writer.write(
+          entity: 'customers',
+          id: x,
+          fields: <String, Object?>{'external_ref': 'K-1'},
+        );
+        final site = newUuidV7();
+        await phone.writer.write(
+          entity: 'sites',
+          id: site,
+          fields: <String, Object?>{
+            'workspace_id': ws,
+            'customer_id': x,
+            'name': 'Werkstatt',
+          },
+        );
+        expect((await phone.engine.run()).stop, SyncStop.done);
+        expect(server.records['customers']![x]!['external_ref'], 'K-5');
+        expect(server.records['sites']![site]!['customer_id'], x);
+        final rejected = (await phone.rejected()).single;
+        expect(rejected.entityId, x);
+        expect(rejected.reason, 'duplicate');
+        expect(rejected.existingId, isNull);
+        expect((await phone.customer(x))!.externalRef, 'K-5');
+        final sites = await phone.db.select(phone.db.sites).get();
+        expect(sites.single.customerId, x);
+      },
+    );
+
+    test('an edit not yet pulled is not taken for a create', () async {
+      final a = newUuidV7();
+      server.put('customers', a, <String, Object?>{
+        'name': 'A',
+        'external_ref': 'K-1',
+      });
+      final phone = Device(server, 'a');
+      await phone.engine.pull();
+      final x = await phone.newCustomer('X', externalRef: 'K-5');
+      expect((await phone.engine.push()).stop, SyncStop.done);
+      // Confirmed, but no pull yet: the edit has no base revision.
+      await phone.writer.write(
+        entity: 'customers',
+        id: x,
+        fields: <String, Object?>{'external_ref': 'K-1'},
+      );
+      expect((await phone.engine.push()).stop, SyncStop.done);
+      final rejected = (await phone.rejected()).single;
+      expect(rejected.reason, 'duplicate');
+      expect(rejected.existingId, isNull);
+      expect(server.records['customers']![x]!['external_ref'], 'K-5');
+      expect(server.live('customers').keys, containsAll(<String>[a, x]));
+      await phone.engine.pull();
+      expect((await phone.customer(x))!.externalRef, 'K-5');
+      expect((await phone.customer(a))!.externalRef, 'K-1');
+    });
   });
 
   group('pull (T7, T8, T13, T14)', () {
