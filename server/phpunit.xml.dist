@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Every suite fails when it holds no tests (D-35). The db and api suites
+<!-- Every suite fails when it holds no tests (D-35). The permission suite is
+     the permission matrix (D-13, D-117, D-138); CI runs it as its own step, so
+     the api suite leaves its directory out. The db, api and permission suites
      need MariaDB; the defaults below match the throw-away test container that
      CI and `docker run` start. They are not credentials of any real database. -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -24,6 +26,10 @@
         </testsuite>
         <testsuite name="api">
             <directory>tests/Api</directory>
+            <exclude>tests/Api/Permission</exclude>
+        </testsuite>
+        <testsuite name="permission">
+            <directory>tests/Api/Permission</directory>
         </testsuite>
     </testsuites>
     <php>

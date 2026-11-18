@@ -60,7 +60,7 @@
         "stan": "PHPStan at level max with strict rules",
         "taint": "Psalm taint analysis of the server code (D-39)",
         "taint:prove": "Proves the taint check fails on a deliberately unsafe fixture",
-        "test": "All PHPUnit suites; db and api need MariaDB",
+        "test": "All PHPUnit suites; db, api and permission need MariaDB",
         "check": "Everything CI runs for the server"
     },
     "config": {
