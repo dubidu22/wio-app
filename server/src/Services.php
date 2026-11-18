@@ -16,6 +16,8 @@ use Wio\Database\Connection;
 use Wio\Database\Sql;
 use Wio\Http\Cors;
 use Wio\Support\SystemClock;
+use Wio\Sync\Pull;
+use Wio\Sync\Push;
 
 /**
  * What the routes need, built on first use: /health never opens the
@@ -93,5 +95,15 @@ final class Services
             $this->deviceTokens(),
             $this->log,
         );
+    }
+
+    public function push(): Push
+    {
+        return new Push($this->sql(), $this->clock);
+    }
+
+    public function pull(): Pull
+    {
+        return new Pull($this->sql());
     }
 }
