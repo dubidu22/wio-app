@@ -230,6 +230,8 @@ jobs:
         run: vendor/bin/phpunit --testsuite db
       - name: API tests
         run: vendor/bin/phpunit --testsuite api
+      - name: Permission matrix (D-13, D-117, D-138)
+        run: vendor/bin/phpunit --testsuite permission
 
   contract:
     name: contract

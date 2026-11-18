@@ -6,7 +6,7 @@ PHP 8.3 API (Slim 4, D-37) and versioned SQL migrations for MariaDB (D-38). Lane
 | --- | --- |
 | `composer install` | Dependencies |
 | `composer check` | Everything CI runs: lint, code style, PHPStan, Psalm taint, tests |
-| `composer test` | All PHPUnit suites (`unit`, `db`, `api`); `db` and `api` need MariaDB |
+| `composer test` | All PHPUnit suites (`unit`, `db`, `api`, `permission`); all but `unit` need MariaDB |
 | `php bin/migrate` | Apply pending migrations to the database in `WIO_DB_DSN` |
 | `php bin/create-owner …` | Create a workspace and its owner (see below) |
 | `php bin/set-owner-password …` | Set a lost owner password, optionally signing out all devices |

@@ -5,8 +5,10 @@ declare(strict_types=1);
 /**
  * The permission matrix (KB data-model.md, rights per role; D-13, D-117):
  * the status each caller gets from each operation. PermissionMatrixTest
- * checks every cell and fails when a routed operation has no row. #13 runs
- * it as its own CI step; #6 and M6 add rows.
+ * checks every cell and fails when a routed operation has no row. It runs as
+ * the PHPUnit suite `permission`, its own CI step (#13, D-138); #6 and M6 add
+ * rows. This file is the repository's copy of the KB rights table (D-13): CI
+ * cannot read the private KB, so reviews check new rows against it (D-139).
  *
  * Callers: anonymous (no token, or an e-mail nobody has), owner, customer,
  * helper, expired_helper (a helper whose link has passed), other_workspace
