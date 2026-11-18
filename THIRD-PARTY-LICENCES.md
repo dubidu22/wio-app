@@ -19,6 +19,7 @@ Banned: SSPL, non-commercial, proprietary, GPL-2.0-only, other licences incompat
 | Transitive: `charset` | 2.0.1 | Apache-2.0 | Text decoding in `tonik_util` |
 | Material Icons font (`MaterialIcons-Regular.otf`, bundled by `uses-material-design: true`, tree-shaken in release builds) | from the Flutter 3.50.0 SDK | Apache-2.0 | Icons used by Material widgets (for example the back arrow) |
 | Roboto font, Regular and Medium (`app/assets/fonts/`) | googlefonts/roboto `main` at 38062f4, v2 hinted | Apache-2.0 (text in `app/assets/fonts/LICENSE.txt`) | Bundled so no platform fetches fonts from a CDN (D-40) |
+| Noto Color Emoji, Noto Sans Symbols, Noto Sans Symbols 2 (`app/web/assets/fallback-fonts/`, web build only, loaded only when a glyph needs them) | fonts.gstatic.com paths of Flutter 3.50.0's font table (notocoloremoji v39, notosanssymbols v47, notosanssymbols2 v25; SHA-256 in the folder's README) | OFL-1.1 (text in each family's `OFL.txt`) | Emoji and symbols on the web without a request to another host (D-40, issue #15) |
 | `flutter_riverpod`, `riverpod` | 3.5.0 | MIT | State management (D-36, D-68) |
 | `drift` | 2.35.4 | MIT | Typed local database (D-36, D-64) |
 | `drift_flutter` | 0.3.1 | MIT | Opens the database on each platform (D-70) |
