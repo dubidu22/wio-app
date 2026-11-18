@@ -1,0 +1,15 @@
+{
+  "name": "wio-app-tools",
+  "private": true,
+  "description": "CI tooling for wio-app: OpenAPI lint and the web network check",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "lint:openapi": "redocly lint ../api/openapi.yaml --config redocly.yaml",
+    "check:web": "node ci/web-network-check.mjs ../app/build/web"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.80.0",
+    "playwright": "1.63.0"
+  }
+}
