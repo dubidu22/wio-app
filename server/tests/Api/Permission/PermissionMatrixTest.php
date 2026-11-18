@@ -55,19 +55,35 @@ final class PermissionMatrixTest extends DatabaseTestCase
             'expired_helper' => 'alter-helfer@example.org',
         ];
         $device = null;
+        $target = null;
+        if ($caller === 'other_workspace') {
+            $target = $this->fixtures->token($workspace, $this->fixtures->user($workspace));
+            $workspace = $this->fixtures->workspace('Anderer Betrieb');
+            $emails['other_workspace'] = 'andere@example.org';
+        }
         if ($caller !== 'anonymous') {
-            $role = $caller === 'expired_helper' ? 'helper' : $caller;
+            $role = match ($caller) {
+                'expired_helper' => 'helper',
+                'other_workspace' => 'owner',
+                default => $caller,
+            };
             $expires = $caller === 'expired_helper' ? '2026-11-18 09:00:00.000' : null;
             $user = $this->fixtures->user($workspace, $role, $emails[$caller], expiresAt: $expires);
             $device = $this->fixtures->token($workspace, $user);
         }
 
-        $request = $this->requestFor($operation, $emails[$caller] ?? 'niemand@example.org', $device);
+        $request = $this->requestFor($operation, $emails[$caller] ?? 'niemand@example.org', $device, $target['device_id'] ?? null);
         $response = $device === null && $this->isSecured($operation)
             ? $this->sendInvalid($request, $operation)
             : $this->send($request);
 
         self::assertSame($expected, $response->getStatusCode(), (string) $response->getBody());
+        if ($target !== null) {
+            self::assertNotNull(
+                $this->sql->row('SELECT id FROM device_tokens WHERE id = ?', [$target['device_id']]),
+                'another workspace never touches the first workspace\'s device',
+            );
+        }
     }
 
     public function testEveryRoutedOperationHasARow(): void
@@ -85,14 +101,15 @@ final class PermissionMatrixTest extends DatabaseTestCase
 
         self::assertSame($routed, $rows, 'matrix.php needs one row per routed operation');
         foreach (self::matrix() as $operation => $row) {
-            self::assertSame(['anonymous', 'owner', 'customer', 'helper', 'expired_helper'], array_keys($row), $operation);
+            self::assertSame(['anonymous', 'owner', 'customer', 'helper', 'expired_helper', 'other_workspace'], array_keys($row), $operation);
         }
     }
 
     /**
      * @param array{token: string, device_id: string}|null $device
+     * @param string|null $targetDevice a device of another workspace to revoke
      */
-    private function requestFor(string $operation, string $email, ?array $device): ServerRequestInterface
+    private function requestFor(string $operation, string $email, ?array $device, ?string $targetDevice): ServerRequestInterface
     {
         $token = $device['token'] ?? null;
 
@@ -102,7 +119,7 @@ final class PermissionMatrixTest extends DatabaseTestCase
             'signOut' => $this->call('POST', '/auth/sign-out', token: $token),
             'getMe' => $this->call('GET', '/auth/me', token: $token),
             'listDevices' => $this->call('GET', '/auth/devices', token: $token),
-            'revokeDevice' => $this->call('DELETE', '/auth/devices/' . ($device['device_id'] ?? '01990000-0000-7000-8000-000000000000'), token: $token),
+            'revokeDevice' => $this->call('DELETE', '/auth/devices/' . ($targetDevice ?? $device['device_id'] ?? '01990000-0000-7000-8000-000000000000'), token: $token),
             default => self::fail("No request for {$operation}: add it here and a row to matrix.php"),
         };
     }

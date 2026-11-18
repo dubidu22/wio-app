@@ -9,18 +9,20 @@ declare(strict_types=1);
  * it as its own CI step; #6 and M6 add rows.
  *
  * Callers: anonymous (no token, or an e-mail nobody has), owner, customer,
- * helper, expired_helper (a helper whose link has passed). Token operations
- * act on the caller's own device; signIn uses the caller's own e-mail and
- * password (customers and helpers get one only in this test, to prove they
- * still cannot sign in before M6).
+ * helper, expired_helper (a helper whose link has passed), other_workspace
+ * (a valid owner token of a second workspace). Token operations act on the
+ * caller's own device, except that other_workspace aims revokeDevice at a
+ * device of the first workspace's owner. signIn uses the caller's own e-mail
+ * and password (customers and helpers get one only in this test, to prove
+ * they still cannot sign in before M6).
  *
- * @return array<string, array{anonymous: int, owner: int, customer: int, helper: int, expired_helper: int}>
+ * @return array<string, array{anonymous: int, owner: int, customer: int, helper: int, expired_helper: int, other_workspace: int}>
  */
 return [
-    'getHealth' => ['anonymous' => 200, 'owner' => 200, 'customer' => 200, 'helper' => 200, 'expired_helper' => 200],
-    'signIn' => ['anonymous' => 401, 'owner' => 200, 'customer' => 401, 'helper' => 401, 'expired_helper' => 401],
-    'signOut' => ['anonymous' => 401, 'owner' => 204, 'customer' => 204, 'helper' => 204, 'expired_helper' => 401],
-    'getMe' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 200, 'expired_helper' => 401],
-    'listDevices' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 200, 'expired_helper' => 401],
-    'revokeDevice' => ['anonymous' => 401, 'owner' => 204, 'customer' => 204, 'helper' => 204, 'expired_helper' => 401],
+    'getHealth' => ['anonymous' => 200, 'owner' => 200, 'customer' => 200, 'helper' => 200, 'expired_helper' => 200, 'other_workspace' => 200],
+    'signIn' => ['anonymous' => 401, 'owner' => 200, 'customer' => 401, 'helper' => 401, 'expired_helper' => 401, 'other_workspace' => 200],
+    'signOut' => ['anonymous' => 401, 'owner' => 204, 'customer' => 204, 'helper' => 204, 'expired_helper' => 401, 'other_workspace' => 204],
+    'getMe' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 200, 'expired_helper' => 401, 'other_workspace' => 200],
+    'listDevices' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 200, 'expired_helper' => 401, 'other_workspace' => 200],
+    'revokeDevice' => ['anonymous' => 401, 'owner' => 204, 'customer' => 204, 'helper' => 204, 'expired_helper' => 401, 'other_workspace' => 404],
 ];

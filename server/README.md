@@ -26,7 +26,7 @@ Configuration comes only from the environment: `WIO_DB_DSN`, `WIO_DB_USER`, `WIO
 - **Every request except `/health` and `/auth/sign-in` needs `Authorization: Bearer <token>`.** `Wio\Auth\AuthMiddleware` turns the token into an `AuthContext` (workspace, user, role, customer, device). Code takes the workspace and role from that context, never from the request (D-112). `public/.htaccess` passes the header on under CGI/FPM.
 - **Passwords**: Argon2id with PHP's defaults, in the server-only table `user_passwords`. Only owners have one in M1. A hash with older options is upgraded at the next sign-in.
 - **Tokens**: `wio_` + 32 random bytes, shown once. `device_tokens` keeps only the SHA-256. Sign-out and revoke delete the row. A token is invalid after 180 days without use, or when its user or workspace is deleted or a helper's link expired.
-- **Limits**: at most 10 failed sign-ins per e-mail and 30 per IP address in 15 minutes, then `429` with `Retry-After`. `sign_in_failures` keeps SHA-256 hashes of the e-mail key and the IP address for 24 hours. The privacy notice names it.
+- **Limits**: at most 10 failed sign-ins per e-mail and 30 per IP address in 15 minutes, then `429` with `Retry-After`. An IPv6 client counts by its /64, an IPv4-mapped address as its IPv4 address (D-137). Each attempt records its row before the password check and counts the window including it, so parallel attempts cannot exceed the limit. `sign_in_failures` keeps SHA-256 hashes of the e-mail key and the IP key for 24 hours. The privacy notice names it.
 - **Errors**: every error is problem+json with a `code` (D-116). Logs never get a request body, a header or a database value.
 
 ### First workspace and owner

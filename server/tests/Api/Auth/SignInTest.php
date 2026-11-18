@@ -6,6 +6,7 @@ namespace Wio\Tests\Api\Auth;
 
 use Wio\Auth\DeviceToken;
 use Wio\Auth\PasswordHasher;
+use Wio\Auth\SignIn;
 use Wio\Tests\Api\DatabaseTestCase;
 use Wio\Tests\Api\Operation;
 use Wio\Tests\Support\AuthFixtures;
@@ -145,6 +146,28 @@ final class SignInTest extends DatabaseTestCase
 
         self::assertProblem($this->signIn(self::credentials() + ['workspace_id' => $home]), 401, 'invalid_credentials');
         self::assertSame(200, $this->signIn(self::credentials() + ['workspace_id' => $business])->getStatusCode());
+    }
+
+    public function testMoreThanTenAccountsWithOneEMailAreRefusedNotGuessedAt(): void
+    {
+        $workspaces = [];
+        for ($i = 0; $i <= SignIn::MAX_ACCOUNTS; ++$i) {
+            $workspaces[] = $workspace = $this->fixtures->workspace(sprintf('Betrieb %02d', $i));
+            $this->fixtures->user($workspace);
+        }
+
+        self::assertProblem($this->signIn(self::credentials()), 401, 'invalid_credentials');
+        self::assertSame(0, $this->fixtures->count('device_tokens'));
+        self::assertCount(1, $this->logged);
+        self::assertStringContainsString('more than 10 owner accounts', $this->logged[0]);
+        foreach ($workspaces as $workspace) {
+            self::assertStringNotContainsString($workspace, $this->logged[0], 'the log line names no workspace');
+        }
+
+        $chosen = $this->signIn(self::credentials() + ['workspace_id' => $workspaces[3]]);
+        self::assertSame(200, $chosen->getStatusCode(), 'a chosen workspace checks only its own row');
+        self::assertSame($workspaces[3], self::workspaceOf($chosen));
+        self::assertCount(1, $this->logged);
     }
 
     private static function workspaceOf(\Psr\Http\Message\ResponseInterface $response): mixed

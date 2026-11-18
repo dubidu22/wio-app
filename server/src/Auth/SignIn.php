@@ -42,9 +42,12 @@ final class SignIn
         $ipHash = SignInLimiter::ipHash($ip);
 
         $this->limiter->purge();
-        $wait = $this->limiter->retryAfter($emailHash, $ipHash);
-        if ($wait !== null) {
-            return SignInResult::limited($wait);
+        // Reserve before checking (D-113): parallel attempts see each other.
+        $reserved = $this->limiter->reserve($emailHash, $ipHash);
+        if ($this->limiter->exceeded($emailHash, $ipHash)) {
+            $this->limiter->release($reserved);
+
+            return SignInResult::limited($this->limiter->retryAfter($emailHash, $ipHash) ?? 1);
         }
 
         $accounts = $this->accounts(NameKey::of($email), $workspaceId);
@@ -64,11 +67,12 @@ final class SignIn
         }
 
         if ($matches === []) {
-            $this->limiter->recordFailure($emailHash, $ipHash);
-
+            // The reserved row stays as the failure.
             return SignInResult::invalid();
         }
         if (\count($matches) > 1) {
+            $this->limiter->release($reserved);
+
             return SignInResult::choose(array_map(
                 static fn(array $account): array => ['id' => $account['workspace_id'], 'name' => $account['workspace_name']],
                 $matches,
@@ -84,6 +88,7 @@ final class SignIn
                     [$this->hasher->hash($password), Time::toDatabase($this->clock->now()), $account['workspace_id'], $account['user_id']],
                 );
             }
+            // Clears this attempt's reserved row with the e-mail key's failures.
             $this->limiter->clear($emailHash);
             $device = $this->tokens->create($account['workspace_id'], $account['user_id'], $deviceName);
 
