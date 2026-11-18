@@ -11,6 +11,6 @@
   },
   "devDependencies": {
     "@redocly/cli": "2.80.0",
-    "playwright": "1.63.0"
+    "playwright": "1.65.1"
   }
 }
