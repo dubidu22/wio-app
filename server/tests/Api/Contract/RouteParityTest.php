@@ -58,6 +58,50 @@ final class RouteParityTest extends TestCase
         }
     }
 
+    public function testEveryApiTestGoesThroughTheContract(): void
+    {
+        $checked = 0;
+        foreach ($this->testClasses() as $class) {
+            if (str_starts_with($class->getName(), 'Wio\\Tests\\Api\\Contract\\')) {
+                continue;
+            }
+            self::assertTrue(
+                $class->isSubclassOf(ContractTestCase::class),
+                $class->getName() . ' must extend ContractTestCase, so its requests and responses are validated (D-93)',
+            );
+            ++$checked;
+        }
+        self::assertGreaterThan(0, $checked);
+    }
+
+    /**
+     * Concrete *Test classes under tests/Api.
+     *
+     * @return list<\ReflectionClass<object>>
+     */
+    private function testClasses(): array
+    {
+        $root = \dirname(__DIR__);
+        $classes = [];
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+        foreach ($files as $file) {
+            if (!$file instanceof \SplFileInfo || !str_ends_with($file->getFilename(), 'Test.php')) {
+                continue;
+            }
+            $relative = substr($file->getPathname(), \strlen($root) + 1, -4);
+            $class = 'Wio\\Tests\\Api\\' . str_replace('/', '\\', $relative);
+            if (!class_exists($class)) {
+                continue;
+            }
+            $reflection = new \ReflectionClass($class);
+            if (!$reflection->isAbstract()) {
+                $classes[] = $reflection;
+            }
+        }
+
+        return $classes;
+    }
+
     /**
      * @return list<string> "METHOD /pattern"
      */

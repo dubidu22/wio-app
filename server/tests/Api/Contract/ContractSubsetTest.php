@@ -74,6 +74,20 @@ final class ContractSubsetTest extends TestCase
         }
     }
 
+    public function testEveryOperationEndsWithTheSharedProblemDefault(): void
+    {
+        foreach (Contract::map(Contract::document()['paths'] ?? null) as $path => $item) {
+            foreach (Contract::map($item) as $method => $operation) {
+                $default = Contract::map(Contract::map(Contract::map($operation)['responses'] ?? null)['default'] ?? null);
+                self::assertSame(
+                    ['$ref' => '#/components/responses/Problem'],
+                    $default,
+                    "{$method} {$path}: needs default: \$ref '#/components/responses/Problem' so any status keeps its code (D-98)",
+                );
+            }
+        }
+    }
+
     public function testRequestSchemasAreClosedAndResponseSchemasOpen(): void
     {
         $requests = $this->reachable($this->bodySchemaRefs('requestBody'));

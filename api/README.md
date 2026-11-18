@@ -15,7 +15,7 @@ The contract is OpenAPI **3.0.3**, written so that it means the same in 3.1. `se
 
 ## Evolution (D-99)
 
-1. Changes within v1 are additive only: new operations, new optional request fields, new response fields, and new documented values of open strings (`EntityName`, `ChangeResult.reason`, `Problem.code`).
+1. Changes within v1 are additive only: new operations, new optional request fields, new response fields, new documented values of open strings (`EntityName`, `ChangeResult.reason`, `Problem.code`), and new values of an enum in a response or record schema. The client is generated with `enums.generateUnknownCase` (`codegen/tonik.yaml`), so an older app decodes a value it does not know as `unknown` and cannot send it back.
 2. Request schemas are closed (`additionalProperties: false`). Response schemas stay open, and apps ignore fields and open-string values they do not know.
 3. The server deploys before the app.
 4. A breaking change needs a new path and a decision in the KB.
@@ -25,9 +25,13 @@ The contract is OpenAPI **3.0.3**, written so that it means the same in 3.1. `se
 
 Each synced table of the database has one record schema (`Room`, `Entry`, …). `ContractSchemaTest` compares them with `server/tests/Db/Schema/schema-snapshot.json`. A migration that adds a column therefore also changes this file in the same PR.
 
+## Errors (D-98)
+
+Every operation ends its responses with `default: $ref: '#/components/responses/Problem'`, so any status an operation does not list (500, a later 426 or 429) still reaches the app as problem+json with its `code`. `ContractSubsetTest` enforces it.
+
 ## Server tests (D-93, D-94)
 
-- Every API test extends `server/tests/Api/ContractTestCase` and declares the operations it calls with `#[Operation('…')]`. Its requests and responses are validated against this file.
+- Every API test extends `server/tests/Api/ContractTestCase` (enforced by `RouteParityTest`) and declares the operations it calls with `#[Operation('…')]`. Its requests and responses are validated against this file.
 - `server/tests/Api/pending-operations.php` lists the operations the server does not implement yet. `RouteParityTest` keeps routes, contract and that list in step, and the list must be empty before M1 closes.
 
 ## Examples

@@ -47,6 +47,8 @@ paths:
                 $ref: '#/components/schemas/Health'
         '405':
           $ref: '#/components/responses/MethodNotAllowed'
+        default:
+          $ref: '#/components/responses/Problem'
   /auth/sign-in:
     post:
       operationId: signIn
@@ -86,6 +88,8 @@ paths:
           $ref: '#/components/responses/TooManyRequests'
         '503':
           $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
   /auth/sign-out:
     post:
       operationId: signOut
@@ -99,6 +103,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '503':
           $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
   /auth/me:
     get:
       operationId: getMe
@@ -116,6 +122,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '503':
           $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
   /auth/devices:
     get:
       operationId: listDevices
@@ -133,6 +141,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '503':
           $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
   /auth/devices/{device_id}:
     delete:
       operationId: revokeDevice
@@ -155,6 +165,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '503':
           $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
   /sync/push:
     post:
       operationId: syncPush
@@ -188,6 +200,8 @@ paths:
           $ref: '#/components/responses/PayloadTooLarge'
         '503':
           $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
   /sync/pull:
     get:
       operationId: syncPull
@@ -195,7 +209,11 @@ paths:
       description: >-
         Repeat with `since` = `last_revision` until `has_more` is false, then
         store `last_revision` (KB sync.md). Records the token may not read are
-        never returned.
+        never returned; `last_revision` is the highest revision the server
+        examined, so it can be above the last returned record, and it is
+        greater than `since` whenever `has_more` is true. A 410
+        `resync_required` means: drop pulled records, keep the outbox, pull
+        again from 0.
       tags:
         - sync
       parameters:
@@ -228,8 +246,20 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '410':
+          description: >-
+            `resync_required`: the app's `since` is no longer valid (for
+            example after the server database was restored, or the token's
+            scope changed). Drop all pulled records, keep the outbox, and pull
+            again from `since=0`. How the server decides is issue 6's.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '503':
           $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
   /files/{sha256}/state:
     get:
       operationId: getFileState
@@ -254,6 +284,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '503':
           $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
   /files/{sha256}:
     put:
       operationId: putFileChunk
@@ -314,6 +346,8 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '503':
           $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
 components:
   securitySchemes:
     deviceToken:
@@ -337,6 +371,12 @@ components:
         format: int32
         minimum: 1
   responses:
+    Problem:
+      description: Any other error; read `code` (D-98). Apps treat an unknown code as a server error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
     BadRequest:
       description: The request does not match the contract (`invalid_request`).
       content:
@@ -402,8 +442,9 @@ components:
         values: invalid_request, token_invalid, invalid_credentials,
         workspace_choice_required, too_many_attempts, too_many_changes,
         payload_too_large, offset_mismatch, hash_mismatch, maintenance,
-        not_found, method_not_allowed, internal. Apps treat an unknown code as
-        a server error.
+        not_found, method_not_allowed, resync_required (410 on pull: drop
+        pulled records, keep the outbox, pull from 0), internal. Apps treat an
+        unknown code as a server error.
       required:
         - type
         - title
@@ -743,7 +784,11 @@ components:
           format: int64
           minimum: 0
           maximum: 9007199254740991
-          description: Revision of the last record, or `since` when the page is empty.
+          description: >-
+            The highest revision the server examined for this page. It can be
+            higher than the last returned record, because records this token
+            may not read are skipped. Store it and pass it as `since`. When
+            `has_more` is true it is greater than `since`.
     FileState:
       type: object
       required:

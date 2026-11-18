@@ -21,6 +21,18 @@ use Wio\Tests\Api\Contract;
 final class ContractExamplesTest extends TestCase
 {
     /**
+     * The property each invalid example must fail on, so a typo elsewhere in
+     * the file cannot make it fail for another reason.
+     */
+    private const array INVALID_PROPERTY = [
+        'request.PushRequest.read-only-field' => 'revision',
+        'request.PushRequest.unknown-op' => 'op',
+        'request.PushRequest.wrong-field-type' => 'height_cm',
+        'request.SignInRequest.unknown-field' => 'remember_me',
+        'response.PullResult.revision-above-2-53' => 'last_revision',
+    ];
+
+    /**
      * @return iterable<string, array{string}>
      */
     public static function validExamples(): iterable
@@ -49,8 +61,24 @@ final class ContractExamplesTest extends TestCase
     #[DataProvider('invalidExamples')]
     public function testInvalidExampleIsRejected(string $file): void
     {
-        $this->expectException(SchemaMismatch::class);
-        $this->check($file);
+        $name = basename($file, '.json');
+        self::assertArrayHasKey($name, self::INVALID_PROPERTY, "{$name}: name the property it must fail on");
+        $property = self::INVALID_PROPERTY[$name];
+
+        try {
+            $this->check($file);
+        } catch (SchemaMismatch $e) {
+            $chain = $e->dataBreadCrumb()?->buildChain() ?? [];
+            $where = $e->getMessage() . ' at ' . implode('.', array_map(static fn(mixed $step): string => \is_scalar($step) ? (string) $step : '~', $chain));
+            self::assertTrue(
+                \in_array($property, $chain, true)
+                    || preg_match('/additional properties \\([^)]*\\b' . preg_quote($property, '/') . '\\b[^)]*\\)/', $e->getMessage()) === 1,
+                "{$name} must fail on {$property}, but failed with: {$where}",
+            );
+
+            return;
+        }
+        self::fail("{$name} was accepted");
     }
 
     public function testThereAreExamplesOfBothKinds(): void
