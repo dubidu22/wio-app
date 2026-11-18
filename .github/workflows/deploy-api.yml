@@ -1,0 +1,173 @@
+# Deploys the API to the ALL-INKL hosting over SSH and smoke tests it
+# (KB 03-process/ci.md, plan 010, D-158 to D-163).
+#
+# - staging:    after every successful ci run on main (D-160)
+# - production: on a tag api-v*, only if ci-passed succeeded on that commit
+# - manual:     workflow_dispatch for a chosen environment, a rollback to the
+#               previous or a named release, and the one-time creation of the
+#               staging smoke owner (D-162)
+#
+# Secrets and variables live only in the GitHub environments staging and
+# production, which Colin sets up (plan 010 section 7). The deploy logic is
+# in tools/deploy/*.sh (shellcheck in ci.yml's tools job). No third-party
+# action touches a credential: SSH is the runner's own OpenSSH with the host
+# key pinned (D-159).
+name: deploy-api
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ["api-v*"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+      mode:
+        description: deploy the selected ref, or roll back
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+      rollback_sha:
+        description: Release to roll back to (empty = the previous one)
+        type: string
+        default: ""
+      create_smoke_owner:
+        description: Staging only, once - create the smoke owner Rauchtest
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: resolve
+    # A ci run on main that was not a push (for example a dispatch) or did
+    # not succeed deploys nothing.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      checks: read
+    outputs:
+      environment: ${{ steps.resolve.outputs.environment }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      mode: ${{ steps.resolve.outputs.mode }}
+    steps:
+      - name: Environment, commit and mode
+        id: resolve
+        env:
+          EVENT: ${{ github.event_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          REF_SHA: ${{ github.sha }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          INPUT_MODE: ${{ inputs.mode }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          case "$EVENT" in
+            workflow_run) environment=staging; sha="$RUN_SHA"; mode=deploy ;;
+            push) environment=production; sha="$REF_SHA"; mode=deploy ;;
+            workflow_dispatch) environment="$INPUT_ENVIRONMENT"; sha="$REF_SHA"; mode="$INPUT_MODE" ;;
+            *) echo "::error::unexpected event $EVENT"; exit 1 ;;
+          esac
+          # Every deploy that does not come from a successful ci run checks
+          # that ci-passed succeeded on the commit (MRG-01).
+          if [[ "$EVENT" != workflow_run && "$mode" == deploy ]]; then
+            conclusions="$(gh api "repos/$REPO/commits/$sha/check-runs?check_name=ci-passed" \
+              --jq '[.check_runs[].conclusion] | join(" ")')"
+            if [[ " $conclusions " != *" success "* ]]; then
+              echo "::error::ci-passed has not succeeded on $sha (found: '${conclusions}')"
+              exit 1
+            fi
+          fi
+          {
+            echo "environment=$environment"
+            echo "sha=$sha"
+            echo "mode=$mode"
+          } >> "$GITHUB_OUTPUT"
+          echo "$mode $sha to $environment"
+
+  deploy:
+    name: deploy (${{ needs.resolve.outputs.environment }})
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: ${{ needs.resolve.outputs.environment }}
+      url: ${{ vars.WIO_API_URL }}
+    concurrency:
+      group: deploy-api-${{ needs.resolve.outputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      WIO_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+      WIO_SSH_HOST: ${{ vars.WIO_SSH_HOST }}
+      WIO_SSH_USER: ${{ vars.WIO_SSH_USER }}
+      WIO_DEPLOY_PATH: ${{ vars.WIO_DEPLOY_PATH }}
+      WIO_API_URL: ${{ vars.WIO_API_URL }}
+      WIO_DB_NAME: ${{ vars.WIO_DB_NAME }}
+      WIO_DB_USER: ${{ vars.WIO_DB_USER }}
+      WIO_PHP_CLI: ${{ vars.WIO_PHP_CLI }}
+      WIO_WEB_ORIGIN: ${{ vars.WIO_WEB_ORIGIN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          persist-credentials: false
+      - uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f # 2.37.0
+        with:
+          php-version: "8.3"
+          extensions: intl, mbstring, pdo_mysql, sodium
+          coverage: none
+          tools: composer:v2
+      - name: SSH key and pinned host key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.WIO_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ vars.WIO_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          for name in SSH_PRIVATE_KEY SSH_KNOWN_HOSTS WIO_SSH_HOST WIO_SSH_USER WIO_DEPLOY_PATH WIO_API_URL; do
+            [[ -n "${!name}" ]] || { echo "::error::$name is not set in the environment $WIO_ENVIRONMENT (plan 010 section 7)"; exit 1; }
+          done
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$RUNNER_TEMP/deploy-key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
+          {
+            echo "WIO_SSH_KEY_FILE=$RUNNER_TEMP/deploy-key"
+            echo "WIO_SSH_KNOWN_HOSTS_FILE=$RUNNER_TEMP/known_hosts"
+          } >> "$GITHUB_ENV"
+      - name: Build the release
+        if: needs.resolve.outputs.mode == 'deploy'
+        env:
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: tools/deploy/build-release.sh . "$SHA" "$RUNNER_TEMP/release.tar.gz"
+      - name: Deploy, migrate, switch and smoke test (D-158, D-159)
+        if: needs.resolve.outputs.mode == 'deploy'
+        env:
+          SHA: ${{ needs.resolve.outputs.sha }}
+          WIO_DB_PASSWORD: ${{ secrets.WIO_DB_PASSWORD }}
+          WIO_SMOKE_PASSWORD: ${{ secrets.WIO_SMOKE_PASSWORD }}
+          WIO_CREATE_SMOKE_OWNER: ${{ inputs.create_smoke_owner && 'true' || 'false' }}
+        run: tools/deploy/deploy.sh deploy "$RUNNER_TEMP/release.tar.gz" "$SHA"
+      - name: Roll back and smoke test
+        if: needs.resolve.outputs.mode == 'rollback'
+        env:
+          ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+          WIO_SMOKE_PASSWORD: ${{ secrets.WIO_SMOKE_PASSWORD }}
+        run: tools/deploy/deploy.sh rollback "$ROLLBACK_SHA"
+      - name: Remove the SSH key
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/known_hosts"

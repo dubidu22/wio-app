@@ -8,8 +8,12 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use Wio\Config\HostConfig;
 use Wio\Database\Connection;
 use Wio\Migration\Runner;
+
+// On the hosting: config.php outside the web root, written by the deploy (D-161).
+HostConfig::load(__DIR__ . '/../config.php');
 
 try {
     $runner = new Runner(Connection::fromEnvironment(), __DIR__ . '/../migrations');

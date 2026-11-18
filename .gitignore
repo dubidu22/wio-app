@@ -21,3 +21,6 @@ key.properties
 # Dependencies installed by package managers
 node_modules/
 server/vendor/
+
+# Host config written by the deploy (D-161): never commit
+server/config.php
