@@ -35,6 +35,6 @@ return [
     // (D-181). Rights per entity and op: tests/Api/Sync/RightsTest.php.
     'syncPush' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 200, 'expired_helper' => 401, 'other_workspace' => 200],
     'syncPush result' => ['anonymous' => 401, 'owner' => 'applied', 'customer' => 'permission', 'helper' => 'permission', 'expired_helper' => 401, 'other_workspace' => 'applied'],
-    // Scope per role (D-182): tests/Api/Sync/PullScopeTest.php.
+    // Scope per role (D-182): tests/Api/Sync/PullTest.php.
     'syncPull' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 200, 'expired_helper' => 401, 'other_workspace' => 200],
 ];

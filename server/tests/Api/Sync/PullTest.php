@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace Wio\Tests\Api\Sync;
 
+use Wio\Auth\AuthContext;
 use Wio\Database\Connection;
+use Wio\Database\Sql;
 use Wio\Schema\RevisionCounter;
+use Wio\Sync\Pull;
 use Wio\Tests\Api\Contract\RecordFields;
 use Wio\Tests\Api\Operation;
 
 /**
  * Plan 006 tests P12 (paging and scope, D-182, D-183), P13 (410, D-184) and
- * P14 (a pull during a write sees only committed, gap-free revisions).
+ * P14 (a pull during a write sees only committed, gap-free revisions), and
+ * the snapshot under a READ COMMITTED session (review of PR 46, M1).
  */
 #[Operation('syncPush')]
 #[Operation('syncPull')]
@@ -172,5 +176,44 @@ final class PullTest extends SyncTestCase
         $page = $this->pull($before);
         self::assertSame($revision, $page['last_revision']);
         self::assertSame('Halb', $page['records'][0]['fields']['name'] ?? null);
+    }
+
+    /**
+     * Pull reads the counter, then the scoped id list, then the full rows by
+     * id. A change committed between the last two reads must not reach the
+     * page, even when the connection's session default is READ COMMITTED
+     * (which would make MariaDB ignore WITH CONSISTENT SNAPSHOT).
+     */
+    public function testAChangeCommittedBetweenTheIdListAndTheRowFetchStaysOutOfThePage(): void
+    {
+        $mine = $this->graph();
+        $theirs = $this->graph('WIO-0002');
+        $customer = $this->fixtures->user($this->workspace, 'customer', 'kunde@example.org', customerId: $mine['customers']);
+        $revision = $this->pulled('notes', $mine['notes'])['revision'] ?? null;
+        self::assertIsInt($revision);
+
+        $pdo = HookedPdo::fromEnvironment();
+        $pdo->exec('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
+        $pdo->beforeRowFetch = function () use ($mine, $theirs): void {
+            // Another device moves the note to the other customer's entry, and commits.
+            $this->write('notes', $mine['notes'], ['subject_id' => $theirs['entries']]);
+        };
+        $caller = new AuthContext($this->workspace, $customer, 'customer', $mine['customers'], self::id());
+        $page = (new Pull(new Sql($pdo)))->page($caller, 0, Pull::MAX_LIMIT);
+
+        self::assertNull($pdo->beforeRowFetch, 'the other device committed between the id list and the row fetch');
+        self::assertSame($theirs['customers'], $this->sql->row('SELECT customer_id FROM notes WHERE id = ?', [$mine['notes']])['customer_id'] ?? null);
+        $notes = array_values(array_filter($page['records'], static fn(array $record): bool => $record['entity'] === 'notes'));
+        self::assertCount(1, $notes);
+        $note = $notes[0]['fields'];
+        self::assertInstanceOf(\stdClass::class, $note);
+        $fields = get_object_vars($note);
+        self::assertSame($mine['entries'], $fields['subject_id'], 'the note as it was in the snapshot');
+        self::assertSame($mine['customers'], $fields['customer_id'], 'never the other customer\'s record');
+        self::assertSame($revision, $fields['revision']);
+        self::assertLessThanOrEqual($page['last_revision'], $revision);
+        $level = $pdo->query('SELECT @@SESSION.tx_isolation');
+        self::assertNotFalse($level);
+        self::assertSame('READ-COMMITTED', $level->fetchColumn(), 'the pin covers the pull\'s transaction only');
     }
 }

@@ -16,6 +16,11 @@ use Wio\Database\Sql;
  * the counter's row lock until it commits (D-52), every revision up to C is
  * committed and visible. The token's scope is part of the SQL, so pages stay
  * full and last_revision can move past records the caller may not read.
+ *
+ * The snapshot holds only under REPEATABLE READ (under READ COMMITTED,
+ * MariaDB ignores WITH CONSISTENT SNAPSHOT), so page() sets that level for
+ * its transaction instead of trusting the host's default. The row fetch
+ * repeats the scope and revision <= C as a second line of defence.
  */
 final class Pull
 {
@@ -34,6 +39,8 @@ final class Pull
     public function page(AuthContext $caller, int $since, int $limit): array
     {
         $pdo = $this->sql->pdo;
+        // Applies to the next transaction only; the session keeps its level.
+        $pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
         $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
         try {
             $page = $this->read($caller, $since, $limit);
@@ -77,7 +84,7 @@ final class Pull
         $hasMore = \count($changed) > $limit;
         $changed = \array_slice($changed, 0, $limit);
 
-        $rows = $this->rows($caller, $changed);
+        $rows = $this->rows($caller, $changed, $top);
         $records = [];
         foreach ($changed as $item) {
             $entity = Sql::text($item['entity']);
@@ -126,13 +133,14 @@ final class Pull
     }
 
     /**
-     * The full rows of the changed records, by entity and id.
+     * The full rows of the changed records, by entity and id, under the same
+     * scope and revision <= C as the id list.
      *
      * @param list<array<string, mixed>> $changed
      *
      * @return array<string, array<string, array<string, mixed>>>
      */
-    private function rows(AuthContext $caller, array $changed): array
+    private function rows(AuthContext $caller, array $changed, int $top): array
     {
         $ids = [];
         foreach ($changed as $item) {
@@ -143,9 +151,9 @@ final class Pull
             if (!isset($ids[$table])) {
                 continue;
             }
-            $workspace = $table === 'workspaces' ? 'id = ?' : 'workspace_id = ?';
+            [$where, $bind] = $this->scope($caller, $table) ?? throw new \LogicException('A changed record outside the scope.');
             $marks = implode(', ', array_fill(0, \count($ids[$table]), '?'));
-            foreach ($this->sql->rows("SELECT * FROM {$table} WHERE {$workspace} AND id IN ({$marks})", [$caller->workspaceId, ...$ids[$table]]) as $row) {
+            foreach ($this->sql->rows("SELECT * FROM {$table} WHERE {$where} AND revision <= ? AND id IN ({$marks})", [...$bind, $top, ...$ids[$table]]) as $row) {
                 $out[$table][Sql::text($row['id'])] = $row;
             }
         }
