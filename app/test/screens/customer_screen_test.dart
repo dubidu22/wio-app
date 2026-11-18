@@ -109,4 +109,23 @@ void main() {
     );
     expect(find.text('Zurück'), findsOneWidget);
   });
+
+  testWidgets('Zurück keeps its size at twice the text size', (tester) async {
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: '/customers/${TestIds.familieBeispiel}',
+      textScale: 2,
+    );
+
+    expect(tester.getSize(find.byIcon(Icons.arrow_back)), const Size(24, 24));
+    final label = find.text('Zurück');
+    final box = find.ancestor(of: label, matching: find.byType(FittedBox));
+    expect(tester.getSize(box), tester.getSize(label), reason: 'not shrunk');
+    expect(
+      tester.getSize(find.text('Familie Beispiel')).width,
+      greaterThan(120),
+      reason: 'the title keeps room',
+    );
+  });
 }

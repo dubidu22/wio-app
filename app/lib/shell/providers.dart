@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -43,11 +45,15 @@ final linkOpenerProvider = Provider<LinkOpener>((ref) => _openInBrowser);
 /// shows the error instead (D-65).
 Duration? _noRetry(int retryCount, Object error) => null;
 
-/// Level 1: today's and later jobs.
+/// Level 1: today's and later jobs. Rebuilds just after the next local
+/// midnight, so a list left open overnight moves the new day under "Heute".
 final jobListProvider = StreamProvider<JobList>(retry: _noRetry, (ref) {
   final db = ref.watch(databaseProvider);
-  final today = calendarDate(ref.watch(clockProvider)());
-  return watchJobList(db, today);
+  final now = ref.watch(clockProvider)();
+  final nextDay = DateTime(now.year, now.month, now.day + 1, 0, 0, 1);
+  final timer = Timer(nextDay.difference(now), ref.invalidateSelf);
+  ref.onDispose(timer.cancel);
+  return watchJobList(db, calendarDate(now));
 });
 
 /// Level 2: one customer with sites and rooms; null when it does not exist.

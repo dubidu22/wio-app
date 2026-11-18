@@ -28,6 +28,10 @@ void main() {
       'database',
       'sharedpref',
       'external',
+      'device_root',
+      'device_file',
+      'device_database',
+      'device_sharedpref',
     ];
     for (final section in <String>['cloud-backup', 'device-transfer']) {
       final body = RegExp(

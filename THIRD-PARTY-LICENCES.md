@@ -25,7 +25,9 @@ Banned: SSPL, non-commercial, proprietary, GPL-2.0-only, other licences incompat
 | `url_launcher` | 6.3.3 | BSD-3-Clause | Opens the source code in the browser (D-73) |
 | `path_provider` | 2.1.6 | BSD-3-Clause | Application Support folder for the database (D-72) |
 | `uuid` | 4.6.0 | MIT | UUID v7 made on the device (D-67) |
-| Transitive: platform packages of `url_launcher` and `path_provider`; `meta`, `collection`, `async`, `stack_trace` and other Dart team packages | see `app/pubspec.lock` | BSD-3-Clause | Used by the packages above |
+| Transitive: `state_notifier` | 1.0.0 | MIT | Used by `riverpod` |
+| Transitive: `sqlite3_flutter_libs`, `sqlcipher_flutter_libs` | 0.6.0+eol, 0.7.0+eol | MIT | Empty end-of-life packages named by `drift_flutter`; no native code |
+| Transitive: platform packages of `url_launcher` and `path_provider`; `jni`, `jni_flutter`, `jni_util`, `objective_c` (used by `path_provider`); `meta`, `collection`, `async`, `stack_trace` and other Dart team packages | see `app/pubspec.lock` | BSD-3-Clause | Used by the packages above |
 
 ## Shipped with the server (PHP)
 

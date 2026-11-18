@@ -42,6 +42,7 @@ Future<void> pumpWioApp(
   Size size = phoneSize,
   double textScale = 1,
   DateTime? now,
+  DateTime Function()? clock,
   LinkOpener? opener,
 }) async {
   tester.view.physicalSize = size;
@@ -58,7 +59,7 @@ Future<void> pumpWioApp(
     ProviderScope(
       overrides: <Override>[
         databaseProvider.overrideWithValue(db),
-        clockProvider.overrideWithValue(() => fixedNow),
+        clockProvider.overrideWithValue(clock ?? () => fixedNow),
         linkOpenerProvider.overrideWithValue(opener ?? (uri) async => false),
       ],
       child: WioApp(initialLocation: location),

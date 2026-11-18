@@ -23,12 +23,14 @@ class JobListScreen extends ConsumerWidget {
         title: Text(l10n.jobsTitle),
         actions: const <Widget>[SourceLinkButton(), SizedBox(width: 8)],
       ),
+      // While the list reloads (for example at midnight) the last list
+      // stays on screen.
       body: switch (jobs) {
-        AsyncData(:final value) => _JobListBody(list: value),
-        AsyncError(:final error) => LoadFailed(
+        AsyncValue(:final error?) => LoadFailed(
           message: l10n.loadFailed,
           error: error,
         ),
+        AsyncValue(:final value?) => _JobListBody(list: value),
         _ => const SizedBox.shrink(),
       },
     );

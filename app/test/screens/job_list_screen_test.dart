@@ -82,4 +82,23 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('a list left open over midnight moves the new day to Heute', (
+    tester,
+  ) async {
+    var now = DateTime(2026, 11, 19, 23, 59);
+    await pumpWioApp(tester, db: db, clock: () => now);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Familie Beispiel'),
+      findsOneWidget,
+    );
+    expect(find.text('Fr., 20. Nov.'), findsOneWidget);
+
+    now = DateTime(2026, 11, 20, 0, 0, 2);
+    await tester.pump(const Duration(minutes: 1, seconds: 2));
+    await tester.pumpAndSettle();
+    expect(find.text('Familie Beispiel'), findsNothing);
+    expect(find.widgetWithText(OutlinedButton, 'Frau Muster'), findsOneWidget);
+    expect(find.text('Fr., 20. Nov.'), findsNothing, reason: 'now today');
+  });
 }

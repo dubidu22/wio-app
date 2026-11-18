@@ -28,7 +28,7 @@ class CustomerScreen extends ConsumerWidget {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: const WioBackButton(),
-        leadingWidth: wioBackButtonWidth,
+        leadingWidth: wioBackButtonWidth(context),
         title: Text(name),
       ),
       body: switch (customer) {
