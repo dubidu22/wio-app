@@ -55,6 +55,8 @@ jobs:
           ../tools/ci/generated-code-fresh.sh .
           -- dart run drift_dev make-migrations
           -- dart run build_runner build
+      - name: Generated API client is fresh (D-92, D-106)
+        run: ../tools/ci/generated-code-fresh.sh .. -- api/generate-dart-client.sh
       - name: Format
         run: dart format --output=none --set-exit-if-changed lib test
       - name: Analyze

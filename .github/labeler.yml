@@ -3,9 +3,10 @@
 # gets its folder (auth, sync, privacy texts).
 lane:app:
   - changed-files:
-      # At least one changed file under app/lib or app/test outside planning.
+      # At least one changed file under app/lib, app/test or app/packages (the
+      # generated API client, D-105) outside planning.
       - all-globs-to-any-file:
-          - "app/{lib,test}/**"
+          - "app/{lib,test,packages}/**"
           - "!app/{lib,test}/planning/**"
 
 lane:planning:
@@ -58,6 +59,7 @@ risk:high:
           - app/lib/sync/**
           - "**/goldens/**"
           - .github/workflows/**
+          - .github/labeler.yml
           - "**/LICENSE*"
           - THIRD-PARTY-LICENCES.md
           - server/bin/migrate
