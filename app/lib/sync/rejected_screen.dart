@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../data/database.dart';
 import '../l10n/app_localizations.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
 import 'rejected_changes.dart';
+import 'sync_runner.dart';
+import 'upload_queue.dart';
 
 /// Path of the list of refused changes (D-197).
 const String rejectedLocation = '/nicht-gesendet';
@@ -20,6 +24,7 @@ class RejectedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final list = ref.watch(rejectedListProvider);
+    final uploads = ref.watch(failedUploadsProvider);
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -27,20 +32,21 @@ class RejectedScreen extends ConsumerWidget {
         leadingWidth: wioBackButtonWidth(context),
         title: Text(l10n.rejectedTitle),
       ),
-      body: switch (list) {
-        AsyncValue(:final error?) => LoadFailed(
-          message: l10n.loadFailed,
-          error: error,
-        ),
-        AsyncValue(:final value?) => ContentWidth(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            children: <Widget>[
-              if (value.isEmpty) HintText(l10n.rejectedEmpty),
-              for (final entry in value) _RejectedTile(entry: entry),
-            ],
+      body: switch ((list, uploads)) {
+        (AsyncValue(:final error?), _) || (_, AsyncValue(:final error?)) =>
+          LoadFailed(message: l10n.loadFailed, error: error),
+        (AsyncValue(value: final changes?), AsyncValue(value: final files?)) =>
+          ContentWidth(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: <Widget>[
+                if (changes.isEmpty && files.isEmpty)
+                  HintText(l10n.rejectedEmpty),
+                for (final entry in changes) _RejectedTile(entry: entry),
+                for (final file in files) _UploadTile(upload: file),
+              ],
+            ),
           ),
-        ),
         _ => const SizedBox.shrink(),
       },
     );
@@ -135,6 +141,100 @@ class _RejectedTile extends ConsumerWidget {
     );
   }
 }
+
+/// A failed upload (D-214): "Noch einmal senden" only after a refused
+/// permission; "Verwerfen" with "Rückgängig" (UX rule 10).
+class _UploadTile extends ConsumerWidget {
+  const _UploadTile({required this.upload});
+
+  final Upload upload;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                l10n.uploadTitle(megabytes(upload.size)),
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(l10n.uploadNotSent, style: theme.textTheme.bodyLarge),
+              const SizedBox(height: 4),
+              Text(
+                _uploadWhy(l10n, upload.failedReason),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: <Widget>[
+                  if (upload.failedReason == UploadFailure.permission)
+                    FilledButton(
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        await retryUpload(ref.read(databaseProvider), upload);
+                        ref.read(syncProvider.notifier).trigger();
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(l10n.rejectedRetried)),
+                        );
+                      },
+                      child: Text(l10n.rejectedRetry),
+                    ),
+                  OutlinedButton(
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      final db = ref.read(databaseProvider);
+                      await discardUpload(db, upload);
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.rejectedDiscarded),
+                          // UX rule 9, as for refused changes.
+                          duration: const Duration(seconds: 8),
+                          persist: false,
+                          action: SnackBarAction(
+                            label: l10n.undo,
+                            onPressed: () => keepUpload(db, upload),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text(l10n.rejectedDiscard),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A size in MB with one decimal, German style ("1,2 MB").
+String megabytes(int bytes) =>
+    '${NumberFormat('0.0', 'de').format(bytes / (1024 * 1024))} MB';
+
+String _uploadWhy(AppLocalizations l10n, String? reason) => switch (reason) {
+  UploadFailure.permission => l10n.uploadPermission,
+  UploadFailure.tooLarge => l10n.uploadTooLarge,
+  UploadFailure.invalid => l10n.uploadInvalid,
+  _ => l10n.uploadDamaged,
+};
 
 String _kind(AppLocalizations l10n, String entity) => switch (entity) {
   'customers' => l10n.entityCustomer,

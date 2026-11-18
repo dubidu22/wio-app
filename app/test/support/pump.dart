@@ -9,6 +9,7 @@ import 'package:wio_app/data/database.dart';
 import 'package:wio_app/l10n/app_localizations.dart';
 import 'package:wio_app/shell/providers.dart';
 import 'package:wio_app/sync/sync_runner.dart';
+import 'package:wio_app/sync/upload_queue.dart';
 import 'package:wio_app/update/app_version.dart';
 
 import 'fake_api.dart';
@@ -64,6 +65,7 @@ Future<void> pumpWioApp(
   InstalledApp installed = testInstalledApp,
   bool autoSync = false,
   SyncTiming syncTiming = const SyncTiming(),
+  UploadStore? uploadStore,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -90,9 +92,22 @@ Future<void> pumpWioApp(
         installedAppProvider.overrideWith((ref) async => installed),
         syncAutoStartProvider.overrideWithValue(autoSync),
         syncTimingProvider.overrideWithValue(syncTiming),
+        // No file system in widget tests unless a test brings one.
+        uploadStoreProvider.overrideWithValue(
+          uploadStore ?? UploadStore(() => Future<String>.error('no files')),
+        ),
       ],
       child: WioApp(initialLocation: location),
     ),
   );
+  await tester.pumpAndSettle();
+}
+
+/// Lets sync's database and HTTP work finish: it runs on short timers and
+/// microtasks that pumpAndSettle alone does not wait for.
+Future<void> settle(WidgetTester tester) async {
+  for (var i = 0; i < 30; i++) {
+    await tester.pump(const Duration(milliseconds: 1));
+  }
   await tester.pumpAndSettle();
 }

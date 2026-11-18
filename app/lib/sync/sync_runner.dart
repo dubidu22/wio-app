@@ -8,6 +8,7 @@ import '../auth/session_provider.dart';
 import '../shell/providers.dart';
 import '../update/app_too_old.dart';
 import 'sync_engine.dart';
+import 'upload_queue.dart';
 
 /// When sync runs by itself (D-201). Tests shorten the times.
 class SyncTiming {
@@ -123,12 +124,20 @@ class SyncNotifier extends Notifier<SyncActivity> {
     state = SyncActivity.running;
     final SyncResult result;
     try {
+      final db = ref.read(databaseProvider);
+      bool tooOld() => ref.mounted && ref.read(appTooOldProvider) != null;
       result = await SyncEngine(
-        db: ref.read(databaseProvider),
+        db: db,
         api: SyncApi(server),
         workspaceId: session.workspace.id,
-        tooOld: () => ref.mounted && ref.read(appTooOldProvider) != null,
+        tooOld: tooOld,
         clock: ref.read(clockProvider),
+        uploads: UploadWorker(
+          db: db,
+          api: FilesApi(server),
+          store: ref.read(uploadStoreProvider),
+          tooOld: tooOld,
+        ),
       ).run();
     } on Object {
       if (ref.mounted) _failed(null);
@@ -141,6 +150,8 @@ class SyncNotifier extends Notifier<SyncActivity> {
       case SyncStop.done:
         _failures = 0;
         state = SyncActivity.idle;
+        // New changes came in while files were sent (D-211).
+        if (result.more) _again = true;
       case SyncStop.offline || SyncStop.failed:
         _failed(result.retryAfter);
       case SyncStop.tooOld:
@@ -176,12 +187,30 @@ final outboxCountProvider = StreamProvider<int>((ref) {
       .watchSingle();
 });
 
-/// Changes the server refused, for the job-list hint (D-197).
-final rejectedCountProvider = StreamProvider<int>((ref) {
+/// Files waiting for upload, for the status line (D-216).
+final pendingUploadCountProvider = StreamProvider<int>((ref) {
   final db = ref.watch(databaseProvider);
   final count = countAll();
-  return (db.selectOnly(db.rejectedChanges)
-        ..addColumns(<Expression<Object>>[count]))
+  return (db.selectOnly(db.uploads)
+        ..addColumns(<Expression<Object>>[count])
+        ..where(db.uploads.failedReason.isNull()))
       .map((row) => row.read(count) ?? 0)
+      .watchSingle();
+});
+
+/// Changes the server refused plus failed uploads, for the job-list hint
+/// (D-197, D-214).
+final rejectedCountProvider = StreamProvider<int>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db
+      .customSelect(
+        'SELECT (SELECT COUNT(*) FROM rejected_changes) + '
+        '(SELECT COUNT(*) FROM uploads WHERE failed_reason IS NOT NULL) AS n',
+        readsFrom: <ResultSetImplementation<Object?, Object?>>{
+          db.rejectedChanges,
+          db.uploads,
+        },
+      )
+      .map((row) => row.read<int>('n'))
       .watchSingle();
 });

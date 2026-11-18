@@ -9,6 +9,7 @@ import 'l10n/app_localizations.dart';
 import 'shell/providers.dart';
 import 'shell/router.dart';
 import 'sync/sync_runner.dart';
+import 'sync/upload_queue.dart';
 import 'update/app_too_old.dart';
 import 'update/update_required_screen.dart';
 
@@ -96,6 +97,13 @@ class _WioAppState extends ConsumerState<WioApp> {
   }
 
   Future<void> _start() async {
+    // Copies of discarded uploads go at start (D-215).
+    unawaited(
+      sweepUploads(
+        ref.read(databaseProvider),
+        ref.read(uploadStoreProvider),
+      ).catchError((Object _) {}),
+    );
     try {
       final session = await ref.read(sessionProvider.future);
       if (!mounted) return;

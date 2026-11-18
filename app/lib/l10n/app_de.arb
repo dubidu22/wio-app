@@ -460,6 +460,44 @@
   "@rejectedOther": {
     "description": "Any other or unknown reason (D-96)."
   },
+  "syncUploads": "{count, plural, =1{1 Datei wird hochgeladen.} other{{count} Dateien werden hochgeladen.}}",
+  "@syncUploads": {
+    "description": "Sync status line: files waiting for upload while no change waits (D-216).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadTitle": "Datei ({size})",
+  "@uploadTitle": {
+    "description": "A file that was not uploaded, with its size such as 1,2 MB (D-214).",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "uploadNotSent": "Die Datei wurde nicht hochgeladen.",
+  "@uploadNotSent": {
+    "description": "What happened to a file that failed (D-214)."
+  },
+  "uploadPermission": "Keine Berechtigung, diese Datei zu senden.",
+  "@uploadPermission": {
+    "description": "Upload refused with 403 forbidden (D-206, D-212)."
+  },
+  "uploadDamaged": "Datei beschädigt.",
+  "@uploadDamaged": {
+    "description": "The copy is missing or does not match its hash (D-212)."
+  },
+  "uploadTooLarge": "Datei zu groß (höchstens 100 MB).",
+  "@uploadTooLarge": {
+    "description": "File over 100 MiB or refused with 413 (D-212)."
+  },
+  "uploadInvalid": "Ungültige Anfrage.",
+  "@uploadInvalid": {
+    "description": "Upload refused with 400 (D-212)."
+  },
   "rejectedRetry": "Noch einmal senden",
   "@rejectedRetry": {
     "description": "Sends a refused change again as a new change (D-172, D-197)."
