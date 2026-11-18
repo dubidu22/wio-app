@@ -772,34 +772,40 @@ components:
       type: array
       description: Corner points in cm, clockwise from the top-left corner (D-83, provisional).
       items:
-        type: object
-        required:
-          - x_cm
-          - y_cm
-        properties:
-          x_cm:
-            type: integer
-            format: int32
-          y_cm:
-            type: integer
-            format: int32
+        $ref: '#/components/schemas/OutlinePoint'
+    OutlinePoint:
+      type: object
+      description: One corner of a room outline, in cm from the plan's origin.
+      required:
+        - x_cm
+        - y_cm
+      properties:
+        x_cm:
+          type: integer
+          format: int32
+        y_cm:
+          type: integer
+          format: int32
     FixtureLevels:
       type: array
       description: Levels from the bottom; each with its height and number of compartments (KB data-model.md).
       items:
-        type: object
-        required:
-          - height_cm
-          - compartments
-        properties:
-          height_cm:
-            type: integer
-            format: int32
-            minimum: 0
-          compartments:
-            type: integer
-            format: int32
-            minimum: 1
+        $ref: '#/components/schemas/FixtureLevel'
+    FixtureLevel:
+      type: object
+      description: One level of a fixture, counted from the bottom.
+      required:
+        - height_cm
+        - compartments
+      properties:
+        height_cm:
+          type: integer
+          format: int32
+          minimum: 0
+        compartments:
+          type: integer
+          format: int32
+          minimum: 1
     Workspace:
       type: object
       description: A `workspaces` record as sync pulls it (D-95).
