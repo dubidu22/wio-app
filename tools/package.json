@@ -5,7 +5,7 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
-    "lint:openapi": "redocly lint ../api/openapi.yaml --config redocly.yaml",
+    "lint:openapi": "REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true redocly lint ../api/openapi.yaml --config redocly.yaml",
     "check:web": "node ci/web-network-check.mjs ../app/build/web"
   },
   "devDependencies": {
