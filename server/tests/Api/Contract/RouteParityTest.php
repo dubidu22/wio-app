@@ -42,8 +42,8 @@ final class RouteParityTest extends TestCase
     public function testThePendingListNamesOnlyOperationsOfTheContract(): void
     {
         $operationIds = array_values(Contract::operations());
-        foreach ($this->pending() as $operationId => $issue) {
-            self::assertContains($operationId, $operationIds, "pending-operations.php lists unknown {$operationId}");
+        self::assertSame([], array_values(array_diff(array_keys($this->pending()), $operationIds)), 'pending-operations.php lists unknown operations');
+        foreach ($this->pending() as $issue) {
             self::assertGreaterThan(0, $issue);
         }
     }

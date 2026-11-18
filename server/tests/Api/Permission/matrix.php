@@ -37,4 +37,9 @@ return [
     'syncPush result' => ['anonymous' => 401, 'owner' => 'applied', 'customer' => 'permission', 'helper' => 'permission', 'expired_helper' => 401, 'other_workspace' => 'applied'],
     // Scope per role (D-182): tests/Api/Sync/PullTest.php.
     'syncPull' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 200, 'expired_helper' => 401, 'other_workspace' => 200],
+    // Files are per workspace (D-185): other_workspace reads and fills its
+    // own store. Helpers get 403 forbidden until M6 (D-206). A one-chunk file
+    // completes at once (200). Upload rules: tests/Api/Files/FilesTest.php.
+    'getFileState' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 403, 'expired_helper' => 401, 'other_workspace' => 200],
+    'putFileChunk' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 403, 'expired_helper' => 401, 'other_workspace' => 200],
 ];

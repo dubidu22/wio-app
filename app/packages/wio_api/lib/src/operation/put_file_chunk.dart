@@ -116,6 +116,17 @@ final class PutFileChunk extends _i1.HttpOperation<_i2.PutFileChunkResponse> {
         throw _i4.ResponseDecodingException(
           'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
         );
+      case (403, r'application/problem+json'):
+        final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
+        final _$body = _i7.Problem.fromJson(_$json);
+        return _i2.PutFileChunkResponse403(body: _$body);
+      case (403, _):
+        final _$content = response.headers['content-type'] ?? 'not specified';
+        final _$matched = _$mediaType ?? 'none';
+        final _$status = response.statusCode;
+        throw _i4.ResponseDecodingException(
+          'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
+        );
       case (409, r'application/problem+json'):
         final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
         final _$body = _i7.Problem.fromJson(_$json);

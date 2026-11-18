@@ -10,7 +10,4 @@ declare(strict_types=1);
  *
  * @return array<string, int> operationId => issue number in dubidu22/wio-app
  */
-return [
-    'getFileState' => 6,
-    'putFileChunk' => 6,
-];
+return [];
