@@ -6,13 +6,19 @@ namespace Wio;
 
 use PDO;
 use Psr\Clock\ClockInterface;
+use Wio\AppVersion\AppVersion;
+use Wio\AppVersion\MinimumAppVersion;
 use Wio\Auth\DeviceTokens;
 use Wio\Auth\PasswordHasher;
 use Wio\Auth\SignIn;
 use Wio\Auth\SignInLimiter;
 use Wio\Database\Connection;
 use Wio\Database\Sql;
+use Wio\Files\FileStore;
+use Wio\Http\Cors;
 use Wio\Support\SystemClock;
+use Wio\Sync\Pull;
+use Wio\Sync\Push;
 
 /**
  * What the routes need, built on first use: /health never opens the
@@ -27,20 +33,34 @@ final class Services
     /** @var \Closure(string): void */
     public readonly \Closure $log;
 
+    /** Apps below it get 426 (D-145); null for no minimum. */
+    public readonly ?AppVersion $minimumAppVersion;
+
+    /** Origins allowed to read answers in a browser (D-164). */
+    public readonly Cors $cors;
+
     /**
      * @param \Closure(): PDO $connect
      * @param \Closure(): PasswordHasher $makeHasher
      * @param \Closure(string): void $log one line to the server's error log; never a password, token or body
+     * @param ?string $minimumAppVersion `major.minor.patch`; tests pass their own
+     * @param string $corsOrigins the `WIO_CORS_ORIGINS` list, comma-separated
+     * @param string $filesDir `WIO_FILES_DIR`, the file store (D-207); file operations answer 500 without it
      */
     public function __construct(
         private readonly \Closure $connect,
         public readonly ClockInterface $clock,
         private readonly \Closure $makeHasher,
         ?\Closure $log = null,
+        ?string $minimumAppVersion = MinimumAppVersion::VALUE,
+        string $corsOrigins = '',
+        private readonly string $filesDir = '',
     ) {
         $this->log = $log ?? static function (string $line): void {
             error_log($line);
         };
+        $this->minimumAppVersion = $minimumAppVersion === null ? null : AppVersion::minimum($minimumAppVersion);
+        $this->cors = Cors::fromConfig($corsOrigins);
     }
 
     public static function fromEnvironment(): self
@@ -49,6 +69,8 @@ final class Services
             static fn(): PDO => Connection::fromEnvironment(),
             new SystemClock(),
             static fn(): PasswordHasher => new PasswordHasher(),
+            corsOrigins: (string) getenv('WIO_CORS_ORIGINS'),
+            filesDir: (string) getenv('WIO_FILES_DIR'),
         );
     }
 
@@ -77,5 +99,20 @@ final class Services
             $this->deviceTokens(),
             $this->log,
         );
+    }
+
+    public function push(): Push
+    {
+        return new Push($this->sql(), $this->clock);
+    }
+
+    public function pull(): Pull
+    {
+        return new Pull($this->sql());
+    }
+
+    public function files(): FileStore
+    {
+        return new FileStore($this->filesDir, $this->clock);
     }
 }

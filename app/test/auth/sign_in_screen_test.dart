@@ -457,6 +457,24 @@ void main() {
       });
     }
 
+    // 426 opens the update notice (plan 038); the screen and its controller
+    // are disposed, which drops the credentials too (D-127).
+    testWidgets('after 426, when the update notice replaces the screen', (
+      tester,
+    ) async {
+      await openSignIn(
+        tester,
+        api: FakeApi(<String, Object>{
+          'POST /auth/sign-in': FakeAnswer.problem(426, 'upgrade_required'),
+        }),
+      );
+      final controller = controllerOf(tester);
+      await fillAndSubmit(tester);
+      expect(find.byType(SignInScreen), findsNothing);
+      expect(find.text('Bitte die App aktualisieren'), findsOneWidget);
+      expect(controller.holdsPassword, isFalse);
+    });
+
     testWidgets('but keeps it for the 409 workspace step', (tester) async {
       await openSignIn(
         tester,

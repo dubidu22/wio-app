@@ -2887,6 +2887,17 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxData> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _opMeta = const VerificationMeta('op');
+  @override
+  late final GeneratedColumn<String> op = GeneratedColumn<String>(
+    'op',
+    aliasedName,
+    false,
+    check: () => op.isIn(outboxOps),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant<String>('upsert'),
+  );
   static const VerificationMeta _fieldsMeta = const VerificationMeta('fields');
   @override
   late final GeneratedColumn<String> fields = GeneratedColumn<String>(
@@ -2924,6 +2935,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxData> {
     changeId,
     entity,
     entityId,
+    op,
     fields,
     baseRevision,
     deviceTime,
@@ -2969,6 +2981,9 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxData> {
       );
     } else if (isInserting) {
       context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('op')) {
+      context.handle(_opMeta, op.isAcceptableOrUnknown(data['op']!, _opMeta));
     }
     if (data.containsKey('fields')) {
       context.handle(
@@ -3020,6 +3035,10 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxData> {
         DriftSqlType.string,
         data['${effectivePrefix}entity_id'],
       )!,
+      op: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}op'],
+      )!,
       fields: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}fields'],
@@ -3048,6 +3067,10 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
   final String entity;
   final String entityId;
 
+  /// What the change does; rows of schema v1 were all upserts. The check
+  /// names its own column, drift's documented form for a column check.
+  final String op;
+
   /// The changed fields only, as a JSON object.
   final String fields;
   final int? baseRevision;
@@ -3057,6 +3080,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
     required this.changeId,
     required this.entity,
     required this.entityId,
+    required this.op,
     required this.fields,
     this.baseRevision,
     required this.deviceTime,
@@ -3068,6 +3092,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
     map['change_id'] = Variable<String>(changeId);
     map['entity'] = Variable<String>(entity);
     map['entity_id'] = Variable<String>(entityId);
+    map['op'] = Variable<String>(op);
     map['fields'] = Variable<String>(fields);
     if (!nullToAbsent || baseRevision != null) {
       map['base_revision'] = Variable<int>(baseRevision);
@@ -3082,6 +3107,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
       changeId: Value(changeId),
       entity: Value(entity),
       entityId: Value(entityId),
+      op: Value(op),
       fields: Value(fields),
       baseRevision: baseRevision == null && nullToAbsent
           ? const Value.absent()
@@ -3100,6 +3126,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
       changeId: serializer.fromJson<String>(json['changeId']),
       entity: serializer.fromJson<String>(json['entity']),
       entityId: serializer.fromJson<String>(json['entityId']),
+      op: serializer.fromJson<String>(json['op']),
       fields: serializer.fromJson<String>(json['fields']),
       baseRevision: serializer.fromJson<int?>(json['baseRevision']),
       deviceTime: serializer.fromJson<String>(json['deviceTime']),
@@ -3113,6 +3140,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
       'changeId': serializer.toJson<String>(changeId),
       'entity': serializer.toJson<String>(entity),
       'entityId': serializer.toJson<String>(entityId),
+      'op': serializer.toJson<String>(op),
       'fields': serializer.toJson<String>(fields),
       'baseRevision': serializer.toJson<int?>(baseRevision),
       'deviceTime': serializer.toJson<String>(deviceTime),
@@ -3124,6 +3152,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
     String? changeId,
     String? entity,
     String? entityId,
+    String? op,
     String? fields,
     Value<int?> baseRevision = const Value.absent(),
     String? deviceTime,
@@ -3132,6 +3161,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
     changeId: changeId ?? this.changeId,
     entity: entity ?? this.entity,
     entityId: entityId ?? this.entityId,
+    op: op ?? this.op,
     fields: fields ?? this.fields,
     baseRevision: baseRevision.present ? baseRevision.value : this.baseRevision,
     deviceTime: deviceTime ?? this.deviceTime,
@@ -3142,6 +3172,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
       changeId: data.changeId.present ? data.changeId.value : this.changeId,
       entity: data.entity.present ? data.entity.value : this.entity,
       entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      op: data.op.present ? data.op.value : this.op,
       fields: data.fields.present ? data.fields.value : this.fields,
       baseRevision: data.baseRevision.present
           ? data.baseRevision.value
@@ -3159,6 +3190,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
           ..write('changeId: $changeId, ')
           ..write('entity: $entity, ')
           ..write('entityId: $entityId, ')
+          ..write('op: $op, ')
           ..write('fields: $fields, ')
           ..write('baseRevision: $baseRevision, ')
           ..write('deviceTime: $deviceTime')
@@ -3172,6 +3204,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
     changeId,
     entity,
     entityId,
+    op,
     fields,
     baseRevision,
     deviceTime,
@@ -3184,6 +3217,7 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
           other.changeId == this.changeId &&
           other.entity == this.entity &&
           other.entityId == this.entityId &&
+          other.op == this.op &&
           other.fields == this.fields &&
           other.baseRevision == this.baseRevision &&
           other.deviceTime == this.deviceTime);
@@ -3194,6 +3228,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
   final Value<String> changeId;
   final Value<String> entity;
   final Value<String> entityId;
+  final Value<String> op;
   final Value<String> fields;
   final Value<int?> baseRevision;
   final Value<String> deviceTime;
@@ -3202,6 +3237,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
     this.changeId = const Value.absent(),
     this.entity = const Value.absent(),
     this.entityId = const Value.absent(),
+    this.op = const Value.absent(),
     this.fields = const Value.absent(),
     this.baseRevision = const Value.absent(),
     this.deviceTime = const Value.absent(),
@@ -3211,6 +3247,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
     required String changeId,
     required String entity,
     required String entityId,
+    this.op = const Value.absent(),
     required String fields,
     this.baseRevision = const Value.absent(),
     required String deviceTime,
@@ -3224,6 +3261,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
     Expression<String>? changeId,
     Expression<String>? entity,
     Expression<String>? entityId,
+    Expression<String>? op,
     Expression<String>? fields,
     Expression<int>? baseRevision,
     Expression<String>? deviceTime,
@@ -3233,6 +3271,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
       if (changeId != null) 'change_id': changeId,
       if (entity != null) 'entity': entity,
       if (entityId != null) 'entity_id': entityId,
+      if (op != null) 'op': op,
       if (fields != null) 'fields': fields,
       if (baseRevision != null) 'base_revision': baseRevision,
       if (deviceTime != null) 'device_time': deviceTime,
@@ -3244,6 +3283,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
     Value<String>? changeId,
     Value<String>? entity,
     Value<String>? entityId,
+    Value<String>? op,
     Value<String>? fields,
     Value<int?>? baseRevision,
     Value<String>? deviceTime,
@@ -3253,6 +3293,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
       changeId: changeId ?? this.changeId,
       entity: entity ?? this.entity,
       entityId: entityId ?? this.entityId,
+      op: op ?? this.op,
       fields: fields ?? this.fields,
       baseRevision: baseRevision ?? this.baseRevision,
       deviceTime: deviceTime ?? this.deviceTime,
@@ -3274,6 +3315,9 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
     if (entityId.present) {
       map['entity_id'] = Variable<String>(entityId.value);
     }
+    if (op.present) {
+      map['op'] = Variable<String>(op.value);
+    }
     if (fields.present) {
       map['fields'] = Variable<String>(fields.value);
     }
@@ -3293,6 +3337,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
           ..write('changeId: $changeId, ')
           ..write('entity: $entity, ')
           ..write('entityId: $entityId, ')
+          ..write('op: $op, ')
           ..write('fields: $fields, ')
           ..write('baseRevision: $baseRevision, ')
           ..write('deviceTime: $deviceTime')
@@ -3529,6 +3574,1304 @@ class SyncStateCompanion extends UpdateCompanion<SyncStateData> {
   }
 }
 
+class $ServerRecordsTable extends ServerRecords
+    with TableInfo<$ServerRecordsTable, ServerRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ServerRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entityMeta = const VerificationMeta('entity');
+  @override
+  late final GeneratedColumn<String> entity = GeneratedColumn<String>(
+    'entity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revisionMeta = const VerificationMeta(
+    'revision',
+  );
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+    'revision',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<String> deletedAt = GeneratedColumn<String>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fieldsMeta = const VerificationMeta('fields');
+  @override
+  late final GeneratedColumn<String> fields = GeneratedColumn<String>(
+    'fields',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    entity,
+    id,
+    revision,
+    deletedAt,
+    fields,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'server_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ServerRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entity')) {
+      context.handle(
+        _entityMeta,
+        entity.isAcceptableOrUnknown(data['entity']!, _entityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityMeta);
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('revision')) {
+      context.handle(
+        _revisionMeta,
+        revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_revisionMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('fields')) {
+      context.handle(
+        _fieldsMeta,
+        fields.isAcceptableOrUnknown(data['fields']!, _fieldsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entity, id};
+  @override
+  ServerRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ServerRecord(
+      entity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      fields: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fields'],
+      )!,
+    );
+  }
+
+  @override
+  $ServerRecordsTable createAlias(String alias) {
+    return $ServerRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class ServerRecord extends DataClass implements Insertable<ServerRecord> {
+  final String entity;
+  final String id;
+  final int revision;
+  final String? deletedAt;
+
+  /// The whole record as a JSON object.
+  final String fields;
+  const ServerRecord({
+    required this.entity,
+    required this.id,
+    required this.revision,
+    this.deletedAt,
+    required this.fields,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entity'] = Variable<String>(entity);
+    map['id'] = Variable<String>(id);
+    map['revision'] = Variable<int>(revision);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<String>(deletedAt);
+    }
+    map['fields'] = Variable<String>(fields);
+    return map;
+  }
+
+  ServerRecordsCompanion toCompanion(bool nullToAbsent) {
+    return ServerRecordsCompanion(
+      entity: Value(entity),
+      id: Value(id),
+      revision: Value(revision),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      fields: Value(fields),
+    );
+  }
+
+  factory ServerRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ServerRecord(
+      entity: serializer.fromJson<String>(json['entity']),
+      id: serializer.fromJson<String>(json['id']),
+      revision: serializer.fromJson<int>(json['revision']),
+      deletedAt: serializer.fromJson<String?>(json['deletedAt']),
+      fields: serializer.fromJson<String>(json['fields']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entity': serializer.toJson<String>(entity),
+      'id': serializer.toJson<String>(id),
+      'revision': serializer.toJson<int>(revision),
+      'deletedAt': serializer.toJson<String?>(deletedAt),
+      'fields': serializer.toJson<String>(fields),
+    };
+  }
+
+  ServerRecord copyWith({
+    String? entity,
+    String? id,
+    int? revision,
+    Value<String?> deletedAt = const Value.absent(),
+    String? fields,
+  }) => ServerRecord(
+    entity: entity ?? this.entity,
+    id: id ?? this.id,
+    revision: revision ?? this.revision,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    fields: fields ?? this.fields,
+  );
+  ServerRecord copyWithCompanion(ServerRecordsCompanion data) {
+    return ServerRecord(
+      entity: data.entity.present ? data.entity.value : this.entity,
+      id: data.id.present ? data.id.value : this.id,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      fields: data.fields.present ? data.fields.value : this.fields,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServerRecord(')
+          ..write('entity: $entity, ')
+          ..write('id: $id, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('fields: $fields')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(entity, id, revision, deletedAt, fields);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ServerRecord &&
+          other.entity == this.entity &&
+          other.id == this.id &&
+          other.revision == this.revision &&
+          other.deletedAt == this.deletedAt &&
+          other.fields == this.fields);
+}
+
+class ServerRecordsCompanion extends UpdateCompanion<ServerRecord> {
+  final Value<String> entity;
+  final Value<String> id;
+  final Value<int> revision;
+  final Value<String?> deletedAt;
+  final Value<String> fields;
+  final Value<int> rowid;
+  const ServerRecordsCompanion({
+    this.entity = const Value.absent(),
+    this.id = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.fields = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ServerRecordsCompanion.insert({
+    required String entity,
+    required String id,
+    required int revision,
+    this.deletedAt = const Value.absent(),
+    required String fields,
+    this.rowid = const Value.absent(),
+  }) : entity = Value(entity),
+       id = Value(id),
+       revision = Value(revision),
+       fields = Value(fields);
+  static Insertable<ServerRecord> custom({
+    Expression<String>? entity,
+    Expression<String>? id,
+    Expression<int>? revision,
+    Expression<String>? deletedAt,
+    Expression<String>? fields,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entity != null) 'entity': entity,
+      if (id != null) 'id': id,
+      if (revision != null) 'revision': revision,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (fields != null) 'fields': fields,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ServerRecordsCompanion copyWith({
+    Value<String>? entity,
+    Value<String>? id,
+    Value<int>? revision,
+    Value<String?>? deletedAt,
+    Value<String>? fields,
+    Value<int>? rowid,
+  }) {
+    return ServerRecordsCompanion(
+      entity: entity ?? this.entity,
+      id: id ?? this.id,
+      revision: revision ?? this.revision,
+      deletedAt: deletedAt ?? this.deletedAt,
+      fields: fields ?? this.fields,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entity.present) {
+      map['entity'] = Variable<String>(entity.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<String>(deletedAt.value);
+    }
+    if (fields.present) {
+      map['fields'] = Variable<String>(fields.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServerRecordsCompanion(')
+          ..write('entity: $entity, ')
+          ..write('id: $id, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('fields: $fields, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RejectedChangesTable extends RejectedChanges
+    with TableInfo<$RejectedChangesTable, RejectedChange> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RejectedChangesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _changeIdMeta = const VerificationMeta(
+    'changeId',
+  );
+  @override
+  late final GeneratedColumn<String> changeId = GeneratedColumn<String>(
+    'change_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityMeta = const VerificationMeta('entity');
+  @override
+  late final GeneratedColumn<String> entity = GeneratedColumn<String>(
+    'entity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _opMeta = const VerificationMeta('op');
+  @override
+  late final GeneratedColumn<String> op = GeneratedColumn<String>(
+    'op',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fieldsMeta = const VerificationMeta('fields');
+  @override
+  late final GeneratedColumn<String> fields = GeneratedColumn<String>(
+    'fields',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deviceTimeMeta = const VerificationMeta(
+    'deviceTime',
+  );
+  @override
+  late final GeneratedColumn<String> deviceTime = GeneratedColumn<String>(
+    'device_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+    'reason',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _existingIdMeta = const VerificationMeta(
+    'existingId',
+  );
+  @override
+  late final GeneratedColumn<String> existingId = GeneratedColumn<String>(
+    'existing_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rejectedAtMeta = const VerificationMeta(
+    'rejectedAt',
+  );
+  @override
+  late final GeneratedColumn<String> rejectedAt = GeneratedColumn<String>(
+    'rejected_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    changeId,
+    entity,
+    entityId,
+    op,
+    fields,
+    deviceTime,
+    reason,
+    existingId,
+    rejectedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rejected_changes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RejectedChange> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('change_id')) {
+      context.handle(
+        _changeIdMeta,
+        changeId.isAcceptableOrUnknown(data['change_id']!, _changeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_changeIdMeta);
+    }
+    if (data.containsKey('entity')) {
+      context.handle(
+        _entityMeta,
+        entity.isAcceptableOrUnknown(data['entity']!, _entityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('op')) {
+      context.handle(_opMeta, op.isAcceptableOrUnknown(data['op']!, _opMeta));
+    } else if (isInserting) {
+      context.missing(_opMeta);
+    }
+    if (data.containsKey('fields')) {
+      context.handle(
+        _fieldsMeta,
+        fields.isAcceptableOrUnknown(data['fields']!, _fieldsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldsMeta);
+    }
+    if (data.containsKey('device_time')) {
+      context.handle(
+        _deviceTimeMeta,
+        deviceTime.isAcceptableOrUnknown(data['device_time']!, _deviceTimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deviceTimeMeta);
+    }
+    if (data.containsKey('reason')) {
+      context.handle(
+        _reasonMeta,
+        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reasonMeta);
+    }
+    if (data.containsKey('existing_id')) {
+      context.handle(
+        _existingIdMeta,
+        existingId.isAcceptableOrUnknown(data['existing_id']!, _existingIdMeta),
+      );
+    }
+    if (data.containsKey('rejected_at')) {
+      context.handle(
+        _rejectedAtMeta,
+        rejectedAt.isAcceptableOrUnknown(data['rejected_at']!, _rejectedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rejectedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {changeId};
+  @override
+  RejectedChange map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RejectedChange(
+      changeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}change_id'],
+      )!,
+      entity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      op: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}op'],
+      )!,
+      fields: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fields'],
+      )!,
+      deviceTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_time'],
+      )!,
+      reason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason'],
+      )!,
+      existingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}existing_id'],
+      ),
+      rejectedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rejected_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RejectedChangesTable createAlias(String alias) {
+    return $RejectedChangesTable(attachedDatabase, alias);
+  }
+}
+
+class RejectedChange extends DataClass implements Insertable<RejectedChange> {
+  final String changeId;
+  final String entity;
+  final String entityId;
+  final String op;
+
+  /// The changed fields as a JSON object, as they were queued.
+  final String fields;
+  final String deviceTime;
+
+  /// The server's reason, or a local one (`too_large`) (D-199).
+  final String reason;
+
+  /// With `duplicate`: the record that already held the value (D-198).
+  final String? existingId;
+  final String rejectedAt;
+  const RejectedChange({
+    required this.changeId,
+    required this.entity,
+    required this.entityId,
+    required this.op,
+    required this.fields,
+    required this.deviceTime,
+    required this.reason,
+    this.existingId,
+    required this.rejectedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['change_id'] = Variable<String>(changeId);
+    map['entity'] = Variable<String>(entity);
+    map['entity_id'] = Variable<String>(entityId);
+    map['op'] = Variable<String>(op);
+    map['fields'] = Variable<String>(fields);
+    map['device_time'] = Variable<String>(deviceTime);
+    map['reason'] = Variable<String>(reason);
+    if (!nullToAbsent || existingId != null) {
+      map['existing_id'] = Variable<String>(existingId);
+    }
+    map['rejected_at'] = Variable<String>(rejectedAt);
+    return map;
+  }
+
+  RejectedChangesCompanion toCompanion(bool nullToAbsent) {
+    return RejectedChangesCompanion(
+      changeId: Value(changeId),
+      entity: Value(entity),
+      entityId: Value(entityId),
+      op: Value(op),
+      fields: Value(fields),
+      deviceTime: Value(deviceTime),
+      reason: Value(reason),
+      existingId: existingId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(existingId),
+      rejectedAt: Value(rejectedAt),
+    );
+  }
+
+  factory RejectedChange.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RejectedChange(
+      changeId: serializer.fromJson<String>(json['changeId']),
+      entity: serializer.fromJson<String>(json['entity']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      op: serializer.fromJson<String>(json['op']),
+      fields: serializer.fromJson<String>(json['fields']),
+      deviceTime: serializer.fromJson<String>(json['deviceTime']),
+      reason: serializer.fromJson<String>(json['reason']),
+      existingId: serializer.fromJson<String?>(json['existingId']),
+      rejectedAt: serializer.fromJson<String>(json['rejectedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'changeId': serializer.toJson<String>(changeId),
+      'entity': serializer.toJson<String>(entity),
+      'entityId': serializer.toJson<String>(entityId),
+      'op': serializer.toJson<String>(op),
+      'fields': serializer.toJson<String>(fields),
+      'deviceTime': serializer.toJson<String>(deviceTime),
+      'reason': serializer.toJson<String>(reason),
+      'existingId': serializer.toJson<String?>(existingId),
+      'rejectedAt': serializer.toJson<String>(rejectedAt),
+    };
+  }
+
+  RejectedChange copyWith({
+    String? changeId,
+    String? entity,
+    String? entityId,
+    String? op,
+    String? fields,
+    String? deviceTime,
+    String? reason,
+    Value<String?> existingId = const Value.absent(),
+    String? rejectedAt,
+  }) => RejectedChange(
+    changeId: changeId ?? this.changeId,
+    entity: entity ?? this.entity,
+    entityId: entityId ?? this.entityId,
+    op: op ?? this.op,
+    fields: fields ?? this.fields,
+    deviceTime: deviceTime ?? this.deviceTime,
+    reason: reason ?? this.reason,
+    existingId: existingId.present ? existingId.value : this.existingId,
+    rejectedAt: rejectedAt ?? this.rejectedAt,
+  );
+  RejectedChange copyWithCompanion(RejectedChangesCompanion data) {
+    return RejectedChange(
+      changeId: data.changeId.present ? data.changeId.value : this.changeId,
+      entity: data.entity.present ? data.entity.value : this.entity,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      op: data.op.present ? data.op.value : this.op,
+      fields: data.fields.present ? data.fields.value : this.fields,
+      deviceTime: data.deviceTime.present
+          ? data.deviceTime.value
+          : this.deviceTime,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      existingId: data.existingId.present
+          ? data.existingId.value
+          : this.existingId,
+      rejectedAt: data.rejectedAt.present
+          ? data.rejectedAt.value
+          : this.rejectedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RejectedChange(')
+          ..write('changeId: $changeId, ')
+          ..write('entity: $entity, ')
+          ..write('entityId: $entityId, ')
+          ..write('op: $op, ')
+          ..write('fields: $fields, ')
+          ..write('deviceTime: $deviceTime, ')
+          ..write('reason: $reason, ')
+          ..write('existingId: $existingId, ')
+          ..write('rejectedAt: $rejectedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    changeId,
+    entity,
+    entityId,
+    op,
+    fields,
+    deviceTime,
+    reason,
+    existingId,
+    rejectedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RejectedChange &&
+          other.changeId == this.changeId &&
+          other.entity == this.entity &&
+          other.entityId == this.entityId &&
+          other.op == this.op &&
+          other.fields == this.fields &&
+          other.deviceTime == this.deviceTime &&
+          other.reason == this.reason &&
+          other.existingId == this.existingId &&
+          other.rejectedAt == this.rejectedAt);
+}
+
+class RejectedChangesCompanion extends UpdateCompanion<RejectedChange> {
+  final Value<String> changeId;
+  final Value<String> entity;
+  final Value<String> entityId;
+  final Value<String> op;
+  final Value<String> fields;
+  final Value<String> deviceTime;
+  final Value<String> reason;
+  final Value<String?> existingId;
+  final Value<String> rejectedAt;
+  final Value<int> rowid;
+  const RejectedChangesCompanion({
+    this.changeId = const Value.absent(),
+    this.entity = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.op = const Value.absent(),
+    this.fields = const Value.absent(),
+    this.deviceTime = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.existingId = const Value.absent(),
+    this.rejectedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RejectedChangesCompanion.insert({
+    required String changeId,
+    required String entity,
+    required String entityId,
+    required String op,
+    required String fields,
+    required String deviceTime,
+    required String reason,
+    this.existingId = const Value.absent(),
+    required String rejectedAt,
+    this.rowid = const Value.absent(),
+  }) : changeId = Value(changeId),
+       entity = Value(entity),
+       entityId = Value(entityId),
+       op = Value(op),
+       fields = Value(fields),
+       deviceTime = Value(deviceTime),
+       reason = Value(reason),
+       rejectedAt = Value(rejectedAt);
+  static Insertable<RejectedChange> custom({
+    Expression<String>? changeId,
+    Expression<String>? entity,
+    Expression<String>? entityId,
+    Expression<String>? op,
+    Expression<String>? fields,
+    Expression<String>? deviceTime,
+    Expression<String>? reason,
+    Expression<String>? existingId,
+    Expression<String>? rejectedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (changeId != null) 'change_id': changeId,
+      if (entity != null) 'entity': entity,
+      if (entityId != null) 'entity_id': entityId,
+      if (op != null) 'op': op,
+      if (fields != null) 'fields': fields,
+      if (deviceTime != null) 'device_time': deviceTime,
+      if (reason != null) 'reason': reason,
+      if (existingId != null) 'existing_id': existingId,
+      if (rejectedAt != null) 'rejected_at': rejectedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RejectedChangesCompanion copyWith({
+    Value<String>? changeId,
+    Value<String>? entity,
+    Value<String>? entityId,
+    Value<String>? op,
+    Value<String>? fields,
+    Value<String>? deviceTime,
+    Value<String>? reason,
+    Value<String?>? existingId,
+    Value<String>? rejectedAt,
+    Value<int>? rowid,
+  }) {
+    return RejectedChangesCompanion(
+      changeId: changeId ?? this.changeId,
+      entity: entity ?? this.entity,
+      entityId: entityId ?? this.entityId,
+      op: op ?? this.op,
+      fields: fields ?? this.fields,
+      deviceTime: deviceTime ?? this.deviceTime,
+      reason: reason ?? this.reason,
+      existingId: existingId ?? this.existingId,
+      rejectedAt: rejectedAt ?? this.rejectedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (changeId.present) {
+      map['change_id'] = Variable<String>(changeId.value);
+    }
+    if (entity.present) {
+      map['entity'] = Variable<String>(entity.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (op.present) {
+      map['op'] = Variable<String>(op.value);
+    }
+    if (fields.present) {
+      map['fields'] = Variable<String>(fields.value);
+    }
+    if (deviceTime.present) {
+      map['device_time'] = Variable<String>(deviceTime.value);
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (existingId.present) {
+      map['existing_id'] = Variable<String>(existingId.value);
+    }
+    if (rejectedAt.present) {
+      map['rejected_at'] = Variable<String>(rejectedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RejectedChangesCompanion(')
+          ..write('changeId: $changeId, ')
+          ..write('entity: $entity, ')
+          ..write('entityId: $entityId, ')
+          ..write('op: $op, ')
+          ..write('fields: $fields, ')
+          ..write('deviceTime: $deviceTime, ')
+          ..write('reason: $reason, ')
+          ..write('existingId: $existingId, ')
+          ..write('rejectedAt: $rejectedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $UploadsTable extends Uploads with TableInfo<$UploadsTable, Upload> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UploadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _sha256Meta = const VerificationMeta('sha256');
+  @override
+  late final GeneratedColumn<String> sha256 = GeneratedColumn<String>(
+    'sha256',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pathMeta = const VerificationMeta('path');
+  @override
+  late final GeneratedColumn<String> path = GeneratedColumn<String>(
+    'path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sizeMeta = const VerificationMeta('size');
+  @override
+  late final GeneratedColumn<int> size = GeneratedColumn<int>(
+    'size',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _failedReasonMeta = const VerificationMeta(
+    'failedReason',
+  );
+  @override
+  late final GeneratedColumn<String> failedReason = GeneratedColumn<String>(
+    'failed_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    sha256,
+    path,
+    size,
+    createdAt,
+    failedReason,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'uploads';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Upload> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sha256')) {
+      context.handle(
+        _sha256Meta,
+        sha256.isAcceptableOrUnknown(data['sha256']!, _sha256Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_sha256Meta);
+    }
+    if (data.containsKey('path')) {
+      context.handle(
+        _pathMeta,
+        path.isAcceptableOrUnknown(data['path']!, _pathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pathMeta);
+    }
+    if (data.containsKey('size')) {
+      context.handle(
+        _sizeMeta,
+        size.isAcceptableOrUnknown(data['size']!, _sizeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sizeMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('failed_reason')) {
+      context.handle(
+        _failedReasonMeta,
+        failedReason.isAcceptableOrUnknown(
+          data['failed_reason']!,
+          _failedReasonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {sha256};
+  @override
+  Upload map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Upload(
+      sha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sha256'],
+      )!,
+      path: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}path'],
+      )!,
+      size: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      )!,
+      failedReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}failed_reason'],
+      ),
+    );
+  }
+
+  @override
+  $UploadsTable createAlias(String alias) {
+    return $UploadsTable(attachedDatabase, alias);
+  }
+}
+
+class Upload extends DataClass implements Insertable<Upload> {
+  final String sha256;
+
+  /// The app's own copy of the file.
+  final String path;
+  final int size;
+  final String createdAt;
+
+  /// Null while the upload is pending.
+  final String? failedReason;
+  const Upload({
+    required this.sha256,
+    required this.path,
+    required this.size,
+    required this.createdAt,
+    this.failedReason,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sha256'] = Variable<String>(sha256);
+    map['path'] = Variable<String>(path);
+    map['size'] = Variable<int>(size);
+    map['created_at'] = Variable<String>(createdAt);
+    if (!nullToAbsent || failedReason != null) {
+      map['failed_reason'] = Variable<String>(failedReason);
+    }
+    return map;
+  }
+
+  UploadsCompanion toCompanion(bool nullToAbsent) {
+    return UploadsCompanion(
+      sha256: Value(sha256),
+      path: Value(path),
+      size: Value(size),
+      createdAt: Value(createdAt),
+      failedReason: failedReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(failedReason),
+    );
+  }
+
+  factory Upload.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Upload(
+      sha256: serializer.fromJson<String>(json['sha256']),
+      path: serializer.fromJson<String>(json['path']),
+      size: serializer.fromJson<int>(json['size']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      failedReason: serializer.fromJson<String?>(json['failedReason']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'sha256': serializer.toJson<String>(sha256),
+      'path': serializer.toJson<String>(path),
+      'size': serializer.toJson<int>(size),
+      'createdAt': serializer.toJson<String>(createdAt),
+      'failedReason': serializer.toJson<String?>(failedReason),
+    };
+  }
+
+  Upload copyWith({
+    String? sha256,
+    String? path,
+    int? size,
+    String? createdAt,
+    Value<String?> failedReason = const Value.absent(),
+  }) => Upload(
+    sha256: sha256 ?? this.sha256,
+    path: path ?? this.path,
+    size: size ?? this.size,
+    createdAt: createdAt ?? this.createdAt,
+    failedReason: failedReason.present ? failedReason.value : this.failedReason,
+  );
+  Upload copyWithCompanion(UploadsCompanion data) {
+    return Upload(
+      sha256: data.sha256.present ? data.sha256.value : this.sha256,
+      path: data.path.present ? data.path.value : this.path,
+      size: data.size.present ? data.size.value : this.size,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      failedReason: data.failedReason.present
+          ? data.failedReason.value
+          : this.failedReason,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Upload(')
+          ..write('sha256: $sha256, ')
+          ..write('path: $path, ')
+          ..write('size: $size, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('failedReason: $failedReason')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(sha256, path, size, createdAt, failedReason);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Upload &&
+          other.sha256 == this.sha256 &&
+          other.path == this.path &&
+          other.size == this.size &&
+          other.createdAt == this.createdAt &&
+          other.failedReason == this.failedReason);
+}
+
+class UploadsCompanion extends UpdateCompanion<Upload> {
+  final Value<String> sha256;
+  final Value<String> path;
+  final Value<int> size;
+  final Value<String> createdAt;
+  final Value<String?> failedReason;
+  final Value<int> rowid;
+  const UploadsCompanion({
+    this.sha256 = const Value.absent(),
+    this.path = const Value.absent(),
+    this.size = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.failedReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UploadsCompanion.insert({
+    required String sha256,
+    required String path,
+    required int size,
+    required String createdAt,
+    this.failedReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : sha256 = Value(sha256),
+       path = Value(path),
+       size = Value(size),
+       createdAt = Value(createdAt);
+  static Insertable<Upload> custom({
+    Expression<String>? sha256,
+    Expression<String>? path,
+    Expression<int>? size,
+    Expression<String>? createdAt,
+    Expression<String>? failedReason,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (sha256 != null) 'sha256': sha256,
+      if (path != null) 'path': path,
+      if (size != null) 'size': size,
+      if (createdAt != null) 'created_at': createdAt,
+      if (failedReason != null) 'failed_reason': failedReason,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UploadsCompanion copyWith({
+    Value<String>? sha256,
+    Value<String>? path,
+    Value<int>? size,
+    Value<String>? createdAt,
+    Value<String?>? failedReason,
+    Value<int>? rowid,
+  }) {
+    return UploadsCompanion(
+      sha256: sha256 ?? this.sha256,
+      path: path ?? this.path,
+      size: size ?? this.size,
+      createdAt: createdAt ?? this.createdAt,
+      failedReason: failedReason ?? this.failedReason,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (sha256.present) {
+      map['sha256'] = Variable<String>(sha256.value);
+    }
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (size.present) {
+      map['size'] = Variable<int>(size.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (failedReason.present) {
+      map['failed_reason'] = Variable<String>(failedReason.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UploadsCompanion(')
+          ..write('sha256: $sha256, ')
+          ..write('path: $path, ')
+          ..write('size: $size, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('failedReason: $failedReason, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$WioDatabase extends GeneratedDatabase {
   _$WioDatabase(QueryExecutor e) : super(e);
   $WioDatabaseManager get managers => $WioDatabaseManager(this);
@@ -3538,6 +4881,11 @@ abstract class _$WioDatabase extends GeneratedDatabase {
   late final $JobsTable jobs = $JobsTable(this);
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
+  late final $ServerRecordsTable serverRecords = $ServerRecordsTable(this);
+  late final $RejectedChangesTable rejectedChanges = $RejectedChangesTable(
+    this,
+  );
+  late final $UploadsTable uploads = $UploadsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3549,6 +4897,9 @@ abstract class _$WioDatabase extends GeneratedDatabase {
     jobs,
     outbox,
     syncState,
+    serverRecords,
+    rejectedChanges,
+    uploads,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -4889,6 +6240,7 @@ typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   required String changeId,
   required String entity,
   required String entityId,
+  Value<String> op,
   required String fields,
   Value<int?> baseRevision,
   required String deviceTime,
@@ -4898,6 +6250,7 @@ typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<String> changeId,
   Value<String> entity,
   Value<String> entityId,
+  Value<String> op,
   Value<String> fields,
   Value<int?> baseRevision,
   Value<String> deviceTime,
@@ -4929,6 +6282,11 @@ class $$OutboxTableFilterComposer
 
   ColumnFilters<String> get entityId => $composableBuilder(
     column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get op => $composableBuilder(
+    column: $table.op,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4977,6 +6335,11 @@ class $$OutboxTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get op => $composableBuilder(
+    column: $table.op,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get fields => $composableBuilder(
     column: $table.fields,
     builder: (column) => ColumnOrderings(column),
@@ -5013,6 +6376,9 @@ class $$OutboxTableAnnotationComposer
 
   GeneratedColumn<String> get entityId =>
       $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get op =>
+      $composableBuilder(column: $table.op, builder: (column) => column);
 
   GeneratedColumn<String> get fields =>
       $composableBuilder(column: $table.fields, builder: (column) => column);
@@ -5060,6 +6426,7 @@ class $$OutboxTableTableManager
                 Value<String> changeId = const Value.absent(),
                 Value<String> entity = const Value.absent(),
                 Value<String> entityId = const Value.absent(),
+                Value<String> op = const Value.absent(),
                 Value<String> fields = const Value.absent(),
                 Value<int?> baseRevision = const Value.absent(),
                 Value<String> deviceTime = const Value.absent(),
@@ -5068,6 +6435,7 @@ class $$OutboxTableTableManager
                 changeId: changeId,
                 entity: entity,
                 entityId: entityId,
+                op: op,
                 fields: fields,
                 baseRevision: baseRevision,
                 deviceTime: deviceTime,
@@ -5078,6 +6446,7 @@ class $$OutboxTableTableManager
                 required String changeId,
                 required String entity,
                 required String entityId,
+                Value<String> op = const Value.absent(),
                 required String fields,
                 Value<int?> baseRevision = const Value.absent(),
                 required String deviceTime,
@@ -5086,6 +6455,7 @@ class $$OutboxTableTableManager
                 changeId: changeId,
                 entity: entity,
                 entityId: entityId,
+                op: op,
                 fields: fields,
                 baseRevision: baseRevision,
                 deviceTime: deviceTime,
@@ -5275,6 +6645,715 @@ typedef $$SyncStateTableProcessedTableManager =
       SyncStateData,
       PrefetchHooks Function()
     >;
+typedef $$ServerRecordsTableCreateCompanionBuilder =
+    ServerRecordsCompanion Function({
+      required String entity,
+      required String id,
+      required int revision,
+      Value<String?> deletedAt,
+      required String fields,
+      Value<int> rowid,
+    });
+typedef $$ServerRecordsTableUpdateCompanionBuilder =
+    ServerRecordsCompanion Function({
+      Value<String> entity,
+      Value<String> id,
+      Value<int> revision,
+      Value<String?> deletedAt,
+      Value<String> fields,
+      Value<int> rowid,
+    });
+
+class $$ServerRecordsTableFilterComposer
+    extends Composer<_$WioDatabase, $ServerRecordsTable> {
+  $$ServerRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fields => $composableBuilder(
+    column: $table.fields,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ServerRecordsTableOrderingComposer
+    extends Composer<_$WioDatabase, $ServerRecordsTable> {
+  $$ServerRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fields => $composableBuilder(
+    column: $table.fields,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ServerRecordsTableAnnotationComposer
+    extends Composer<_$WioDatabase, $ServerRecordsTable> {
+  $$ServerRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entity =>
+      $composableBuilder(column: $table.entity, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+
+  GeneratedColumn<String> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get fields =>
+      $composableBuilder(column: $table.fields, builder: (column) => column);
+}
+
+class $$ServerRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$WioDatabase,
+          $ServerRecordsTable,
+          ServerRecord,
+          $$ServerRecordsTableFilterComposer,
+          $$ServerRecordsTableOrderingComposer,
+          $$ServerRecordsTableAnnotationComposer,
+          $$ServerRecordsTableCreateCompanionBuilder,
+          $$ServerRecordsTableUpdateCompanionBuilder,
+          (
+            ServerRecord,
+            BaseReferences<_$WioDatabase, $ServerRecordsTable, ServerRecord>,
+          ),
+          ServerRecord,
+          PrefetchHooks Function()
+        > {
+  $$ServerRecordsTableTableManager(_$WioDatabase db, $ServerRecordsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ServerRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ServerRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ServerRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> entity = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<int> revision = const Value.absent(),
+                Value<String?> deletedAt = const Value.absent(),
+                Value<String> fields = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ServerRecordsCompanion(
+                entity: entity,
+                id: id,
+                revision: revision,
+                deletedAt: deletedAt,
+                fields: fields,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String entity,
+                required String id,
+                required int revision,
+                Value<String?> deletedAt = const Value.absent(),
+                required String fields,
+                Value<int> rowid = const Value.absent(),
+              }) => ServerRecordsCompanion.insert(
+                entity: entity,
+                id: id,
+                revision: revision,
+                deletedAt: deletedAt,
+                fields: fields,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ServerRecordsTable, ServerRecord>(table),
+                  BaseReferences<
+                    _$WioDatabase,
+                    $ServerRecordsTable,
+                    ServerRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ServerRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WioDatabase,
+      $ServerRecordsTable,
+      ServerRecord,
+      $$ServerRecordsTableFilterComposer,
+      $$ServerRecordsTableOrderingComposer,
+      $$ServerRecordsTableAnnotationComposer,
+      $$ServerRecordsTableCreateCompanionBuilder,
+      $$ServerRecordsTableUpdateCompanionBuilder,
+      (
+        ServerRecord,
+        BaseReferences<_$WioDatabase, $ServerRecordsTable, ServerRecord>,
+      ),
+      ServerRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$RejectedChangesTableCreateCompanionBuilder =
+    RejectedChangesCompanion Function({
+      required String changeId,
+      required String entity,
+      required String entityId,
+      required String op,
+      required String fields,
+      required String deviceTime,
+      required String reason,
+      Value<String?> existingId,
+      required String rejectedAt,
+      Value<int> rowid,
+    });
+typedef $$RejectedChangesTableUpdateCompanionBuilder =
+    RejectedChangesCompanion Function({
+      Value<String> changeId,
+      Value<String> entity,
+      Value<String> entityId,
+      Value<String> op,
+      Value<String> fields,
+      Value<String> deviceTime,
+      Value<String> reason,
+      Value<String?> existingId,
+      Value<String> rejectedAt,
+      Value<int> rowid,
+    });
+
+class $$RejectedChangesTableFilterComposer
+    extends Composer<_$WioDatabase, $RejectedChangesTable> {
+  $$RejectedChangesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get changeId => $composableBuilder(
+    column: $table.changeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get op => $composableBuilder(
+    column: $table.op,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fields => $composableBuilder(
+    column: $table.fields,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceTime => $composableBuilder(
+    column: $table.deviceTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get existingId => $composableBuilder(
+    column: $table.existingId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rejectedAt => $composableBuilder(
+    column: $table.rejectedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RejectedChangesTableOrderingComposer
+    extends Composer<_$WioDatabase, $RejectedChangesTable> {
+  $$RejectedChangesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get changeId => $composableBuilder(
+    column: $table.changeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get op => $composableBuilder(
+    column: $table.op,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fields => $composableBuilder(
+    column: $table.fields,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceTime => $composableBuilder(
+    column: $table.deviceTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get existingId => $composableBuilder(
+    column: $table.existingId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rejectedAt => $composableBuilder(
+    column: $table.rejectedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RejectedChangesTableAnnotationComposer
+    extends Composer<_$WioDatabase, $RejectedChangesTable> {
+  $$RejectedChangesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get changeId =>
+      $composableBuilder(column: $table.changeId, builder: (column) => column);
+
+  GeneratedColumn<String> get entity =>
+      $composableBuilder(column: $table.entity, builder: (column) => column);
+
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get op =>
+      $composableBuilder(column: $table.op, builder: (column) => column);
+
+  GeneratedColumn<String> get fields =>
+      $composableBuilder(column: $table.fields, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceTime => $composableBuilder(
+    column: $table.deviceTime,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reason =>
+      $composableBuilder(column: $table.reason, builder: (column) => column);
+
+  GeneratedColumn<String> get existingId => $composableBuilder(
+    column: $table.existingId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get rejectedAt => $composableBuilder(
+    column: $table.rejectedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$RejectedChangesTableTableManager
+    extends
+        RootTableManager<
+          _$WioDatabase,
+          $RejectedChangesTable,
+          RejectedChange,
+          $$RejectedChangesTableFilterComposer,
+          $$RejectedChangesTableOrderingComposer,
+          $$RejectedChangesTableAnnotationComposer,
+          $$RejectedChangesTableCreateCompanionBuilder,
+          $$RejectedChangesTableUpdateCompanionBuilder,
+          (
+            RejectedChange,
+            BaseReferences<
+              _$WioDatabase,
+              $RejectedChangesTable,
+              RejectedChange
+            >,
+          ),
+          RejectedChange,
+          PrefetchHooks Function()
+        > {
+  $$RejectedChangesTableTableManager(
+    _$WioDatabase db,
+    $RejectedChangesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RejectedChangesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RejectedChangesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RejectedChangesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> changeId = const Value.absent(),
+                Value<String> entity = const Value.absent(),
+                Value<String> entityId = const Value.absent(),
+                Value<String> op = const Value.absent(),
+                Value<String> fields = const Value.absent(),
+                Value<String> deviceTime = const Value.absent(),
+                Value<String> reason = const Value.absent(),
+                Value<String?> existingId = const Value.absent(),
+                Value<String> rejectedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RejectedChangesCompanion(
+                changeId: changeId,
+                entity: entity,
+                entityId: entityId,
+                op: op,
+                fields: fields,
+                deviceTime: deviceTime,
+                reason: reason,
+                existingId: existingId,
+                rejectedAt: rejectedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String changeId,
+                required String entity,
+                required String entityId,
+                required String op,
+                required String fields,
+                required String deviceTime,
+                required String reason,
+                Value<String?> existingId = const Value.absent(),
+                required String rejectedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => RejectedChangesCompanion.insert(
+                changeId: changeId,
+                entity: entity,
+                entityId: entityId,
+                op: op,
+                fields: fields,
+                deviceTime: deviceTime,
+                reason: reason,
+                existingId: existingId,
+                rejectedAt: rejectedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RejectedChangesTable, RejectedChange>(table),
+                  BaseReferences<
+                    _$WioDatabase,
+                    $RejectedChangesTable,
+                    RejectedChange
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RejectedChangesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WioDatabase,
+      $RejectedChangesTable,
+      RejectedChange,
+      $$RejectedChangesTableFilterComposer,
+      $$RejectedChangesTableOrderingComposer,
+      $$RejectedChangesTableAnnotationComposer,
+      $$RejectedChangesTableCreateCompanionBuilder,
+      $$RejectedChangesTableUpdateCompanionBuilder,
+      (
+        RejectedChange,
+        BaseReferences<_$WioDatabase, $RejectedChangesTable, RejectedChange>,
+      ),
+      RejectedChange,
+      PrefetchHooks Function()
+    >;
+typedef $$UploadsTableCreateCompanionBuilder = UploadsCompanion Function({
+  required String sha256,
+  required String path,
+  required int size,
+  required String createdAt,
+  Value<String?> failedReason,
+  Value<int> rowid,
+});
+typedef $$UploadsTableUpdateCompanionBuilder = UploadsCompanion Function({
+  Value<String> sha256,
+  Value<String> path,
+  Value<int> size,
+  Value<String> createdAt,
+  Value<String?> failedReason,
+  Value<int> rowid,
+});
+
+class $$UploadsTableFilterComposer
+    extends Composer<_$WioDatabase, $UploadsTable> {
+  $$UploadsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get failedReason => $composableBuilder(
+    column: $table.failedReason,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$UploadsTableOrderingComposer
+    extends Composer<_$WioDatabase, $UploadsTable> {
+  $$UploadsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get failedReason => $composableBuilder(
+    column: $table.failedReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$UploadsTableAnnotationComposer
+    extends Composer<_$WioDatabase, $UploadsTable> {
+  $$UploadsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get sha256 =>
+      $composableBuilder(column: $table.sha256, builder: (column) => column);
+
+  GeneratedColumn<String> get path =>
+      $composableBuilder(column: $table.path, builder: (column) => column);
+
+  GeneratedColumn<int> get size =>
+      $composableBuilder(column: $table.size, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get failedReason => $composableBuilder(
+    column: $table.failedReason,
+    builder: (column) => column,
+  );
+}
+
+class $$UploadsTableTableManager
+    extends
+        RootTableManager<
+          _$WioDatabase,
+          $UploadsTable,
+          Upload,
+          $$UploadsTableFilterComposer,
+          $$UploadsTableOrderingComposer,
+          $$UploadsTableAnnotationComposer,
+          $$UploadsTableCreateCompanionBuilder,
+          $$UploadsTableUpdateCompanionBuilder,
+          (Upload, BaseReferences<_$WioDatabase, $UploadsTable, Upload>),
+          Upload,
+          PrefetchHooks Function()
+        > {
+  $$UploadsTableTableManager(_$WioDatabase db, $UploadsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UploadsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UploadsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UploadsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> sha256 = const Value.absent(),
+                Value<String> path = const Value.absent(),
+                Value<int> size = const Value.absent(),
+                Value<String> createdAt = const Value.absent(),
+                Value<String?> failedReason = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UploadsCompanion(
+                sha256: sha256,
+                path: path,
+                size: size,
+                createdAt: createdAt,
+                failedReason: failedReason,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String sha256,
+                required String path,
+                required int size,
+                required String createdAt,
+                Value<String?> failedReason = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UploadsCompanion.insert(
+                sha256: sha256,
+                path: path,
+                size: size,
+                createdAt: createdAt,
+                failedReason: failedReason,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$UploadsTable, Upload>(table),
+                  BaseReferences<_$WioDatabase, $UploadsTable, Upload>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$UploadsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WioDatabase,
+      $UploadsTable,
+      Upload,
+      $$UploadsTableFilterComposer,
+      $$UploadsTableOrderingComposer,
+      $$UploadsTableAnnotationComposer,
+      $$UploadsTableCreateCompanionBuilder,
+      $$UploadsTableUpdateCompanionBuilder,
+      (Upload, BaseReferences<_$WioDatabase, $UploadsTable, Upload>),
+      Upload,
+      PrefetchHooks Function()
+    >;
 
 class $WioDatabaseManager {
   final _$WioDatabase _db;
@@ -5290,4 +7369,10 @@ class $WioDatabaseManager {
       $$OutboxTableTableManager(_db, _db.outbox);
   $$SyncStateTableTableManager get syncState =>
       $$SyncStateTableTableManager(_db, _db.syncState);
+  $$ServerRecordsTableTableManager get serverRecords =>
+      $$ServerRecordsTableTableManager(_db, _db.serverRecords);
+  $$RejectedChangesTableTableManager get rejectedChanges =>
+      $$RejectedChangesTableTableManager(_db, _db.rejectedChanges);
+  $$UploadsTableTableManager get uploads =>
+      $$UploadsTableTableManager(_db, _db.uploads);
 }

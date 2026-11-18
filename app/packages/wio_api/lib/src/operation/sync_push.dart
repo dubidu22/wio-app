@@ -19,6 +19,7 @@ final class SyncPush extends _i1.HttpOperation<_i2.SyncPushResponse> {
 
   _i3.Future<_i4.TonikResult<_i2.SyncPushResponse, _i5.Response>> call({
     required _i6.PushRequest body,
+    _i3.String? wioAppVersion,
     _i4.TonikCancellation? cancellation,
   }) {
     return this.execute(
@@ -28,7 +29,7 @@ final class SyncPush extends _i1.HttpOperation<_i2.SyncPushResponse> {
         path: _path(),
         query: null,
         data: _data(body: body),
-        options: _options(),
+        options: _options(wioAppVersion: wioAppVersion),
       ),
       decode: _parseResponse,
     );
@@ -42,9 +43,16 @@ final class SyncPush extends _i1.HttpOperation<_i2.SyncPushResponse> {
     return _i7.utf8.encode(_i7.jsonEncode(body.toJson()));
   }
 
-  _i3.Map<_i3.String, _i3.String> _options() {
+  _i3.Map<_i3.String, _i3.String> _options({_i3.String? wioAppVersion}) {
     final _$headers = <_i3.String, _i3.String>{};
     _$headers['Accept'] = r'application/json,application/problem+json';
+    if (wioAppVersion != null) {
+      _$headers[r'Wio-App-Version'] = wioAppVersion.toSimple(
+        explode: false,
+        allowEmpty: false,
+        literal: true,
+      );
+    }
     _$headers[r'Content-Type'] = r'application/json';
     return _$headers;
   }
@@ -90,6 +98,17 @@ final class SyncPush extends _i1.HttpOperation<_i2.SyncPushResponse> {
         final _$body = _i9.Problem.fromJson(_$json);
         return _i2.SyncPushResponse413(body: _$body);
       case (413, _):
+        final _$content = response.headers['content-type'] ?? 'not specified';
+        final _$matched = _$mediaType ?? 'none';
+        final _$status = response.statusCode;
+        throw _i4.ResponseDecodingException(
+          'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
+        );
+      case (426, r'application/problem+json'):
+        final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
+        final _$body = _i9.Problem.fromJson(_$json);
+        return _i2.SyncPushResponse426(body: _$body);
+      case (426, _):
         final _$content = response.headers['content-type'] ?? 'not specified';
         final _$matched = _$mediaType ?? 'none';
         final _$status = response.statusCode;

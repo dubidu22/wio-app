@@ -8,6 +8,9 @@ import 'auth/session_provider.dart';
 import 'l10n/app_localizations.dart';
 import 'shell/providers.dart';
 import 'shell/router.dart';
+import 'sync/sync_runner.dart';
+import 'update/app_too_old.dart';
+import 'update/update_required_screen.dart';
 
 /// Font bundled with the app (D-40); no platform loads fonts from a CDN.
 const String wioFontFamily = 'Roboto';
@@ -73,9 +76,22 @@ class _WioAppState extends ConsumerState<WioApp> {
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(
-      onResume: () =>
-          unawaited(ref.read(sessionProvider.notifier).checkIfStale()),
+      onResume: () {
+        unawaited(ref.read(sessionProvider.notifier).checkIfStale());
+        ref.read(syncProvider.notifier).trigger();
+      },
     );
+    // The update notice opens once, from whatever screen is showing, when
+    // the server first says the app is too old (D-154).
+    ref.listenManual(appTooOldProvider, (previous, next) {
+      if (previous == null && next != null) _router.go(updateLocation);
+    });
+    // Sync starts after a sign-in too, not only at start-up (D-201).
+    ref.listenManual(sessionProvider, (previous, next) {
+      if (previous case AsyncData(value: null) when next.value != null) {
+        ref.read(syncProvider.notifier).trigger();
+      }
+    });
     unawaited(_start());
   }
 
@@ -85,6 +101,8 @@ class _WioAppState extends ConsumerState<WioApp> {
       if (!mounted) return;
       if (session != null) {
         await ref.read(sessionProvider.notifier).check();
+        // Sync starts once getMe has run (D-129, D-201).
+        if (mounted) ref.read(syncProvider.notifier).trigger();
       } else if (widget.initialLocation == '/' &&
           await isLocalDatabaseEmpty(ref.read(databaseProvider)) &&
           mounted) {

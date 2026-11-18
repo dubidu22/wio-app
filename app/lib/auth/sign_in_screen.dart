@@ -9,6 +9,8 @@ import '../l10n/app_localizations.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
+import '../update/app_too_old.dart';
+import '../update/update_required_screen.dart';
 import 'session_provider.dart';
 import 'sign_in_controller.dart';
 
@@ -41,6 +43,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   }
 
   void _submit() {
+    // Too old: signing in would fail too, so Anmelden shows why (D-155).
+    if (ref.read(appTooOldProvider) != null) {
+      context.go(updateLocation);
+      return;
+    }
     unawaited(
       ref
           .read(signInControllerProvider.notifier)
@@ -259,6 +266,7 @@ class _Message extends ConsumerWidget {
       SignInMessage.serverError => l10n.signInServerError,
       SignInMessage.noServer => l10n.signInNoServer,
       SignInMessage.otherWorkspace => l10n.signInOtherWorkspace,
+      SignInMessage.upgradeRequired => l10n.signInUpgradeRequired,
     };
     final theme = Theme.of(context);
     return Padding(

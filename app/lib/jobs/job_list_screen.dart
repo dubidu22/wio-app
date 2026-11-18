@@ -10,11 +10,18 @@ import '../shell/layout.dart';
 import '../shell/providers.dart';
 import '../shell/router.dart';
 import '../shell/source_link_button.dart';
+import '../sync/rejected_screen.dart';
+import '../sync/sync_runner.dart';
+import '../update/app_too_old.dart';
+import '../update/update_required_screen.dart';
 
 /// Level 1, "Aufträge": today's and later jobs (KB workflows.md). Tapping a
 /// job opens its customer. The "Quellcode" button sits top right (D-73).
 /// Signed out, a plain hint with "Anmelden" sits on top and the list stays
-/// usable (D-130); signed in, "Abmelden" sits at the end (D-132).
+/// usable (D-130); signed in, "Abmelden" sits at the end (D-132). While the
+/// app is too old, the update hint takes the top instead (D-155). Refused
+/// changes add a hint with "Ansehen" (D-197); a status line says what is
+/// still on the phone (D-203).
 class JobListScreen extends ConsumerWidget {
   const JobListScreen({super.key});
 
@@ -38,6 +45,7 @@ class JobListScreen extends ConsumerWidget {
         AsyncValue(:final value?) => _JobListBody(
           list: value,
           session: ref.watch(sessionProvider),
+          tooOld: ref.watch(appTooOldProvider) != null,
         ),
         _ => const SizedBox.shrink(),
       },
@@ -46,9 +54,16 @@ class JobListScreen extends ConsumerWidget {
 }
 
 class _JobListBody extends StatelessWidget {
-  const _JobListBody({required this.list, required this.session});
+  const _JobListBody({
+    required this.list,
+    required this.session,
+    required this.tooOld,
+  });
 
   final JobList list;
+
+  /// The update hint replaces the signed-out hint (D-155).
+  final bool tooOld;
 
   /// Loading shows neither the hint nor Abmelden.
   final AsyncValue<Session?> session;
@@ -60,7 +75,11 @@ class _JobListBody extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         children: <Widget>[
-          if (session case AsyncData(value: null)) const _SignedOutHint(),
+          if (tooOld)
+            const _UpdateHint()
+          else if (session case AsyncData(value: null))
+            const _SignedOutHint(),
+          const _RejectedHint(),
           SectionHeading(l10n.jobsToday),
           if (list.today.isEmpty)
             HintText(l10n.jobsTodayEmpty)
@@ -72,6 +91,7 @@ class _JobListBody extends StatelessWidget {
           else
             for (final job in list.upcoming)
               _JobButton(job: job, showDate: true),
+          const _SyncStatusLine(),
           if (session case AsyncData(value: final Session signedIn))
             _SignOutFooter(session: signedIn),
         ],
@@ -136,6 +156,78 @@ class _SignedOutHint extends StatelessWidget {
           FilledButton(
             onPressed: () => context.go(signInLocation),
             child: Text(l10n.signInButton),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Refused changes (D-197): a plain hint and "Ansehen" while any are listed.
+class _RejectedHint extends ConsumerWidget {
+  const _RejectedHint();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(rejectedCountProvider).value ?? 0;
+    if (count == 0) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          HintText(l10n.rejectedHint(count)),
+          OutlinedButton(
+            onPressed: () => context.go(rejectedLocation),
+            child: Text(l10n.rejectedOpen),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What sync is doing and what is still on the phone (D-203). No button:
+/// sync runs by itself (D-201).
+class _SyncStatusLine extends ConsumerWidget {
+  const _SyncStatusLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final pending = ref.watch(outboxCountProvider).value;
+    if (pending == null) return const SizedBox.shrink();
+    final text = switch (ref.watch(syncProvider)) {
+      SyncActivity.running => l10n.syncRunning,
+      SyncActivity.offline when pending > 0 => l10n.syncOffline,
+      _ when pending > 0 => l10n.syncPending(pending),
+      _ => l10n.syncAllSent,
+    };
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Semantics(liveRegion: true, child: HintText(text)),
+    );
+  }
+}
+
+/// Too old (D-155): a plain hint and "App aktualisieren", never a gate.
+class _UpdateHint extends StatelessWidget {
+  const _UpdateHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          HintText(l10n.updateHint),
+          UpdateButton(
+            onNotOpened: (uri) => ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.updateLinkFallback(uri.toString()))),
+            ),
           ),
         ],
       ),

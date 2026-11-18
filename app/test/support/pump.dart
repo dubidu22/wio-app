@@ -8,6 +8,8 @@ import 'package:wio_app/auth/token_store.dart';
 import 'package:wio_app/data/database.dart';
 import 'package:wio_app/l10n/app_localizations.dart';
 import 'package:wio_app/shell/providers.dart';
+import 'package:wio_app/sync/sync_runner.dart';
+import 'package:wio_app/update/app_version.dart';
 
 import 'fake_api.dart';
 import 'test_data.dart';
@@ -32,13 +34,20 @@ Future<void> pumpScreen(WidgetTester tester, Widget screen) async {
   await tester.pumpAndSettle();
 }
 
+/// The installed build the tests pretend to be (D-150).
+const InstalledApp testInstalledApp = InstalledApp(
+  version: '0.1.0+1',
+  packageName: 'org.example.wio',
+);
+
 /// Tablet size of the second golden set (D-76).
 const Size tabletSize = Size(820, 1180);
 
 /// Pumps the whole app at [location] over [db], with a fixed clock and a
 /// link opener that opens nothing (D-68). Signed in with the example session
 /// unless [store] says otherwise; the API is [api] or a fake server that
-/// answers with the example files, never the network. Clears the tree at the end so
+/// answers with the example files, never the network. Sync does not start
+/// by itself unless [autoSync] is set. Clears the tree at the end so
 /// drift's stream timers finish inside the test.
 Future<void> pumpWioApp(
   WidgetTester tester, {
@@ -52,6 +61,9 @@ Future<void> pumpWioApp(
   TokenStore? store,
   FakeApi? api,
   String deviceName = 'Testtelefon',
+  InstalledApp installed = testInstalledApp,
+  bool autoSync = false,
+  SyncTiming syncTiming = const SyncTiming(),
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -75,6 +87,9 @@ Future<void> pumpWioApp(
         apiBaseUrlProvider.overrideWithValue(fakeApiBase),
         httpClientProvider.overrideWithValue((api ?? FakeApi()).client),
         deviceNameProvider.overrideWithValue(() async => deviceName),
+        installedAppProvider.overrideWith((ref) async => installed),
+        syncAutoStartProvider.overrideWithValue(autoSync),
+        syncTimingProvider.overrideWithValue(syncTiming),
       ],
       child: WioApp(initialLocation: location),
     ),

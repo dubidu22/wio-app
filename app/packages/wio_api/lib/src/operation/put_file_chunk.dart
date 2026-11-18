@@ -20,6 +20,7 @@ final class PutFileChunk extends _i1.HttpOperation<_i2.PutFileChunkResponse> {
     required _i4.TonikFile body,
     required _i3.String sha256,
     required _i3.String contentRange,
+    _i3.String? wioAppVersion,
     _i4.TonikCancellation? cancellation,
   }) {
     return this.execute(
@@ -29,7 +30,10 @@ final class PutFileChunk extends _i1.HttpOperation<_i2.PutFileChunkResponse> {
         path: _path(sha256: sha256),
         query: null,
         data: _data(body: body),
-        options: _options(contentRange: contentRange),
+        options: _options(
+          contentRange: contentRange,
+          wioAppVersion: wioAppVersion,
+        ),
       ),
       decode: _parseResponse,
     );
@@ -43,7 +47,10 @@ final class PutFileChunk extends _i1.HttpOperation<_i2.PutFileChunkResponse> {
     return body.toBytes();
   }
 
-  _i3.Map<_i3.String, _i3.String> _options({required _i3.String contentRange}) {
+  _i3.Map<_i3.String, _i3.String> _options({
+    required _i3.String contentRange,
+    _i3.String? wioAppVersion,
+  }) {
     final _$headers = <_i3.String, _i3.String>{};
     _$headers['Accept'] = r'application/json,application/problem+json';
     _$headers[r'Content-Range'] = contentRange.toSimple(
@@ -51,6 +58,13 @@ final class PutFileChunk extends _i1.HttpOperation<_i2.PutFileChunkResponse> {
       allowEmpty: false,
       literal: true,
     );
+    if (wioAppVersion != null) {
+      _$headers[r'Wio-App-Version'] = wioAppVersion.toSimple(
+        explode: false,
+        allowEmpty: false,
+        literal: true,
+      );
+    }
     _$headers[r'Content-Type'] = r'application/octet-stream';
     return _$headers;
   }
@@ -102,6 +116,17 @@ final class PutFileChunk extends _i1.HttpOperation<_i2.PutFileChunkResponse> {
         throw _i4.ResponseDecodingException(
           'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
         );
+      case (403, r'application/problem+json'):
+        final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
+        final _$body = _i7.Problem.fromJson(_$json);
+        return _i2.PutFileChunkResponse403(body: _$body);
+      case (403, _):
+        final _$content = response.headers['content-type'] ?? 'not specified';
+        final _$matched = _$mediaType ?? 'none';
+        final _$status = response.statusCode;
+        throw _i4.ResponseDecodingException(
+          'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
+        );
       case (409, r'application/problem+json'):
         final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
         final _$body = _i7.Problem.fromJson(_$json);
@@ -129,6 +154,17 @@ final class PutFileChunk extends _i1.HttpOperation<_i2.PutFileChunkResponse> {
         final _$body = _i7.Problem.fromJson(_$json);
         return _i2.PutFileChunkResponse422(body: _$body);
       case (422, _):
+        final _$content = response.headers['content-type'] ?? 'not specified';
+        final _$matched = _$mediaType ?? 'none';
+        final _$status = response.statusCode;
+        throw _i4.ResponseDecodingException(
+          'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
+        );
+      case (426, r'application/problem+json'):
+        final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
+        final _$body = _i7.Problem.fromJson(_$json);
+        return _i2.PutFileChunkResponse426(body: _$body);
+      case (426, _):
         final _$content = response.headers['content-type'] ?? 'not specified';
         final _$matched = _$mediaType ?? 'none';
         final _$status = response.statusCode;

@@ -17,6 +17,7 @@ final class RevokeDevice extends _i1.HttpOperation<_i2.RevokeDeviceResponse> {
 
   _i3.Future<_i4.TonikResult<_i2.RevokeDeviceResponse, _i5.Response>> call({
     required _i3.String deviceId,
+    _i3.String? wioAppVersion,
     _i4.TonikCancellation? cancellation,
   }) {
     return this.execute(
@@ -26,7 +27,7 @@ final class RevokeDevice extends _i1.HttpOperation<_i2.RevokeDeviceResponse> {
         path: _path(deviceId: deviceId),
         query: null,
         data: _data(),
-        options: _options(),
+        options: _options(wioAppVersion: wioAppVersion),
       ),
       decode: _parseResponse,
     );
@@ -44,9 +45,16 @@ final class RevokeDevice extends _i1.HttpOperation<_i2.RevokeDeviceResponse> {
     return null;
   }
 
-  _i3.Map<_i3.String, _i3.String> _options() {
+  _i3.Map<_i3.String, _i3.String> _options({_i3.String? wioAppVersion}) {
     final _$headers = <_i3.String, _i3.String>{};
     _$headers['Accept'] = r'application/problem+json';
+    if (wioAppVersion != null) {
+      _$headers[r'Wio-App-Version'] = wioAppVersion.toSimple(
+        explode: false,
+        allowEmpty: false,
+        literal: true,
+      );
+    }
     return _$headers;
   }
 
@@ -71,6 +79,17 @@ final class RevokeDevice extends _i1.HttpOperation<_i2.RevokeDeviceResponse> {
         final _$body = _i6.Problem.fromJson(_$json);
         return _i2.RevokeDeviceResponse404(body: _$body);
       case (404, _):
+        final _$content = response.headers['content-type'] ?? 'not specified';
+        final _$matched = _$mediaType ?? 'none';
+        final _$status = response.statusCode;
+        throw _i4.ResponseDecodingException(
+          'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
+        );
+      case (426, r'application/problem+json'):
+        final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
+        final _$body = _i6.Problem.fromJson(_$json);
+        return _i2.RevokeDeviceResponse426(body: _$body);
+      case (426, _):
         final _$content = response.headers['content-type'] ?? 'not specified';
         final _$matched = _$mediaType ?? 'none';
         final _$status = response.statusCode;

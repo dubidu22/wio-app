@@ -46,6 +46,22 @@ class ListDevicesResponse401 extends ListDevicesResponse {
 }
 
 @_i1.immutable
+class ListDevicesResponse426 extends ListDevicesResponse {
+  const ListDevicesResponse426({required this.body});
+
+  final _i4.Problem body;
+
+  @_i3.override
+  _i3.bool operator ==(_i3.Object other) {
+    if (_i3.identical(this, other)) return true;
+    return other is ListDevicesResponse426 && other.body == this.body;
+  }
+
+  @_i3.override
+  _i3.int get hashCode => this.body.hashCode;
+}
+
+@_i1.immutable
 class ListDevicesResponse503 extends ListDevicesResponse {
   const ListDevicesResponse503({required this.body});
 

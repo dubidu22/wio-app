@@ -78,6 +78,22 @@ class PutFileChunkResponse401 extends PutFileChunkResponse {
 }
 
 @_i1.immutable
+class PutFileChunkResponse403 extends PutFileChunkResponse {
+  const PutFileChunkResponse403({required this.body});
+
+  final _i4.Problem body;
+
+  @_i3.override
+  _i3.bool operator ==(_i3.Object other) {
+    if (_i3.identical(this, other)) return true;
+    return other is PutFileChunkResponse403 && other.body == this.body;
+  }
+
+  @_i3.override
+  _i3.int get hashCode => this.body.hashCode;
+}
+
+@_i1.immutable
 class PutFileChunkResponse409 extends PutFileChunkResponse {
   const PutFileChunkResponse409({required this.body});
 
@@ -119,6 +135,22 @@ class PutFileChunkResponse422 extends PutFileChunkResponse {
   _i3.bool operator ==(_i3.Object other) {
     if (_i3.identical(this, other)) return true;
     return other is PutFileChunkResponse422 && other.body == this.body;
+  }
+
+  @_i3.override
+  _i3.int get hashCode => this.body.hashCode;
+}
+
+@_i1.immutable
+class PutFileChunkResponse426 extends PutFileChunkResponse {
+  const PutFileChunkResponse426({required this.body});
+
+  final _i4.Problem body;
+
+  @_i3.override
+  _i3.bool operator ==(_i3.Object other) {
+    if (_i3.identical(this, other)) return true;
+    return other is PutFileChunkResponse426 && other.body == this.body;
   }
 
   @_i3.override

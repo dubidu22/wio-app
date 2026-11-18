@@ -10,8 +10,9 @@ use Wio\Tests\Api\Contract;
 
 /**
  * Checks the free-form `fields` of a pushed change or a pulled record against
- * the entity's record schema (D-95, D-96, D-97). Test support for now; the
- * sync issue (#6) moves the same rules into the server.
+ * the entity's record schema (D-95, D-96, D-97), with the contract's own
+ * validator. The server checks pushed fields with its generated copy,
+ * src/Sync/RecordSchemas.php (D-177); these tests read the contract itself.
  */
 final class RecordFields
 {

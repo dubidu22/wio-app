@@ -18,6 +18,7 @@ final class GetFileState extends _i1.HttpOperation<_i2.GetFileStateResponse> {
 
   _i3.Future<_i4.TonikResult<_i2.GetFileStateResponse, _i5.Response>> call({
     required _i3.String sha256,
+    _i3.String? wioAppVersion,
     _i4.TonikCancellation? cancellation,
   }) {
     return this.execute(
@@ -27,7 +28,7 @@ final class GetFileState extends _i1.HttpOperation<_i2.GetFileStateResponse> {
         path: _path(sha256: sha256),
         query: null,
         data: _data(),
-        options: _options(),
+        options: _options(wioAppVersion: wioAppVersion),
       ),
       decode: _parseResponse,
     );
@@ -45,9 +46,16 @@ final class GetFileState extends _i1.HttpOperation<_i2.GetFileStateResponse> {
     return null;
   }
 
-  _i3.Map<_i3.String, _i3.String> _options() {
+  _i3.Map<_i3.String, _i3.String> _options({_i3.String? wioAppVersion}) {
     final _$headers = <_i3.String, _i3.String>{};
     _$headers['Accept'] = r'application/json,application/problem+json';
+    if (wioAppVersion != null) {
+      _$headers[r'Wio-App-Version'] = wioAppVersion.toSimple(
+        explode: false,
+        allowEmpty: false,
+        literal: true,
+      );
+    }
     return _$headers;
   }
 
@@ -81,6 +89,28 @@ final class GetFileState extends _i1.HttpOperation<_i2.GetFileStateResponse> {
         final _$body = _i7.Problem.fromJson(_$json);
         return _i2.GetFileStateResponse401(body: _$body);
       case (401, _):
+        final _$content = response.headers['content-type'] ?? 'not specified';
+        final _$matched = _$mediaType ?? 'none';
+        final _$status = response.statusCode;
+        throw _i4.ResponseDecodingException(
+          'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
+        );
+      case (403, r'application/problem+json'):
+        final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
+        final _$body = _i7.Problem.fromJson(_$json);
+        return _i2.GetFileStateResponse403(body: _$body);
+      case (403, _):
+        final _$content = response.headers['content-type'] ?? 'not specified';
+        final _$matched = _$mediaType ?? 'none';
+        final _$status = response.statusCode;
+        throw _i4.ResponseDecodingException(
+          'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
+        );
+      case (426, r'application/problem+json'):
+        final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
+        final _$body = _i7.Problem.fromJson(_$json);
+        return _i2.GetFileStateResponse426(body: _$body);
+      case (426, _):
         final _$content = response.headers['content-type'] ?? 'not specified';
         final _$matched = _$mediaType ?? 'none';
         final _$status = response.statusCode;

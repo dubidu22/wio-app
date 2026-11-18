@@ -21,19 +21,23 @@ use Wio\Tests\Support\AuthFixtures;
 #[Operation('getMe')]
 #[Operation('listDevices')]
 #[Operation('revokeDevice')]
+#[Operation('syncPush')]
+#[Operation('syncPull')]
+#[Operation('getFileState')]
+#[Operation('putFileChunk')]
 final class PermissionMatrixTest extends DatabaseTestCase
 {
     /**
-     * @return array<string, array<string, int>>
+     * @return array<string, array<string, int|string>>
      */
     private static function matrix(): array
     {
-        /** @var array<string, array<string, int>> */
+        /** @var array<string, array<string, int|string>> */
         return require __DIR__ . '/matrix.php';
     }
 
     /**
-     * @return iterable<string, array{string, string, int}>
+     * @return iterable<string, array{string, string, int|string}>
      */
     public static function cells(): iterable
     {
@@ -45,7 +49,7 @@ final class PermissionMatrixTest extends DatabaseTestCase
     }
 
     #[DataProvider('cells')]
-    public function testCell(string $operation, string $caller, int $expected): void
+    public function testCell(string $operation, string $caller, int|string $expected): void
     {
         $workspace = $this->fixtures->workspace();
         $emails = [
@@ -72,12 +76,23 @@ final class PermissionMatrixTest extends DatabaseTestCase
             $device = $this->fixtures->token($workspace, $user);
         }
 
+        $result = str_ends_with($operation, ' result');
+        $operation = $result ? substr($operation, 0, -7) : $operation;
         $request = $this->requestFor($operation, $emails[$caller] ?? 'niemand@example.org', $device, $target['device_id'] ?? null);
         $response = $device === null && $this->isSecured($operation)
             ? $this->sendInvalid($request, $operation)
             : $this->send($request);
 
-        self::assertSame($expected, $response->getStatusCode(), (string) $response->getBody());
+        if (\is_int($expected)) {
+            self::assertSame($expected, $response->getStatusCode(), (string) $response->getBody());
+        } else {
+            self::assertSame(200, $response->getStatusCode(), (string) $response->getBody());
+            $results = self::json($response)['results'] ?? null;
+            self::assertIsArray($results);
+            $first = $results[0] ?? null;
+            self::assertIsArray($first);
+            self::assertSame($expected, $first['status'] === 'rejected' ? $first['reason'] : $first['status'], (string) $response->getBody());
+        }
         if ($target !== null) {
             self::assertNotNull(
                 $this->sql->row('SELECT id FROM device_tokens WHERE id = ?', [$target['device_id']]),
@@ -96,7 +111,7 @@ final class PermissionMatrixTest extends DatabaseTestCase
             }
         }
         sort($routed);
-        $rows = array_keys(self::matrix());
+        $rows = array_values(array_filter(array_keys(self::matrix()), static fn(string $row): bool => !str_ends_with($row, ' result')));
         sort($rows);
 
         self::assertSame($routed, $rows, 'matrix.php needs one row per routed operation');
@@ -120,6 +135,18 @@ final class PermissionMatrixTest extends DatabaseTestCase
             'getMe' => $this->call('GET', '/auth/me', token: $token),
             'listDevices' => $this->call('GET', '/auth/devices', token: $token),
             'revokeDevice' => $this->call('DELETE', '/auth/devices/' . ($targetDevice ?? $device['device_id'] ?? '01990000-0000-7000-8000-000000000000'), token: $token),
+            'syncPush' => $this->call('POST', '/sync/push', ['changes' => [[
+                'change_id' => '01990000-0000-7000-8000-00000000c001',
+                'entity' => 'labels',
+                'id' => '01990000-0000-7000-8000-00000000a001',
+                'op' => 'upsert',
+                'fields' => ['name' => 'Keller'],
+                'base_revision' => null,
+                'device_time' => '2026-11-18T09:00:00.000Z',
+            ]]], token: $token),
+            'syncPull' => $this->call('GET', '/sync/pull?since=0', token: $token),
+            'getFileState' => $this->call('GET', '/files/' . hash('sha256', 'Kiste') . '/state', token: $token),
+            'putFileChunk' => $this->chunk(hash('sha256', 'Kiste'), 'Kiste', 0, 5, $token),
             default => self::fail("No request for {$operation}: add it here and a row to matrix.php"),
         };
     }

@@ -32,6 +32,15 @@ abstract class DatabaseTestCase extends ContractTestCase
     /** @var list<string> lines the app logged, instead of PHP's error log */
     protected array $logged = [];
 
+    /** The server's minimum app version in this test (D-145). */
+    protected ?string $minimumAppVersion = null;
+
+    /** The server's WIO_CORS_ORIGINS in this test (D-164). */
+    protected string $corsOrigins = '';
+
+    /** The server's WIO_FILES_DIR in this test (D-207): a fresh directory, removed after the test. */
+    protected string $filesDir;
+
     public static function setUpBeforeClass(): void
     {
         MigratedDatabase::migrate();
@@ -45,6 +54,7 @@ abstract class DatabaseTestCase extends ContractTestCase
     protected function setUp(): void
     {
         $this->clock = new FrozenClock();
+        $this->filesDir = sys_get_temp_dir() . '/wio-files-' . bin2hex(random_bytes(6));
         $this->sql = new Sql(Connection::fromEnvironment());
         MigratedDatabase::empty($this->sql->pdo);
         $this->fixtures = new AuthFixtures($this->sql, $this->clock);
@@ -61,7 +71,31 @@ abstract class DatabaseTestCase extends ContractTestCase
             function (string $line): void {
                 $this->logged[] = $line;
             },
+            $this->minimumAppVersion,
+            $this->corsOrigins,
+            $this->filesDir,
         );
+    }
+
+    protected function tearDown(): void
+    {
+        self::removeTree($this->filesDir);
+        parent::tearDown();
+    }
+
+    private static function removeTree(string $path): void
+    {
+        if (is_dir($path) && !is_link($path)) {
+            $names = scandir($path);
+            foreach ($names === false ? [] : $names as $name) {
+                if ($name !== '.' && $name !== '..') {
+                    self::removeTree($path . '/' . $name);
+                }
+            }
+            rmdir($path);
+        } elseif (file_exists($path) || is_link($path)) {
+            unlink($path);
+        }
     }
 
     protected function app(): RequestHandlerInterface
@@ -72,7 +106,7 @@ abstract class DatabaseTestCase extends ContractTestCase
     /**
      * @param array<string, mixed>|null $body
      */
-    protected function call(string $method, string $uri, ?array $body = null, ?string $token = null, string $ip = self::IP): ServerRequestInterface
+    protected function call(string $method, string $uri, ?array $body = null, ?string $token = null, string $ip = self::IP, ?string $appVersion = null): ServerRequestInterface
     {
         $request = $this->request($method, $uri, ['REMOTE_ADDR' => $ip]);
         if ($body !== null) {
@@ -83,8 +117,25 @@ abstract class DatabaseTestCase extends ContractTestCase
         if ($token !== null) {
             $request = $request->withHeader('Authorization', 'Bearer ' . $token);
         }
+        if ($appVersion !== null) {
+            $request = $request->withHeader('Wio-App-Version', $appVersion);
+        }
 
         return $request;
+    }
+
+    /**
+     * One chunk of a file upload (putFileChunk): `bytes` are the chunk,
+     * `start` its first byte in the file of `total` bytes.
+     */
+    protected function chunk(string $sha256, string $bytes, int $start, int $total, ?string $token, ?string $appVersion = null, ?string $range = null): ServerRequestInterface
+    {
+        $range ??= 'bytes ' . $start . '-' . ($start + \strlen($bytes) - 1) . '/' . $total;
+
+        return $this->call('PUT', '/files/' . $sha256, token: $token, appVersion: $appVersion)
+            ->withHeader('Content-Type', 'application/octet-stream')
+            ->withHeader('Content-Range', $range)
+            ->withBody((new StreamFactory())->createStream($bytes));
     }
 
     /**

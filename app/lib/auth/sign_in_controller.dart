@@ -24,6 +24,7 @@ enum SignInMessage {
   serverError,
   noServer,
   otherWorkspace,
+  upgradeRequired,
 }
 
 /// Wait when a 429 has no usable Retry-After: the server's window (D-113).
@@ -74,6 +75,7 @@ typedef _Deps = ({
   SessionNotifier sessions,
   Session? previous,
   http.Client httpClient,
+  ApiHooks hooks,
   WioDatabase db,
 });
 
@@ -150,6 +152,7 @@ class SignInController extends Notifier<SignInState> {
       sessions: ref.read(sessionProvider.notifier),
       previous: ref.read(sessionProvider).value,
       httpClient: ref.read(httpClientProvider),
+      hooks: ref.read(apiHooksProvider),
       db: ref.read(databaseProvider),
     );
     final readDeviceName = ref.read(deviceNameProvider);
@@ -198,6 +201,10 @@ class SignInController extends Notifier<SignInState> {
         _fail(messageForCode(body.code));
       case TonikSuccess(value: SignInResponse503()):
         _fail(SignInMessage.maintenance);
+      // The API client has already opened the update notice (D-152); the
+      // fields keep a message in case the owner comes back to them.
+      case TonikSuccess(value: SignInResponse426()):
+        _fail(SignInMessage.upgradeRequired);
       case TonikSuccess(value: SignInResponseDefault(:final body)):
         _fail(messageForCode(body.code));
       // No answer at all is a connection failure, whatever the client
@@ -246,7 +253,7 @@ class SignInController extends Notifier<SignInState> {
     if (local != null && local != session.workspace.id) {
       // D-131: never mix two workspaces on one device until #6 can switch.
       // The new token is revoked even when the screen has closed.
-      revokeToken(session, deps.httpClient);
+      revokeToken(session, deps.httpClient, deps.hooks);
       if (ref.mounted) {
         state = const SignInState(message: SignInMessage.otherWorkspace);
       }
@@ -258,7 +265,7 @@ class SignInController extends Notifier<SignInState> {
     // replaces the old session; its token is revoked, not left valid.
     final previous = deps.previous;
     if (previous != null && previous.token != session.token) {
-      revokeToken(previous, deps.httpClient);
+      revokeToken(previous, deps.httpClient, deps.hooks);
     }
     if (ref.mounted) state = const SignInState(done: true);
   }
@@ -275,8 +282,8 @@ class SignInController extends Notifier<SignInState> {
 
 /// Revokes a token the device will not keep (D-131). Runs to the end on its
 /// own, whatever happens to the screen that started it.
-void revokeToken(Session session, http.Client httpClient) {
-  final api = buildAuthApi(session.apiBase, httpClient, () => session);
+void revokeToken(Session session, http.Client httpClient, ApiHooks hooks) {
+  final api = buildAuthApi(session.apiBase, httpClient, () => session, hooks);
   unawaited(
     api
         .signOut()
@@ -292,5 +299,6 @@ SignInMessage messageForCode(String code) => switch (code) {
   'too_many_attempts' => SignInMessage.tooManyAttempts,
   'maintenance' => SignInMessage.maintenance,
   'invalid_request' => SignInMessage.invalidRequest,
+  'upgrade_required' => SignInMessage.upgradeRequired,
   _ => SignInMessage.serverError,
 };

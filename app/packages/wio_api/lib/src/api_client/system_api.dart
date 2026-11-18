@@ -19,7 +19,10 @@ class SystemApi {
 
   /// Check that the API is up
   /// Answers without touching the database, for deploy smoke tests.
+  /// [wioAppVersion] Version of the app that sends the request (D-140), from its build. Only major.minor.patch is compared; +build is ignored (D-141). Missing: accepted. Malformed: 400 `invalid_request`. Below the server's minimum: 426 `upgrade_required` (D-142).
   _i3.Future<_i4.TonikResult<_i5.GetHealthResponse, _i6.Response>> getHealth({
+    _i3.String? wioAppVersion,
     _i4.TonikCancellation? cancellation,
-  }) async => this._getHealth(cancellation: cancellation);
+  }) async =>
+      this._getHealth(wioAppVersion: wioAppVersion, cancellation: cancellation);
 }

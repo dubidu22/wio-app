@@ -21,6 +21,7 @@ final class SyncPull extends _i1.HttpOperation<_i2.SyncPullResponse> {
   _i3.Future<_i4.TonikResult<_i2.SyncPullResponse, _i5.Response>> call({
     required _i3.int since,
     _i3.int limit = limitDefault,
+    _i3.String? wioAppVersion,
     _i4.TonikCancellation? cancellation,
   }) {
     return this.execute(
@@ -30,7 +31,7 @@ final class SyncPull extends _i1.HttpOperation<_i2.SyncPullResponse> {
         path: _path(),
         query: _queryParameters(since: since, limit: limit),
         data: _data(),
-        options: _options(),
+        options: _options(wioAppVersion: wioAppVersion),
       ),
       decode: _parseResponse,
     );
@@ -72,9 +73,16 @@ final class SyncPull extends _i1.HttpOperation<_i2.SyncPullResponse> {
         .join('&');
   }
 
-  _i3.Map<_i3.String, _i3.String> _options() {
+  _i3.Map<_i3.String, _i3.String> _options({_i3.String? wioAppVersion}) {
     final _$headers = <_i3.String, _i3.String>{};
     _$headers['Accept'] = r'application/json,application/problem+json';
+    if (wioAppVersion != null) {
+      _$headers[r'Wio-App-Version'] = wioAppVersion.toSimple(
+        explode: false,
+        allowEmpty: false,
+        literal: true,
+      );
+    }
     return _$headers;
   }
 
@@ -119,6 +127,17 @@ final class SyncPull extends _i1.HttpOperation<_i2.SyncPullResponse> {
         final _$body = _i8.Problem.fromJson(_$json);
         return _i2.SyncPullResponse410(body: _$body);
       case (410, _):
+        final _$content = response.headers['content-type'] ?? 'not specified';
+        final _$matched = _$mediaType ?? 'none';
+        final _$status = response.statusCode;
+        throw _i4.ResponseDecodingException(
+          'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
+        );
+      case (426, r'application/problem+json'):
+        final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
+        final _$body = _i8.Problem.fromJson(_$json);
+        return _i2.SyncPullResponse426(body: _$body);
+      case (426, _):
         final _$content = response.headers['content-type'] ?? 'not specified';
         final _$matched = _$mediaType ?? 'none';
         final _$status = response.statusCode;

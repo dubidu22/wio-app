@@ -17,44 +17,12 @@ import 'package:wio_app/data/database.dart';
 import 'package:wio_app/shell/providers.dart';
 
 import '../support/fake_api.dart';
+import '../support/local_rows.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
 
 const String signedOutHint =
     'Nicht angemeldet. Neue Daten werden erst nach der Anmeldung gesendet.';
-
-/// Local rows per table, to prove nothing is wiped (D-65, D-129).
-Future<Map<String, int>> countRows(WioDatabase db) async => <String, int>{
-  for (final table in <String>[
-    'customers',
-    'sites',
-    'rooms',
-    'jobs',
-    'outbox',
-    'sync_state',
-  ])
-    table:
-        (await db.customSelect('SELECT COUNT(*) AS n FROM $table').getSingle())
-            .read<int>('n'),
-};
-
-/// Test data plus one unsent change in the outbox.
-Future<WioDatabase> seededWithOutbox() async {
-  final db = memoryDatabase();
-  await seedTestData(db);
-  await db
-      .into(db.outbox)
-      .insert(
-        OutboxCompanion.insert(
-          changeId: '01970000-0000-7000-8000-0000000000f1',
-          entity: 'customers',
-          entityId: TestIds.frauMuster,
-          fields: '{"name":"Frau Muster"}',
-          deviceTime: '2026-11-19T09:00:00.000Z',
-        ),
-      );
-  return db;
-}
 
 /// The example session with older names, so a refresh is visible.
 Session staleSession() {
@@ -88,7 +56,12 @@ void main() {
     test('adds the bearer to every request but sign-in', () async {
       final api = FakeApi();
       final session = exampleSession(token: 'wio_abc');
-      final auth = buildAuthApi(fakeApiBase, api.client, () => session);
+      final auth = buildAuthApi(
+        fakeApiBase,
+        api.client,
+        () => session,
+        ApiHooks.none,
+      );
       await auth.getMe();
       await auth.signOut();
       await auth.signIn(
@@ -111,7 +84,12 @@ void main() {
 
     test('sends no header without a token', () async {
       final api = FakeApi();
-      await buildAuthApi(fakeApiBase, api.client, () => null).getMe();
+      await buildAuthApi(
+        fakeApiBase,
+        api.client,
+        () => null,
+        ApiHooks.none,
+      ).getMe();
       expect(api.to('/auth/me').single.headers['Authorization'], isNull);
     });
 
@@ -125,7 +103,12 @@ void main() {
       ]) {
         final api = FakeApi();
         final session = exampleSession(token: 'wio_abc');
-        await buildAuthApi(other, api.client, () => session).getMe();
+        await buildAuthApi(
+          other,
+          api.client,
+          () => session,
+          ApiHooks.none,
+        ).getMe();
         expect(
           api.to('/auth/me').single.headers['Authorization'],
           isNull,
@@ -199,6 +182,8 @@ void main() {
       'maintenance': FakeAnswer.problem(503, 'maintenance'),
       'a 401 with another code': FakeAnswer.problem(401, 'something_else'),
       'a 500': FakeAnswer.problem(500, 'internal'),
+      // An app too old for the server keeps its session and data (D-148).
+      'upgrade required': FakeAnswer.problem(426, 'upgrade_required'),
     };
     for (final MapEntry(key: name, value: answer) in keep.entries) {
       testWidgets('$name keeps the session', (tester) async {

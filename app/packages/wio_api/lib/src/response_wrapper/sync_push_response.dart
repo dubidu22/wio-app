@@ -78,6 +78,22 @@ class SyncPushResponse413 extends SyncPushResponse {
 }
 
 @_i1.immutable
+class SyncPushResponse426 extends SyncPushResponse {
+  const SyncPushResponse426({required this.body});
+
+  final _i4.Problem body;
+
+  @_i3.override
+  _i3.bool operator ==(_i3.Object other) {
+    if (_i3.identical(this, other)) return true;
+    return other is SyncPushResponse426 && other.body == this.body;
+  }
+
+  @_i3.override
+  _i3.int get hashCode => this.body.hashCode;
+}
+
+@_i1.immutable
 class SyncPushResponse503 extends SyncPushResponse {
   const SyncPushResponse503({required this.body});
 

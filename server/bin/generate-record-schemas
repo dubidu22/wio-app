@@ -1,0 +1,22 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Writes src/Sync/RecordSchemas.php from the record schemas of
+// api/openapi.yaml (D-177). Run after every change of a record schema and
+// commit the result; RecordSchemasTest fails when the two differ. Needs the
+// dev dependencies (symfony/yaml).
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Symfony\Component\Yaml\Yaml;
+use Wio\Sync\RecordSchemaGenerator;
+
+$contract = Yaml::parseFile(__DIR__ . '/../../api/openapi.yaml');
+if (!is_array($contract)) {
+    fwrite(STDERR, 'api/openapi.yaml is not a mapping.' . PHP_EOL);
+    exit(1);
+}
+file_put_contents(__DIR__ . '/../src/Sync/RecordSchemas.php', (new RecordSchemaGenerator($contract))->source());
+fwrite(STDOUT, 'Wrote src/Sync/RecordSchemas.php.' . PHP_EOL);

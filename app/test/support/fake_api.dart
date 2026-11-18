@@ -45,7 +45,8 @@ final Exception noSignal = http.ClientException('no signal (fake)');
 /// The fake API server (lessons-from-v1: a fake for every external
 /// service). Answers by "METHOD /path" from [answers]; an answer can also be
 /// [noSignal], a `Completer` the test completes later, or a list of
-/// answers given in order. A String body is sent as it is. Defaults are the
+/// answers given in order, or another `http.Client` that answers instead
+/// (for example the fake sync server's). A String body is sent as it is. Defaults are the
 /// example files: sign-in 200, getMe 200, sign-out 204. Records every
 /// request.
 class FakeApi {
@@ -82,6 +83,13 @@ class FakeApi {
       answer = answer.length > 1 ? answer.removeAt(0) : answer.first;
     }
     if (answer is Completer<FakeAnswer>) answer = await answer.future;
+    if (answer is http.Client) {
+      // A sent request cannot be sent again; the other client gets a copy.
+      final copy = http.Request(request.method, request.url)
+        ..headers.addAll(request.headers)
+        ..bodyBytes = request.bodyBytes;
+      return http.Response.fromStream(await answer.send(copy));
+    }
     if (answer is FakeAnswer) {
       final body = answer.body;
       // UTF-8 bytes, as the server sends them; a String body would be encoded

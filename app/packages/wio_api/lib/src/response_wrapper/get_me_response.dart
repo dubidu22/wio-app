@@ -46,6 +46,22 @@ class GetMeResponse401 extends GetMeResponse {
 }
 
 @_i1.immutable
+class GetMeResponse426 extends GetMeResponse {
+  const GetMeResponse426({required this.body});
+
+  final _i4.Problem body;
+
+  @_i3.override
+  _i3.bool operator ==(_i3.Object other) {
+    if (_i3.identical(this, other)) return true;
+    return other is GetMeResponse426 && other.body == this.body;
+  }
+
+  @_i3.override
+  _i3.int get hashCode => this.body.hashCode;
+}
+
+@_i1.immutable
 class GetMeResponse503 extends GetMeResponse {
   const GetMeResponse503({required this.body});
 
