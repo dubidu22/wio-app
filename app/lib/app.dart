@@ -8,6 +8,8 @@ import 'auth/session_provider.dart';
 import 'l10n/app_localizations.dart';
 import 'shell/providers.dart';
 import 'shell/router.dart';
+import 'update/app_too_old.dart';
+import 'update/update_required_screen.dart';
 
 /// Font bundled with the app (D-40); no platform loads fonts from a CDN.
 const String wioFontFamily = 'Roboto';
@@ -76,6 +78,11 @@ class _WioAppState extends ConsumerState<WioApp> {
       onResume: () =>
           unawaited(ref.read(sessionProvider.notifier).checkIfStale()),
     );
+    // The update notice opens once, from whatever screen is showing, when
+    // the server first says the app is too old (D-154).
+    ref.listenManual(appTooOldProvider, (previous, next) {
+      if (previous == null && next != null) _router.go(updateLocation);
+    });
     unawaited(_start());
   }
 

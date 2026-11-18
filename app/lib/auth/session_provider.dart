@@ -7,6 +7,8 @@ import 'package:wio_api/wio_api.dart';
 
 import '../data/database.dart';
 import '../shell/providers.dart';
+import '../update/app_too_old.dart';
+import '../update/app_version.dart';
 import 'auth_client.dart';
 import 'device_name.dart';
 import 'session.dart';
@@ -46,15 +48,36 @@ const Duration signOutTimeout = Duration(seconds: 5);
 /// getMe runs again when the app comes back after this long (D-129).
 const Duration recheckAfter = Duration(hours: 1);
 
-/// The auth API with the stored token; null when no server is set.
-final authApiProvider = Provider<AuthApi?>((ref) {
+/// The installed version and the too-old state for [AuthClient] (D-151,
+/// D-152). Read from the app's root, so a client kept after its screen
+/// closed (for example a token being revoked) still uses them.
+final apiHooksProvider = Provider<ApiHooks>((ref) {
+  return ApiHooks(
+    appVersion: () async =>
+        (await ref.read(installedAppProvider.future)).version,
+    tooOld: () => ref.read(appTooOldProvider),
+    reportTooOld: (tooOld) =>
+        ref.read(appTooOldProvider.notifier).report(tooOld),
+  );
+});
+
+/// The API server with the stored token; null when no server is set. Every
+/// generated API is built on it, so each gets the same client (D-151).
+final apiServerProvider = Provider<Server?>((ref) {
   final base = ref.watch(apiBaseUrlProvider);
   if (base.isEmpty) return null;
-  return buildAuthApi(
+  return buildApiServer(
     base,
     ref.watch(httpClientProvider),
     () => ref.read(sessionProvider).value,
+    ref.watch(apiHooksProvider),
   );
+});
+
+/// The auth API with the stored token; null when no server is set.
+final authApiProvider = Provider<AuthApi?>((ref) {
+  final server = ref.watch(apiServerProvider);
+  return server == null ? null : AuthApi(server);
 });
 
 /// The signed-in session, or null when signed out (D-129, D-130).
@@ -90,7 +113,8 @@ class SessionNotifier extends AsyncNotifier<Session?> {
 
   /// Checks the stored token with getMe, without blocking anything (D-129):
   /// 200 refreshes the names, 401 token_invalid forgets the session and
-  /// keeps every local row, anything else changes nothing.
+  /// keeps every local row, anything else changes nothing; that includes
+  /// 426 upgrade_required, which the API client reports itself (D-156).
   Future<void> check() async {
     final session = await future;
     final api = ref.read(authApiProvider);

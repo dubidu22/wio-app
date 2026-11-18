@@ -20,4 +20,5 @@ const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
   'lib/customers/customer_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}',
   ),
+  'lib/update/update_required_screen.dart': CatalogScreen('/aktualisieren'),
 };

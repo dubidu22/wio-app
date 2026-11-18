@@ -10,11 +10,14 @@ import '../shell/layout.dart';
 import '../shell/providers.dart';
 import '../shell/router.dart';
 import '../shell/source_link_button.dart';
+import '../update/app_too_old.dart';
+import '../update/update_required_screen.dart';
 
 /// Level 1, "Aufträge": today's and later jobs (KB workflows.md). Tapping a
 /// job opens its customer. The "Quellcode" button sits top right (D-73).
 /// Signed out, a plain hint with "Anmelden" sits on top and the list stays
-/// usable (D-130); signed in, "Abmelden" sits at the end (D-132).
+/// usable (D-130); signed in, "Abmelden" sits at the end (D-132). While the
+/// app is too old, the update hint takes the top instead (D-155).
 class JobListScreen extends ConsumerWidget {
   const JobListScreen({super.key});
 
@@ -38,6 +41,7 @@ class JobListScreen extends ConsumerWidget {
         AsyncValue(:final value?) => _JobListBody(
           list: value,
           session: ref.watch(sessionProvider),
+          tooOld: ref.watch(appTooOldProvider) != null,
         ),
         _ => const SizedBox.shrink(),
       },
@@ -46,9 +50,16 @@ class JobListScreen extends ConsumerWidget {
 }
 
 class _JobListBody extends StatelessWidget {
-  const _JobListBody({required this.list, required this.session});
+  const _JobListBody({
+    required this.list,
+    required this.session,
+    required this.tooOld,
+  });
 
   final JobList list;
+
+  /// The update hint replaces the signed-out hint (D-155).
+  final bool tooOld;
 
   /// Loading shows neither the hint nor Abmelden.
   final AsyncValue<Session?> session;
@@ -60,7 +71,10 @@ class _JobListBody extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         children: <Widget>[
-          if (session case AsyncData(value: null)) const _SignedOutHint(),
+          if (tooOld)
+            const _UpdateHint()
+          else if (session case AsyncData(value: null))
+            const _SignedOutHint(),
           SectionHeading(l10n.jobsToday),
           if (list.today.isEmpty)
             HintText(l10n.jobsTodayEmpty)
@@ -136,6 +150,30 @@ class _SignedOutHint extends StatelessWidget {
           FilledButton(
             onPressed: () => context.go(signInLocation),
             child: Text(l10n.signInButton),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Too old (D-155): a plain hint and "App aktualisieren", never a gate.
+class _UpdateHint extends StatelessWidget {
+  const _UpdateHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          HintText(l10n.updateHint),
+          UpdateButton(
+            onNotOpened: (uri) => ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.updateLinkFallback(uri.toString()))),
+            ),
           ),
         ],
       ),
