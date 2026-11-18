@@ -33,6 +33,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.1"
+  big_decimal:
+    dependency: transitive
+    description:
+      name: big_decimal
+      sha256: "6413818091e80c907bb73bae383418db5c148fd7fd283e56197bfeeeb212d5bd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -105,6 +113,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  charset:
+    dependency: transitive
+    description:
+      name: charset
+      sha256: "27802032a581e01ac565904ece8c8962564b1070690794f0072f6865958ce8b9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   checked_yaml:
     dependency: transitive
     description:
@@ -301,6 +317,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  http:
+    dependency: "direct dev"
+    description:
+      name: http
+      sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.6.0"
   http_multi_server:
     dependency: transitive
     description:
@@ -730,6 +754,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.14"
+  tonik_util:
+    dependency: "direct dev"
+    description:
+      name: tonik_util
+      sha256: e72ba8270ceb4f9971b61564e14c6ed379f1b8083192209f1295f0668084d3ef
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.11.1"
   typed_data:
     dependency: transitive
     description:
@@ -858,6 +890,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.3"
+  wio_api:
+    dependency: "direct main"
+    description:
+      path: "packages/wio_api"
+      relative: true
+    source: path
+    version: "1.0.0"
   xdg_directories:
     dependency: transitive
     description:

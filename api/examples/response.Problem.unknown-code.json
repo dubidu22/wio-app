@@ -1,0 +1,8 @@
+{
+  "type": "about:blank",
+  "title": "Something new",
+  "status": 500,
+  "code": "some_future_code",
+  "detail": "Apps treat an unknown code as a server error."
+}
+

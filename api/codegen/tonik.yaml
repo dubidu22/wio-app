@@ -1,0 +1,13 @@
+# tonik settings for the wio-app Dart client (D-91). Paths are relative to
+# this file's directory; api/generate-dart-client.sh runs tonik from here.
+spec: ../openapi.yaml
+outputDir: ../../app/packages
+packageName: wio_api
+logLevel: warn
+transport:
+  backend: http
+# Old apps must survive enum values a newer server adds (D-96, D-99): an
+# unknown value decodes as `unknown` instead of throwing. Encoding `unknown`
+# throws, so an app can never send it.
+enums:
+  generateUnknownCase: true

@@ -1,23 +1,34 @@
 # wio-app API contract: the only interface between the app and the server
-# (INV-02). Stub from the CI issue (#2, D-43): it holds only GET /health so the
-# validation step in CI checks a real file. The contract issue (#4) owns this
-# file from here on and settles the OpenAPI version (O-7). Every change here is
-# critical.
+# (INV-02). OpenAPI 3.0.3 in the subset that means the same in 3.1 (D-89, D-90).
+# Every change here is critical (D-24). Evolution rules: api/README.md (D-99).
+# The Dart client in app/packages/wio_api/ is generated from this file (D-91);
+# regenerate it with api/generate-dart-client.sh after every change.
 openapi: 3.0.3
 info:
   title: wio-app API
-  version: 0.0.0
-  description: API of wio-app, the field app for tidy-up and moving work.
+  version: 1.0.0
+  description: >-
+    API of wio-app, the field app for tidy-up and moving work. The phone writes
+    locally first and syncs later; the server is the only place that orders
+    changes (KB sync.md). Errors are application/problem+json with a machine
+    `code` (D-98).
   license:
     name: AGPL-3.0-only
     url: https://www.gnu.org/licenses/agpl-3.0.html
 servers:
   - url: /
     description: The server the app is configured for
-security: []
+security:
+  - deviceToken: []
 tags:
   - name: system
     description: Operational endpoints
+  - name: auth
+    description: Owner sign-in and device tokens (behaviour in issue 5, D-100)
+  - name: sync
+    description: Push and pull of changes (KB sync.md, D-96, D-97)
+  - name: files
+    description: Resumable upload of pictures and audio (D-96)
 paths:
   /health:
     get:
@@ -26,6 +37,7 @@ paths:
       description: Answers without touching the database, for deploy smoke tests.
       tags:
         - system
+      security: []
       responses:
         '200':
           description: The API is up.
@@ -34,12 +46,388 @@ paths:
               schema:
                 $ref: '#/components/schemas/Health'
         '405':
-          description: Only GET is allowed.
+          $ref: '#/components/responses/MethodNotAllowed'
+        default:
+          $ref: '#/components/responses/Problem'
+  /auth/sign-in:
+    post:
+      operationId: signIn
+      summary: Sign in with e-mail and password and get a device token
+      description: >-
+        Creates one device token for this device. When the e-mail and password
+        match users in more than one workspace and no `workspace_id` is given,
+        the answer is 409 with the workspaces to choose from (only after the
+        password matched).
+      tags:
+        - auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: Signed in.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: The e-mail belongs to several workspaces; sign in again with one `workspace_id`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
+  /auth/sign-out:
+    post:
+      operationId: signOut
+      summary: Revoke the calling device token
+      tags:
+        - auth
+      responses:
+        '204':
+          description: The token is revoked.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
+  /auth/me:
+    get:
+      operationId: getMe
+      summary: The signed-in user and workspace of this token
+      tags:
+        - auth
+      responses:
+        '200':
+          description: The token is valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
+  /auth/devices:
+    get:
+      operationId: listDevices
+      summary: The devices signed in as this user
+      tags:
+        - auth
+      responses:
+        '200':
+          description: All live device tokens of this user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
+  /auth/devices/{device_id}:
+    delete:
+      operationId: revokeDevice
+      summary: Sign out another device of this user
+      tags:
+        - auth
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: The device token is revoked.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
+  /sync/push:
+    post:
+      operationId: syncPush
+      summary: Send up to 200 changes from the outbox
+      description: >-
+        The server applies each change in its own transaction and answers one
+        result per change, in request order. The app removes a change from its
+        outbox only when its `change_id` comes back `applied` or `merged`; a
+        `change_id` the server already applied is answered again, not applied
+        twice (KB sync.md).
+      tags:
+        - sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushRequest'
+      responses:
+        '200':
+          description: One result per change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
+  /sync/pull:
+    get:
+      operationId: syncPull
+      summary: Changed records since a revision, in revision order
+      description: >-
+        Repeat with `since` = `last_revision` until `has_more` is false, then
+        store `last_revision` (KB sync.md). Records the token may not read are
+        never returned; `last_revision` is the highest revision the server
+        examined, so it can be above the last returned record, and it is
+        greater than `since` whenever `has_more` is true. A 410
+        `resync_required` means: drop pulled records, keep the outbox, pull
+        again from 0.
+      tags:
+        - sync
+      parameters:
+        - name: since
+          in: query
+          required: true
+          description: The last revision the app has stored; 0 for everything.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 9007199254740991
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 500
+            default: 500
+      responses:
+        '200':
+          description: A page of records.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '410':
+          description: >-
+            `resync_required`: the app's `since` is no longer valid (for
+            example after the server database was restored, or the token's
+            scope changed). Drop all pulled records, keep the outbox, and pull
+            again from `since=0`. How the server decides is issue 6's.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
+  /files/{sha256}/state:
+    get:
+      operationId: getFileState
+      summary: How much of a file the server holds in this workspace
+      description: >-
+        Files are kept per workspace; this never tells whether another
+        workspace holds the same file. An unknown file answers 0 bytes.
+      tags:
+        - files
+      parameters:
+        - $ref: '#/components/parameters/Sha256'
+      responses:
+        '200':
+          description: The upload state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileState'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
+  /files/{sha256}:
+    put:
+      operationId: putFileChunk
+      summary: Upload one chunk of a file, resumable and idempotent
+      description: >-
+        Chunks of at most 4 MiB in order, each with `Content-Range`. When the
+        last byte arrives the server checks the SHA-256 and answers 200; a
+        mismatch discards the partial file (422). A chunk that does not start
+        at the received size answers 409 with the size to resume from.
+      tags:
+        - files
+      parameters:
+        - $ref: '#/components/parameters/Sha256'
+        - name: Content-Range
+          in: header
+          required: true
+          description: '`bytes <first>-<last>/<total>`, for example `bytes 0-4194303/9000000`.'
+          schema:
+            type: string
+            pattern: '^bytes [0-9]{1,15}-[0-9]{1,15}/[0-9]{1,15}$'
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: The file is complete and its hash matches.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileState'
+        '202':
+          description: The chunk is stored; more is needed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileState'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: The chunk does not start at the received size (`offset_mismatch`); resume from `received_bytes`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '422':
+          description: The complete file does not match its SHA-256 (`hash_mismatch`); the partial file is gone.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
 components:
+  securitySchemes:
+    deviceToken:
+      type: http
+      scheme: bearer
+      description: Opaque device token of at most 128 characters from sign-in (D-100).
+  parameters:
+    Sha256:
+      name: sha256
+      in: path
+      required: true
+      description: Lower-case hex SHA-256 of the whole file.
+      schema:
+        type: string
+        pattern: '^[0-9a-f]{64}$'
+  headers:
+    RetryAfter:
+      description: Seconds to wait before trying again.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+  responses:
+    Problem:
+      description: Any other error; read `code` (D-98). Apps treat an unknown code as a server error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    BadRequest:
+      description: The request does not match the contract (`invalid_request`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Missing or revoked token (`token_invalid`) or wrong e-mail or password (`invalid_credentials`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: No such resource for this token (`not_found`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    MethodNotAllowed:
+      description: The method is not allowed on this path (`method_not_allowed`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PayloadTooLarge:
+      description: More than 200 changes (`too_many_changes`) or a body over the limit (`payload_too_large`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TooManyRequests:
+      description: Too many sign-in attempts (`too_many_attempts`).
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Maintenance:
+      description: The server is migrating (`maintenance`, D-56); retry later.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
   schemas:
     Health:
       type: object
-      additionalProperties: false
       required:
         - status
       properties:
@@ -47,3 +435,2079 @@ components:
           type: string
           enum:
             - ok
+    Problem:
+      type: object
+      description: >-
+        RFC 9457 problem details (D-98). `code` is an open string; documented
+        values: invalid_request, token_invalid, invalid_credentials,
+        workspace_choice_required, too_many_attempts, too_many_changes,
+        payload_too_large, offset_mismatch, hash_mismatch, maintenance,
+        not_found, method_not_allowed, resync_required (410 on pull: drop
+        pulled records, keep the outbox, pull from 0), internal. Apps treat an
+        unknown code as a server error.
+      required:
+        - type
+        - title
+        - status
+        - code
+      properties:
+        type:
+          type: string
+          description: Always `about:blank`; the machine meaning is in `code`.
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        code:
+          type: string
+          maxLength: 64
+        workspaces:
+          type: array
+          description: Only with `workspace_choice_required`.
+          items:
+            $ref: '#/components/schemas/WorkspaceRef'
+        received_bytes:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: Only with `offset_mismatch`.
+    WorkspaceRef:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+    SignInRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+        - device_name
+      properties:
+        email:
+          type: string
+          minLength: 3
+          maxLength: 254
+        password:
+          type: string
+          format: password
+          minLength: 1
+          maxLength: 1024
+        device_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Shown in the device list, for example the phone model.
+        workspace_id:
+          type: string
+          format: uuid
+          description: Only after a 409 with several workspaces.
+    SignInResult:
+      type: object
+      required:
+        - token
+        - device_id
+        - user
+        - workspace
+      properties:
+        token:
+          type: string
+          minLength: 32
+          maxLength: 128
+          description: 'Send as `Authorization: Bearer <token>`; the server keeps only its hash.'
+        device_id:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/MeUser'
+        workspace:
+          $ref: '#/components/schemas/MeWorkspace'
+    Me:
+      type: object
+      required:
+        - device_id
+        - user
+        - workspace
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/MeUser'
+        workspace:
+          $ref: '#/components/schemas/MeWorkspace'
+    MeUser:
+      type: object
+      required:
+        - id
+        - role
+        - display_name
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+            - owner
+            - customer
+            - helper
+        display_name:
+          type: string
+          nullable: true
+    MeWorkspace:
+      type: object
+      required:
+        - id
+        - name
+        - plan
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        plan:
+          type: string
+          enum:
+            - personal
+            - professional
+    Device:
+      type: object
+      required:
+        - id
+        - device_name
+        - created_at
+        - last_used_at
+        - current
+      properties:
+        id:
+          type: string
+          format: uuid
+        device_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        current:
+          type: boolean
+          description: True for the token that made this request.
+    DeviceList:
+      type: object
+      required:
+        - devices
+      properties:
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+    Change:
+      type: object
+      additionalProperties: false
+      description: >-
+        One outbox entry (KB sync.md step 1, D-96, D-97). `fields` holds only
+        the changed fields of the entity's record schema that are not
+        read-only; the server checks them against that schema.
+      required:
+        - change_id
+        - entity
+        - id
+        - op
+        - fields
+        - base_revision
+        - device_time
+      properties:
+        change_id:
+          type: string
+          format: uuid
+          description: UUID v7 made on the device; the idempotency key.
+        entity:
+          $ref: '#/components/schemas/EntityName'
+        id:
+          type: string
+          format: uuid
+          description: Id of the record the change is about.
+        op:
+          type: string
+          description: >-
+            upsert creates or changes fields; delete sets the tombstone;
+            restore removes it (undo, D-97); move_entry changes an entry's
+            current place and writes its place history (the only way to do so).
+          enum:
+            - upsert
+            - delete
+            - restore
+            - move_entry
+        fields:
+          type: object
+          additionalProperties: true
+        base_revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          nullable: true
+          description: The record's revision the device last saw; null when it creates the record.
+        device_time:
+          type: string
+          format: date-time
+          description: Device clock, for information only; never decides order.
+    EntityName:
+      type: string
+      description: >-
+        Table name of the record (open string, D-96). Documented values:
+        workspaces, users, customers, sites, rooms, openings, fixtures,
+        entries, place_history, pictures, notes, labels, property_keys,
+        entity_labels, entity_properties, jobs, time_blocks, sign_offs,
+        expenses, conflicts. Apps skip records of an entity they do not know.
+      pattern: '^[a-z][a-z_]{0,31}$'
+    PushRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - changes
+      properties:
+        changes:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/Change'
+    ChangeResult:
+      type: object
+      required:
+        - change_id
+        - status
+      properties:
+        change_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - applied
+            - merged
+            - rejected
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          nullable: true
+          description: The record's new revision for applied and merged.
+        reason:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: >-
+            Only for rejected (open string, D-96). Documented values:
+            permission, deleted, duplicate, invalid, not_found, stale_base.
+            Apps treat an unknown reason as a plain rejection.
+        existing_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Only with duplicate, the id of the live record that holds the value.
+        detail:
+          type: string
+          nullable: true
+          description: Text for logs, never shown to users.
+    PushResult:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/ChangeResult'
+    PulledRecord:
+      type: object
+      required:
+        - entity
+        - id
+        - revision
+        - deleted_at
+        - fields
+      properties:
+        entity:
+          $ref: '#/components/schemas/EntityName'
+        id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        fields:
+          type: object
+          additionalProperties: true
+          description: The whole record as the entity's record schema describes it (D-95).
+    PullResult:
+      type: object
+      required:
+        - records
+        - has_more
+        - last_revision
+      properties:
+        records:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/PulledRecord'
+        has_more:
+          type: boolean
+        last_revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: >-
+            The highest revision the server examined for this page. It can be
+            higher than the last returned record, because records this token
+            may not read are skipped. Store it and pass it as `since`. When
+            `has_more` is true it is greater than `since`.
+    FileState:
+      type: object
+      required:
+        - sha256
+        - received_bytes
+        - complete
+      properties:
+        sha256:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        size:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          nullable: true
+          description: Total size from the first chunk's Content-Range; null before any chunk.
+        received_bytes:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        complete:
+          type: boolean
+    RoomOutline:
+      type: array
+      description: Corner points in cm, clockwise from the top-left corner (D-83, provisional).
+      items:
+        $ref: '#/components/schemas/OutlinePoint'
+    OutlinePoint:
+      type: object
+      description: One corner of a room outline, in cm from the plan's origin.
+      required:
+        - x_cm
+        - y_cm
+      properties:
+        x_cm:
+          type: integer
+          format: int32
+        y_cm:
+          type: integer
+          format: int32
+    FixtureLevels:
+      type: array
+      description: Levels from the bottom; each with its height and number of compartments (KB data-model.md).
+      items:
+        $ref: '#/components/schemas/FixtureLevel'
+    FixtureLevel:
+      type: object
+      description: One level of a fixture, counted from the bottom.
+      required:
+        - height_cm
+        - compartments
+      properties:
+        height_cm:
+          type: integer
+          format: int32
+          minimum: 0
+        compartments:
+          type: integer
+          format: int32
+          minimum: 1
+    Workspace:
+      type: object
+      description: A `workspaces` record as sync pulls it (D-95).
+      required:
+        - id
+        - name
+        - plan
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+          nullable: true
+        plan:
+          type: string
+          enum:
+            - personal
+            - professional
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    User:
+      type: object
+      description: A `users` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - role
+        - display_name
+        - email
+        - expires_at
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        role:
+          type: string
+          enum:
+            - owner
+            - customer
+            - helper
+        display_name:
+          type: string
+          maxLength: 200
+          nullable: true
+        email:
+          type: string
+          maxLength: 254
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Customer:
+      type: object
+      description: A `customers` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - name
+        - contact
+        - external_ref
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+          nullable: true
+        contact:
+          description: "Free-form contact details; typed by a later issue (D-95)."
+          type: object
+          additionalProperties: true
+          nullable: true
+        external_ref:
+          type: string
+          maxLength: 191
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Site:
+      type: object
+      description: A `sites` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - name
+        - address
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          maxLength: 200
+          nullable: true
+        address:
+          type: string
+          maxLength: 500
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Room:
+      type: object
+      description: A `rooms` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - site_id
+        - name
+        - outline
+        - height_cm
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        site_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+          nullable: true
+        outline:
+          type: array
+          allOf:
+            - $ref: '#/components/schemas/RoomOutline'
+          nullable: true
+        height_cm:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Opening:
+      type: object
+      description: A `openings` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - room_id
+        - kind
+        - wall_index
+        - offset_cm
+        - width_cm
+        - height_cm
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        room_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - door
+            - window
+        wall_index:
+          type: integer
+          format: int32
+          minimum: 0
+        offset_cm:
+          type: integer
+          format: int32
+          minimum: 0
+        width_cm:
+          type: integer
+          format: int32
+          minimum: 0
+        height_cm:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Fixture:
+      type: object
+      description: A `fixtures` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - room_id
+        - name
+        - x_cm
+        - y_cm
+        - rotation_deg
+        - width_cm
+        - depth_cm
+        - height_cm
+        - levels
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        room_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+          nullable: true
+        x_cm:
+          type: integer
+          format: int32
+        y_cm:
+          type: integer
+          format: int32
+        rotation_deg:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 359
+        width_cm:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        depth_cm:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        height_cm:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        levels:
+          type: array
+          allOf:
+            - $ref: '#/components/schemas/FixtureLevels'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Entry:
+      type: object
+      description: A `entries` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - code
+        - title
+        - site_id
+        - room_id
+        - fixture_id
+        - level
+        - compartment
+        - floor_x_cm
+        - floor_y_cm
+        - target_site_id
+        - target_room_id
+        - target_fixture_id
+        - target_level
+        - target_compartment
+        - target_floor_x_cm
+        - target_floor_y_cm
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        code:
+          type: string
+          maxLength: 255
+          nullable: true
+        title:
+          type: string
+          maxLength: 200
+          nullable: true
+        site_id:
+          type: string
+          format: uuid
+          nullable: true
+        room_id:
+          type: string
+          format: uuid
+          nullable: true
+        fixture_id:
+          type: string
+          format: uuid
+          nullable: true
+        level:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        compartment:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        floor_x_cm:
+          type: integer
+          format: int32
+          nullable: true
+        floor_y_cm:
+          type: integer
+          format: int32
+          nullable: true
+        target_site_id:
+          type: string
+          format: uuid
+          nullable: true
+        target_room_id:
+          type: string
+          format: uuid
+          nullable: true
+        target_fixture_id:
+          type: string
+          format: uuid
+          nullable: true
+        target_level:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        target_compartment:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        target_floor_x_cm:
+          type: integer
+          format: int32
+          nullable: true
+        target_floor_y_cm:
+          type: integer
+          format: int32
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    PlaceHistory:
+      type: object
+      description: A `place_history` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - entry_id
+        - from_site_id
+        - from_room_id
+        - from_fixture_id
+        - from_level
+        - from_compartment
+        - from_floor_x_cm
+        - from_floor_y_cm
+        - to_site_id
+        - to_room_id
+        - to_fixture_id
+        - to_level
+        - to_compartment
+        - to_floor_x_cm
+        - to_floor_y_cm
+        - moved_at
+        - moved_by
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        entry_id:
+          type: string
+          format: uuid
+        from_site_id:
+          type: string
+          format: uuid
+          nullable: true
+        from_room_id:
+          type: string
+          format: uuid
+          nullable: true
+        from_fixture_id:
+          type: string
+          format: uuid
+          nullable: true
+        from_level:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        from_compartment:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        from_floor_x_cm:
+          type: integer
+          format: int32
+          nullable: true
+        from_floor_y_cm:
+          type: integer
+          format: int32
+          nullable: true
+        to_site_id:
+          type: string
+          format: uuid
+          nullable: true
+        to_room_id:
+          type: string
+          format: uuid
+          nullable: true
+        to_fixture_id:
+          type: string
+          format: uuid
+          nullable: true
+        to_level:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        to_compartment:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        to_floor_x_cm:
+          type: integer
+          format: int32
+          nullable: true
+        to_floor_y_cm:
+          type: integer
+          format: int32
+          nullable: true
+        moved_at:
+          type: string
+          format: date-time
+        moved_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Picture:
+      type: object
+      description: A `pictures` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - file_sha256
+        - file_bytes
+        - file_mime
+        - width_px
+        - height_px
+        - taken_at
+        - room_id
+        - entry_id
+        - after_of
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        file_sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        file_bytes:
+          type: integer
+          format: int32
+          minimum: 0
+        file_mime:
+          type: string
+          maxLength: 100
+        width_px:
+          type: integer
+          format: int32
+          minimum: 0
+        height_px:
+          type: integer
+          format: int32
+          minimum: 0
+        taken_at:
+          type: string
+          format: date-time
+          nullable: true
+        room_id:
+          type: string
+          format: uuid
+          nullable: true
+        entry_id:
+          type: string
+          format: uuid
+          nullable: true
+        after_of:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Note:
+      type: object
+      description: A `notes` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - subject_type
+        - subject_id
+        - text
+        - audio_sha256
+        - audio_bytes
+        - audio_seconds
+        - transcript
+        - transcript_source
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        subject_type:
+          type: string
+          enum:
+            - entry
+            - room
+            - picture
+            - job
+            - customer
+        subject_id:
+          type: string
+          format: uuid
+        text:
+          type: string
+          nullable: true
+        audio_sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+          nullable: true
+        audio_bytes:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        audio_seconds:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        transcript:
+          type: string
+          nullable: true
+        transcript_source:
+          type: string
+          enum:
+            - device
+            - manual
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Label:
+      type: object
+      description: A `labels` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - name
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    PropertyKey:
+      type: object
+      description: A `property_keys` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - name
+        - unit
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        unit:
+          type: string
+          maxLength: 32
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    EntityLabel:
+      type: object
+      description: A `entity_labels` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - entity_type
+        - entity_id
+        - label_id
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        entity_type:
+          type: string
+          enum:
+            - entry
+            - room
+            - fixture
+            - picture
+        entity_id:
+          type: string
+          format: uuid
+        label_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    EntityProperty:
+      type: object
+      description: A `entity_properties` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - entity_type
+        - entity_id
+        - key_id
+        - value_text
+        - value_number
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        entity_type:
+          type: string
+          enum:
+            - entry
+            - room
+            - fixture
+            - picture
+        entity_id:
+          type: string
+          format: uuid
+        key_id:
+          type: string
+          format: uuid
+        value_text:
+          type: string
+          maxLength: 1000
+          nullable: true
+        value_number:
+          type: string
+          pattern: "^-?[0-9]{1,14}(\\.[0-9]{1,6})?$"
+          description: "Decimal as text, so no float rounding (D-95)."
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Job:
+      type: object
+      description: A `jobs` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - date
+        - agreed_minutes
+        - report_sent_at
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        agreed_minutes:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        report_sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    TimeBlock:
+      type: object
+      description: A `time_blocks` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - job_id
+        - started_at
+        - ended_at
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+        job_id:
+          type: string
+          format: uuid
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    SignOff:
+      type: object
+      description: A `sign_offs` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - job_id
+        - minutes_confirmed
+        - signature
+        - signed_at
+        - signed_by
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+        job_id:
+          type: string
+          format: uuid
+        minutes_confirmed:
+          type: integer
+          format: int32
+          minimum: 0
+        signature:
+          description: "Stroke list of the signature; typed by the sign-off issue in M5 (D-95)."
+          type: array
+          items: {}
+        signed_at:
+          type: string
+          format: date-time
+        signed_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Expense:
+      type: object
+      description: A `expenses` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - job_id
+        - picture_id
+        - amount_cents
+        - note
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+        job_id:
+          type: string
+          format: uuid
+        picture_id:
+          type: string
+          format: uuid
+          nullable: true
+        amount_cents:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        note:
+          type: string
+          maxLength: 1000
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    Conflict:
+      type: object
+      description: A `conflicts` record as sync pulls it (D-95).
+      required:
+        - id
+        - workspace_id
+        - customer_id
+        - entity
+        - entity_id
+        - field
+        - lost_value
+        - lost_change_id
+        - won_revision
+        - created_at
+        - created_by
+        - updated_at
+        - updated_by
+        - revision
+        - deleted_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        workspace_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        entity:
+          type: string
+          enum:
+            - workspaces
+            - users
+            - customers
+            - sites
+            - rooms
+            - openings
+            - fixtures
+            - labels
+            - property_keys
+            - entity_labels
+            - entity_properties
+            - entries
+            - place_history
+            - pictures
+            - notes
+            - jobs
+            - time_blocks
+            - sign_offs
+            - expenses
+        entity_id:
+          type: string
+          format: uuid
+        field:
+          type: string
+          maxLength: 64
+        lost_value:
+          description: "The value that lost: any JSON value, null included (D-95)."
+        lost_change_id:
+          type: string
+          format: uuid
+          nullable: true
+        won_revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true

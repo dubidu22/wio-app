@@ -1,0 +1,7 @@
+{
+  "device_id": "01990000-0000-7000-8000-009900000001",
+  "user": {"id": "01990000-0000-7000-8000-000200000001", "role": "owner", "display_name": "Inhaber Beispiel"},
+  "workspace": {"id": "01990000-0000-7000-8000-000100000001", "name": "Demo Umzüge", "plan": "professional"},
+  "unknown_later_field": "apps ignore fields they do not know"
+}
+

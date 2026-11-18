@@ -1,0 +1,11 @@
+{
+  "type": "about:blank",
+  "title": "Choose a workspace",
+  "status": 409,
+  "code": "workspace_choice_required",
+  "workspaces": [
+    {"id": "01990000-0000-7000-8000-000100000001", "name": "Demo Umzüge"},
+    {"id": "01990000-0000-7000-8000-000100000002", "name": "Demo privat"}
+  ]
+}
+
