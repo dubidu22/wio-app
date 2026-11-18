@@ -152,10 +152,12 @@ final class MigrationRunnerTest extends TestCase
             '0009_device_tokens',
             '0010_sign_in_failures',
             '0011_users_email_key_index',
+            '0012_applied_changes',
+            '0013_field_versions',
         ], $applied);
         self::assertSame([
-            'conflicts', 'customers', 'device_tokens', 'entity_labels', 'entity_properties', 'entries', 'expenses',
-            'fixtures', 'jobs', 'labels', 'notes', 'openings', 'pictures', 'place_history', 'property_keys', 'rooms',
+            'applied_changes', 'conflicts', 'customers', 'device_tokens', 'entity_labels', 'entity_properties', 'entries', 'expenses',
+            'field_versions', 'fixtures', 'jobs', 'labels', 'notes', 'openings', 'pictures', 'place_history', 'property_keys', 'rooms',
             'schema_migrations', 'sign_in_failures', 'sign_offs', 'sites', 'time_blocks', 'user_passwords', 'users',
             'workspace_counters', 'workspaces',
         ], $this->tables());

@@ -1,4 +1,28 @@
 {
+    "applied_changes": {
+        "columns": [
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "change_id char(36) ascii ascii_bin NOT NULL",
+            "device_id char(36) ascii ascii_bin NULL",
+            "payload_sha256 char(64) ascii ascii_bin NOT NULL",
+            "status varchar(16) ascii ascii_bin NOT NULL",
+            "revision bigint(20) unsigned NULL",
+            "reason varchar(64) ascii ascii_bin NULL",
+            "existing_id char(36) ascii ascii_bin NULL",
+            "created_at datetime(3) NOT NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (workspace_id, change_id)",
+            "ix_applied_changes_created_at (created_at)"
+        ],
+        "foreign_keys": [
+            "fk_applied_changes_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_applied_changes_payload_sha256: `payload_sha256` regexp '^[0-9a-f]{64}$'",
+            "ck_applied_changes_status: `status` in ('applied','merged','rejected')"
+        ]
+    },
     "conflicts": {
         "columns": [
             "id char(36) ascii ascii_bin NOT NULL",
@@ -271,6 +295,23 @@
         "checks": [
             "ck_expenses_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'"
         ]
+    },
+    "field_versions": {
+        "columns": [
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "entity varchar(32) ascii ascii_bin NOT NULL",
+            "entity_id char(36) ascii ascii_bin NOT NULL",
+            "field varchar(64) ascii ascii_bin NOT NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "change_id char(36) ascii ascii_bin NOT NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (workspace_id, entity, entity_id, field)"
+        ],
+        "foreign_keys": [
+            "fk_field_versions_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": []
     },
     "fixtures": {
         "columns": [
