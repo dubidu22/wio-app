@@ -23,7 +23,7 @@
         "phpstan/phpstan-strict-rules": "^2",
         "phpunit/phpunit": "^12",
         "symfony/yaml": "^7.4",
-        "vimeo/psalm": "^6"
+        "vimeo/psalm": "^7"
     },
     "autoload": {
         "psr-4": {
