@@ -1,0 +1,21 @@
+# Strictest static analysis (D-39): level max, strict rules, bleeding edge.
+includes:
+    - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+
+parameters:
+    level: max
+    paths:
+        - bin/migrate
+        - public
+        - src
+        - tests
+    excludePaths:
+        - tests/fixtures/*
+    checkUninitializedProperties: true
+    checkImplicitMixed: true
+    checkBenevolentUnionTypes: true
+    reportUnmatchedIgnoredErrors: true
+    # PHPUnit runs setUp() before every test, like a constructor.
+    additionalConstructors:
+        - PHPUnit\Framework\TestCase::setUp

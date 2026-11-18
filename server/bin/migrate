@@ -1,0 +1,25 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Applies pending migrations from server/migrations/ to the database named by
+// WIO_DB_DSN, WIO_DB_USER and WIO_DB_PASSWORD (D-38).
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Wio\Database\Connection;
+use Wio\Migration\Runner;
+
+try {
+    $runner = new Runner(Connection::fromEnvironment(), __DIR__ . '/../migrations');
+    $applied = $runner->migrate();
+} catch (Throwable $e) {
+    fwrite(STDERR, 'Migration failed: ' . $e->getMessage() . PHP_EOL);
+    exit(1);
+}
+
+fwrite(STDOUT, sprintf('Applied %d migration(s).', count($applied)) . PHP_EOL);
+foreach ($applied as $version) {
+    fwrite(STDOUT, '  ' . $version . PHP_EOL);
+}

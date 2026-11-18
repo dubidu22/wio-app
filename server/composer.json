@@ -1,0 +1,70 @@
+{
+    "name": "wio-app/server",
+    "description": "wio-app API: PHP 8.3 and MariaDB",
+    "type": "project",
+    "license": "AGPL-3.0-only",
+    "require": {
+        "php": "~8.3.0",
+        "ext-intl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "slim/psr7": "^1",
+        "slim/slim": "^4"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3",
+        "php-parallel-lint/php-parallel-lint": "^1",
+        "phpstan/phpstan": "^2",
+        "phpstan/phpstan-strict-rules": "^2",
+        "phpunit/phpunit": "^12",
+        "vimeo/psalm": "^6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wio\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Wio\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "lint": "parallel-lint --exclude vendor bin public src tests",
+        "cs": "php-cs-fixer check --diff",
+        "cs:fix": "php-cs-fixer fix",
+        "stan": "phpstan analyse --no-progress --memory-limit=1G",
+        "taint": "psalm --taint-analysis --no-progress --no-cache",
+        "taint:prove": [
+            "@php tests/expect-tainted-sql.php"
+        ],
+        "test": "phpunit",
+        "check": [
+            "@lint",
+            "@cs",
+            "@stan",
+            "@taint",
+            "@taint:prove",
+            "@test"
+        ]
+    },
+    "scripts-descriptions": {
+        "lint": "PHP syntax check of all files",
+        "cs": "Code style check (PER-CS)",
+        "stan": "PHPStan at level max with strict rules",
+        "taint": "Psalm taint analysis of the server code (D-39)",
+        "taint:prove": "Proves the taint check fails on a deliberately unsafe fixture",
+        "test": "All PHPUnit suites; db and api need MariaDB",
+        "check": "Everything CI runs for the server"
+    },
+    "config": {
+        "platform": {
+            "php": "8.3.6"
+        },
+        "sort-packages": true,
+        "allow-plugins": {},
+        "process-timeout": 900
+    }
+}
