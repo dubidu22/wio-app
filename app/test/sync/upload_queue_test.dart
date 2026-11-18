@@ -432,15 +432,57 @@ void main() {
     },
   );
 
-  test('the start-up sweep removes copies without a row (W2, D-215)', () async {
-    final phone = Phone(server);
-    final kept = await phone.enqueue(phone.source(1000));
-    final gone = await phone.enqueue(phone.source(2000, seed: 2));
-    final row = (await phone.rows()).firstWhere((r) => r.sha256 == gone);
-    await discardUpload(phone.db, row);
-    // Rückgängig still finds the copy until the sweep.
-    expect(phone.copies(), containsAll(<String>[kept, gone]));
-    await sweepUploads(phone.db, phone.store);
-    expect(phone.copies(), <String>[kept]);
+  group('start-up sweep (W2, D-215)', () {
+    test('removes old copies without a row and keeps the rest', () async {
+      final phone = Phone(server);
+      final kept = await phone.enqueue(phone.source(1000));
+      final gone = await phone.enqueue(phone.source(2000, seed: 2));
+      final row = (await phone.rows()).firstWhere((r) => r.sha256 == gone);
+      await discardUpload(phone.db, row);
+      final stale = File('${phone.folder.path}/uploads/1-2.tmp')
+        ..writeAsStringSync('half');
+      // Rückgängig still finds the copy until the sweep.
+      expect(phone.copies(), containsAll(<String>[kept, gone, '1-2.tmp']));
+      // Two minutes later the files are older than the margin.
+      await sweepUploads(
+        phone.db,
+        phone.store,
+        clock: () => DateTime.now().add(const Duration(minutes: 2)),
+      );
+      expect(phone.copies(), <String>[kept]);
+      expect(stale.existsSync(), isFalse);
+    });
+
+    test('a copy written while the sweep runs survives (S1)', () async {
+      final phone = Phone(server);
+      // The sweep read the rows before this enqueue inserted its row: a
+      // fresh copy and a fresh .tmp have no row yet.
+      final copy = phone.source(1000);
+      final fresh =
+          File(
+              '${phone.folder.path}/uploads/${sha256Of(copy.readAsBytesSync())}',
+            )
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(copy.readAsBytesSync());
+      final temporary = File('${phone.folder.path}/uploads/3-4.tmp')
+        ..writeAsStringSync('half');
+      await sweepUploads(phone.db, phone.store);
+      expect(fresh.existsSync(), isTrue);
+      expect(temporary.existsSync(), isTrue);
+    });
+
+    test('an enqueue alongside a sweep keeps its copy (S1)', () async {
+      final phone = Phone(server);
+      final source = phone.source(3 * mib);
+      final results = await Future.wait(<Future<Object?>>[
+        phone.enqueue(source),
+        sweepUploads(phone.db, phone.store),
+        sweepUploads(phone.db, phone.store),
+      ]);
+      final sha = results.first! as String;
+      expect(phone.copies(), <String>[sha]);
+      expect((await phone.worker().run()).stop, SyncStop.done);
+      expect(server.files[sha], source.readAsBytesSync());
+    });
   });
 }

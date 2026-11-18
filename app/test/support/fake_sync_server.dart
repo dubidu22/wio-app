@@ -87,6 +87,9 @@ class FakeSyncServer {
   int? fileStatus;
   String fileCode = 'refused';
 
+  /// How long a chunk's answer takes after the server stored it.
+  Duration chunkDelay = Duration.zero;
+
   /// Lose the answers of this many chunk uploads after storing them.
   int loseChunkAnswers = 0;
 
@@ -159,6 +162,9 @@ class FakeSyncServer {
         response = _json(404, problemBody(404, 'not_found'));
     }
     afterRequest?.call(key);
+    if (key.startsWith('PUT /files/') && chunkDelay > Duration.zero) {
+      await Future<void>.delayed(chunkDelay);
+    }
     if (_lose(() => loseAnswers--, loseAnswers > 0)) {
       throw http.ClientException('answer lost (fake)');
     }
@@ -458,9 +464,12 @@ class FakeSyncServer {
     if (total < 1 || last < first || last >= total) {
       return _json(400, problemBody(400, 'invalid_request'));
     }
-    if (body.length != last - first + 1 ||
-        body.length > 4 * 1024 * 1024 ||
-        total > 100 * 1024 * 1024) {
+    // As the real server: a body that does not match its range is a bad
+    // request; a chunk or file over the limits is too large.
+    if (body.length != last - first + 1) {
+      return _json(400, problemBody(400, 'invalid_request'));
+    }
+    if (body.length > 4 * 1024 * 1024 || total > 100 * 1024 * 1024) {
       return _json(413, problemBody(413, 'payload_too_large'));
     }
     if (files.containsKey(sha256)) return _json(200, _state(sha256));

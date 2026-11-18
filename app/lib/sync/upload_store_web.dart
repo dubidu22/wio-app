@@ -13,7 +13,10 @@ class UploadStore {
 
   Future<({String sha256, int size})> hash(String path) async => _unsupported();
 
-  Future<String> keep(String source, String sha256) async => _unsupported();
+  Future<int> size(String path) async => _unsupported();
+
+  Future<({String sha256, int size, String path})> keep(String source) async =>
+      _unsupported();
 
   Future<Uint8List> read(String path, int start, int length) async =>
       _unsupported();
@@ -22,5 +25,5 @@ class UploadStore {
 
   Future<void> remove(String path) async {}
 
-  Future<void> sweep(Set<String> keep) async {}
+  Future<void> sweep(Set<String> keep, {required DateTime before}) async {}
 }

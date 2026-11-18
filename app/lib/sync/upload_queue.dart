@@ -43,39 +43,71 @@ final uploadStoreProvider = Provider<UploadStore>(
 
 /// Queues the file at [source] for upload and returns its SHA-256 (D-210).
 /// An empty file is not queued (D-209). A file over 100 MiB gets a failed
-/// row and no copy. The same file twice is one upload.
+/// row and no copy. The same file twice is one upload. The hash is taken
+/// from the app's copy, not from the source (PR 51 review N3).
 Future<String> enqueueUpload(
   WioDatabase db,
   UploadStore store,
   String source, {
   required DateTime now,
 }) async {
-  final (:sha256, :size) = await store.hash(source);
-  if (size == 0) return sha256;
-  final tooLarge = size > maxUploadBytes;
-  final path = tooLarge ? '' : await store.keep(source, sha256);
-  await db
-      .into(db.uploads)
-      .insert(
-        UploadsCompanion.insert(
-          sha256: sha256,
-          path: path,
-          size: size,
-          createdAt: now.toUtc().toIso8601String(),
-          failedReason: Value<String?>(
-            tooLarge ? UploadFailure.tooLarge : null,
-          ),
-        ),
-        mode: InsertMode.insertOrIgnore,
-      );
-  return sha256;
+  final sourceSize = await store.size(source);
+  if (sourceSize == 0) return emptyFileSha256;
+  if (sourceSize > maxUploadBytes) {
+    final sha256 = (await store.hash(source)).sha256;
+    await _insert(db, sha256, '', sourceSize, now, UploadFailure.tooLarge);
+    return sha256;
+  }
+  final copy = await store.keep(source);
+  if (copy.size == 0 || copy.size > maxUploadBytes) {
+    // The source changed while it was copied; treat the copy as the file.
+    await store.remove(copy.path);
+    if (copy.size == 0) return emptyFileSha256;
+    await _insert(db, copy.sha256, '', copy.size, now, UploadFailure.tooLarge);
+    return copy.sha256;
+  }
+  await _insert(db, copy.sha256, copy.path, copy.size, now, null);
+  return copy.sha256;
 }
 
+Future<void> _insert(
+  WioDatabase db,
+  String sha256,
+  String path,
+  int size,
+  DateTime now,
+  String? failedReason,
+) => db
+    .into(db.uploads)
+    .insert(
+      UploadsCompanion.insert(
+        sha256: sha256,
+        path: path,
+        size: size,
+        createdAt: now.toUtc().toIso8601String(),
+        failedReason: Value<String?>(failedReason),
+      ),
+      mode: InsertMode.insertOrIgnore,
+    );
+
+/// How old a file without a row must be before the sweep deletes it: an
+/// enqueue running alongside writes its copy before its row (S1). File
+/// times can be coarse, so the margin is generous.
+const Duration sweepMargin = Duration(minutes: 1);
+
 /// Deletes copies that no upload row names any more (D-215). Runs at start,
-/// so "Rückgängig" after "Verwerfen" still finds its copy.
-Future<void> sweepUploads(WioDatabase db, UploadStore store) async {
+/// so "Rückgängig" after "Verwerfen" still finds its copy. Only files older
+/// than the sweep's start minus [sweepMargin] go.
+Future<void> sweepUploads(
+  WioDatabase db,
+  UploadStore store, {
+  DateTime Function() clock = DateTime.now,
+}) async {
+  final started = clock();
   final rows = await db.select(db.uploads).get();
-  await store.sweep(<String>{for (final row in rows) row.sha256});
+  await store.sweep(<String>{
+    for (final row in rows) row.sha256,
+  }, before: started.subtract(sweepMargin));
 }
 
 /// Failed uploads for "Nicht gesendet", newest first (D-214).

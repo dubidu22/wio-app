@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -14,6 +15,7 @@ class UploadStore {
       UploadStore(() async => (await getApplicationSupportDirectory()).path);
 
   final Future<String> Function() _base;
+  final Random _random = Random();
 
   Future<Directory> _folder() async {
     final folder = Directory('${await _base()}/uploads');
@@ -29,15 +31,28 @@ class UploadStore {
     return (sha256: digest.toString(), size: size);
   }
 
-  /// Copies [source] into the folder as [sha256] unless a copy is there;
-  /// returns the copy's path. The copy appears whole or not at all.
-  Future<String> keep(String source, String sha256) async {
-    final target = File('${(await _folder()).path}/$sha256');
-    if (!target.existsSync()) {
-      final temporary = await File(source).copy('${target.path}.tmp');
+  /// Size of the file at [path] in bytes.
+  Future<int> size(String path) => File(path).length();
+
+  /// Copies [source] into the folder and names the copy by the hash of the
+  /// copy itself, so a source that changes while it is copied cannot give
+  /// a row whose bytes do not match its name (PR 51 review N3). The copy
+  /// appears whole or not at all; an existing copy of the same bytes stays.
+  Future<({String sha256, int size, String path})> keep(String source) async {
+    final folder = (await _folder()).path;
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final temporary = await File(source)
+        .copy('$folder/$stamp-${_random.nextInt(1 << 32)}.tmp');
+    // The sweep spares recent files; a copy may keep the source's time.
+    await temporary.setLastModified(DateTime.now());
+    final (:sha256, :size) = await hash(temporary.path);
+    final target = File('$folder/$sha256');
+    if (target.existsSync()) {
+      await remove(temporary.path);
+    } else {
       await temporary.rename(target.path);
     }
-    return target.path;
+    return (sha256: sha256, size: size, path: target.path);
   }
 
   /// At most [length] bytes of [path] from [start].
@@ -62,12 +77,22 @@ class UploadStore {
     }
   }
 
-  /// Deletes copies whose name is not in [keep] (D-215).
-  Future<void> sweep(Set<String> keep) async {
+  /// Deletes copies (and left-over `.tmp` files) whose name is not in
+  /// [keep] and that were last changed before [before] (D-215). Files
+  /// written after that, by an enqueue running alongside the sweep, stay
+  /// (PR 51 review S1).
+  Future<void> sweep(Set<String> keep, {required DateTime before}) async {
     final folder = await _folder();
     await for (final entry in folder.list()) {
-      final name = entry.uri.pathSegments.last;
-      if (entry is File && !keep.contains(name)) await remove(entry.path);
+      if (entry is! File) continue;
+      if (keep.contains(entry.uri.pathSegments.last)) continue;
+      try {
+        if (entry.lastModifiedSync().isBefore(before)) {
+          await remove(entry.path);
+        }
+      } on FileSystemException {
+        // Renamed or deleted meanwhile.
+      }
     }
   }
 }
