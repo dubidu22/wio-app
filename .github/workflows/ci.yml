@@ -1,0 +1,271 @@
+# CI for wio-app (KB 03-process/ci.md, plan 002). The required check is the
+# job ci-passed (D-27, D-34).
+#
+# Fast set: every pull request, on Linux.
+# Full set: push to main, manual dispatch, and pull requests labelled full-ci.
+# It adds macOS app tests, an iOS build without signing and an Android debug
+# build (D-33). No path filters: every job runs on every PR.
+# Third-party actions are pinned by commit SHA (D-42).
+name: ci
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  FULL: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci') }}
+  FULL_JOBS: app-macos app-android
+  # Tool telemetry off: nothing from CI goes to third parties (INV-04).
+  REDOCLY_TELEMETRY: "off"
+  REDOCLY_SUPPRESS_UPDATE_NOTICE: "true"
+  FLUTTER_SUPPRESS_ANALYTICS: "true"
+  DART_SUPPRESS_ANALYTICS: "true"
+
+jobs:
+  app:
+    name: app
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+      - name: Turn off tool analytics
+        run: flutter config --no-analytics && dart --disable-analytics
+      - run: flutter pub get --enforce-lockfile
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
+      - name: Unit and widget tests
+        run: ../tools/ci/flutter-test.sh --exclude-tags golden,ux
+      - name: UX rules (56-px targets, labelled buttons)
+        run: ../tools/ci/flutter-test.sh --tags ux
+      - name: Golden tests
+        run: ../tools/ci/flutter-test.sh --tags golden
+      - name: Upload golden failures
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: golden-failures
+          path: app/test/**/failures/
+          if-no-files-found: ignore
+
+  app-web:
+    name: app-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+      - name: Turn off tool analytics
+        run: flutter config --no-analytics && dart --disable-analytics
+      - name: Build web (WebAssembly with JavaScript fallback, no CDN)
+        working-directory: app
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter build web --wasm --no-web-resources-cdn --release
+      - name: Install tools
+        working-directory: tools
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: The network check can fail (fixtures)
+        working-directory: tools
+        run: npm run test:web-check
+      - name: No request leaves the local server (D-40)
+        working-directory: tools
+        run: npm run check:web
+
+  app-macos:
+    name: app-macos
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci') }}
+    runs-on: macos-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+      - name: Turn off tool analytics
+        run: flutter config --no-analytics && dart --disable-analytics
+      - run: flutter pub get --enforce-lockfile
+      - name: Unit and widget tests
+        run: ../tools/ci/flutter-test.sh --exclude-tags golden,ux
+      - name: UX rules
+        run: ../tools/ci/flutter-test.sh --tags ux
+      - name: iOS build without signing
+        run: flutter build ios --debug --no-codesign
+
+  app-android:
+    name: app-android
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+      - name: Turn off tool analytics
+        run: flutter config --no-analytics && dart --disable-analytics
+      - run: flutter pub get --enforce-lockfile
+      - name: Android debug build
+        run: flutter build apk --debug
+
+  server:
+    name: server
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mariadb:
+        # Assumed to match the hosting until Colin confirms the version (O-12).
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: wio_test
+          MARIADB_USER: wio_test
+          MARIADB_PASSWORD: wio_test
+          MARIADB_ROOT_PASSWORD: root_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      WIO_DB_DSN: mysql:host=127.0.0.1;port=3306;dbname=wio_test;charset=utf8mb4
+      WIO_DB_USER: wio_test
+      WIO_DB_PASSWORD: wio_test
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f # 2.37.0
+        with:
+          php-version: "8.3"
+          extensions: intl, mbstring, pdo_mysql
+          coverage: none
+          tools: composer:v2
+      - name: Install dependencies (locked)
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Validate composer.json and composer.lock
+        run: composer validate --strict
+      - name: PHP lint
+        run: composer lint
+      - name: Code style (PER-CS)
+        run: composer cs
+      - name: Static analysis (PHPStan level max)
+        run: composer stan
+      - name: Security analysis (Psalm taint, D-39)
+        run: composer taint
+      - name: The taint check can fail (deliberately unsafe fixture)
+        run: composer taint:prove
+      - name: Migrations up from an empty database
+        run: php bin/migrate
+      - name: Unit tests
+        run: vendor/bin/phpunit --testsuite unit
+      - name: Database tests
+        run: vendor/bin/phpunit --testsuite db
+      - name: API tests
+        run: vendor/bin/phpunit --testsuite api
+
+  contract:
+    name: contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+      - name: Install tools
+        working-directory: tools
+        run: npm ci
+      - name: OpenAPI lint (D-43)
+        working-directory: tools
+        run: npm run lint:openapi
+
+  tools:
+    name: tools
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: actionlint
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          "$(go env GOPATH)/bin/actionlint" -color
+      - name: shellcheck
+        run: shellcheck tools/ci/*.sh tools/ci/test/*.sh
+      - name: Tests of the CI scripts
+        run: |
+          tools/ci/test/check-needs.test.sh
+          tools/ci/test/flutter-test.test.sh
+
+  ci-passed:
+    name: ci-passed
+    if: ${{ always() }}
+    needs: [app, app-web, app-macos, app-android, server, contract, tools]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/workflows/ci.yml
+            tools/ci/check-needs.sh
+          sparse-checkout-cone-mode: false
+      - name: Every job ran and passed (D-34)
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: tools/ci/check-needs.sh .github/workflows/ci.yml

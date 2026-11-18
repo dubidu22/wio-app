@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- Runs taint analysis on the deliberately unsafe fixture only. CI expects
+     this run to FAIL with TaintedSql; a pass means the check is broken (D-39). -->
+<psalm
+    errorLevel="1"
+    resolveFromConfigFile="true"
+    findUnusedCode="false"
+    findUnusedBaselineEntry="false"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+>
+    <projectFiles>
+        <directory name="tests/fixtures/taint"/>
+    </projectFiles>
+</psalm>

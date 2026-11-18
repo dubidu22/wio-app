@@ -1,0 +1,26 @@
+# Adds lane:* labels from the changed paths and risk:high when a critical path
+# changes (KB 03-process/ci.md), so a critical change cannot hide behind a
+# missing label. Uses pull_request, not pull_request_target: fork PRs get a
+# read-only token and stay unlabelled, and outside PRs are not merged (D-28).
+name: labels
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  label:
+    name: label
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          configuration-path: .github/labeler.yml
+          sync-labels: false

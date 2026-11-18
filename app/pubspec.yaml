@@ -1,0 +1,33 @@
+name: wio_app
+description: "wio-app: field app for tidy-up and moving work."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.14.0
+  # The only place the Flutter version is pinned (D-41); CI reads it from here.
+  flutter: 3.50.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  material_ui: ^1.11.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+  # Bundled so that no platform fetches fonts from a CDN at run time (D-40).
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500

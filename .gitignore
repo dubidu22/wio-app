@@ -17,3 +17,7 @@ Thumbs.db
 *.p8
 *.mobileprovision
 key.properties
+
+# Dependencies installed by package managers
+node_modules/
+server/vendor/

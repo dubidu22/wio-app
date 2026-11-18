@@ -1,0 +1,49 @@
+# wio-app API contract: the only interface between the app and the server
+# (INV-02). Stub from the CI issue (#2, D-43): it holds only GET /health so the
+# validation step in CI checks a real file. The contract issue (#4) owns this
+# file from here on and settles the OpenAPI version (O-7). Every change here is
+# critical.
+openapi: 3.0.3
+info:
+  title: wio-app API
+  version: 0.0.0
+  description: API of wio-app, the field app for tidy-up and moving work.
+  license:
+    name: AGPL-3.0-only
+    url: https://www.gnu.org/licenses/agpl-3.0.html
+servers:
+  - url: /
+    description: The server the app is configured for
+security: []
+tags:
+  - name: system
+    description: Operational endpoints
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Check that the API is up
+      description: Answers without touching the database, for deploy smoke tests.
+      tags:
+        - system
+      responses:
+        '200':
+          description: The API is up.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '405':
+          description: Only GET is allowed.
+components:
+  schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok

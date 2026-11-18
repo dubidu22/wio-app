@@ -1,0 +1,39 @@
+# Weekly grouped updates (KB 03-process/ci.md, D-42). Every Dependabot PR is
+# reviewed like any other PR.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    labels: [lane:platform, chore]
+
+  - package-ecosystem: pub
+    directory: /app
+    schedule:
+      interval: weekly
+    groups:
+      pub:
+        patterns: ["*"]
+    labels: [lane:platform, chore]
+
+  - package-ecosystem: composer
+    directory: /server
+    schedule:
+      interval: weekly
+    groups:
+      composer:
+        patterns: ["*"]
+    labels: [lane:platform, chore]
+
+  - package-ecosystem: npm
+    directory: /tools
+    schedule:
+      interval: weekly
+    groups:
+      tools:
+        patterns: ["*"]
+    labels: [lane:platform, chore]

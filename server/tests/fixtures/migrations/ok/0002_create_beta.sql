@@ -1,0 +1,2 @@
+CREATE TABLE beta (id INT NOT NULL PRIMARY KEY);
+INSERT INTO beta (id) VALUES (1), (2);

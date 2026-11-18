@@ -1,0 +1,3 @@
+# OpenAPI lint rules for api/openapi.yaml (D-43).
+extends:
+  - recommended-strict

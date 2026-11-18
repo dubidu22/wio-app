@@ -1,0 +1,50 @@
+# Path rules for labels.yml. Lanes follow CLAUDE.md; risk:high follows the
+# critical list (CLAUDE.md, D-24). Add a path here when a new critical area
+# gets its folder (auth, sync, privacy texts).
+lane:app:
+  - changed-files:
+      # At least one changed file under app/lib or app/test outside planning.
+      - all-globs-to-any-file:
+          - "app/{lib,test}/**"
+          - "!app/{lib,test}/planning/**"
+
+lane:planning:
+  - changed-files:
+      - any-glob-to-any-file:
+          - app/lib/planning/**
+          - app/test/planning/**
+
+lane:api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - server/**
+          - api/**
+
+lane:platform:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+          - tools/**
+          - app/android/**
+          - app/ios/**
+          - app/web/**
+          - app/pubspec.yaml
+          - app/pubspec.lock
+          - server/composer.json
+          - server/composer.lock
+
+risk:high:
+  - changed-files:
+      - any-glob-to-any-file:
+          - api/openapi.yaml
+          - server/migrations/**
+          - server/src/Migration/**
+          - server/src/Auth/**
+          - server/src/Sync/**
+          - app/lib/sync/**
+          - "**/goldens/**"
+          - .github/workflows/**
+          - "**/LICENSE*"
+          - THIRD-PARTY-LICENCES.md
+          - server/bin/migrate
+          - "**/privacy/**"

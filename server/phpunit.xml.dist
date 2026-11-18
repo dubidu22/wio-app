@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Every suite fails when it holds no tests (D-35). The db and api suites
+     need MariaDB; the defaults below match the throw-away test container that
+     CI and `docker run` start. They are not credentials of any real database. -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         cacheDirectory=".phpunit.cache"
+         colors="true"
+         executionOrder="random"
+         failOnEmptyTestSuite="true"
+         failOnRisky="true"
+         failOnWarning="true"
+         failOnDeprecation="true"
+         failOnNotice="true"
+         beStrictAboutOutputDuringTests="true"
+         beStrictAboutCoverageMetadata="false">
+    <testsuites>
+        <testsuite name="unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="db">
+            <directory>tests/Db</directory>
+        </testsuite>
+        <testsuite name="api">
+            <directory>tests/Api</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="WIO_DB_DSN" value="mysql:host=127.0.0.1;port=3306;dbname=wio_test;charset=utf8mb4" force="false"/>
+        <env name="WIO_DB_USER" value="wio_test" force="false"/>
+        <env name="WIO_DB_PASSWORD" value="wio_test" force="false"/>
+    </php>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+</phpunit>
