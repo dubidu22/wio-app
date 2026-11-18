@@ -113,6 +113,10 @@ class _RejectedTile extends ConsumerWidget {
                       messenger.showSnackBar(
                         SnackBar(
                           content: Text(l10n.rejectedDiscarded),
+                          // UX rule 9: the note goes by itself; an action
+                          // would otherwise keep it on screen.
+                          duration: const Duration(seconds: 8),
+                          persist: false,
                           action: SnackBarAction(
                             label: l10n.undo,
                             onPressed: () => keepRejected(db, change),

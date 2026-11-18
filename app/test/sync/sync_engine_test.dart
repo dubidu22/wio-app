@@ -591,7 +591,19 @@ void main() {
     await phone.engine.push();
     final row = (await phone.customer(TestIds.frauMuster))!;
     expect(row.revision, 1);
+    // Without a server copy the refused value cannot be undone yet; the row
+    // stays as it is until its copy arrives.
+    expect(row.name, 'Abgelehnt');
     expect(await phone.outbox(), 0);
+    expect((await phone.rejected()).single.reason, 'permission');
+
+    server
+      ..refuse = null
+      ..put('customers', TestIds.frauMuster, <String, Object?>{
+        'name': 'Frau Muster',
+      });
+    await phone.engine.pull();
+    expect((await phone.customer(TestIds.frauMuster))!.name, 'Frau Muster');
   });
 }
 

@@ -249,5 +249,22 @@ void main() {
       expect(await db.select(db.rejectedChanges).get(), hasLength(1));
       expect(find.text('Kunde: Nicht erlaubt'), findsOneWidget);
     });
+
+    testWidgets('the Verworfen note goes away after 8 seconds (UX rule 9)', (
+      tester,
+    ) async {
+      await refused(tester);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Ansehen'));
+      await settle(tester);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Verwerfen'));
+      await settle(tester);
+      expect(find.text('Verworfen.'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 7));
+      expect(find.text('Verworfen.'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 2));
+      await settle(tester);
+      expect(find.text('Verworfen.'), findsNothing);
+      expect(find.text('Rückgängig'), findsNothing);
+    });
   });
 }

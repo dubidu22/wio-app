@@ -70,6 +70,7 @@ Future<void> _rebuild(
           readsFrom: <TableInfo<Table, Object?>>{table},
         )
         .getSingleOrNull();
+    // Such a row cannot undo a refused value until its copy arrives.
     if (row != null && row.data['revision'] != null) {
       values.addAll(row.data);
       base = true;

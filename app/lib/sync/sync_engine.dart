@@ -115,9 +115,7 @@ class SyncEngine {
       if (page.isNotEmpty && _refersTo(row, fields, createdHere)) break;
       page.add(row);
       bytes += size;
-      if (row.op == 'upsert' &&
-          row.baseRevision == null &&
-          canBeDuplicate(row.entity, fields)) {
+      if (isCreate(row, fields) && canBeDuplicate(row.entity, fields)) {
         createdHere.add(row.entityId);
       }
     }
@@ -237,7 +235,8 @@ class SyncEngine {
 
   /// A create the server has never confirmed: no server copy.
   Future<bool> _isLocalCreate(OutboxData row) async {
-    if (row.op != 'upsert' || row.baseRevision != null) return false;
+    final fields = jsonDecode(row.fields) as Map<String, Object?>;
+    if (!isCreate(row, fields)) return false;
     final copy =
         await (db.select(db.serverRecords)..where(
               (r) => r.entity.equals(row.entity) & r.id.equals(row.entityId),
@@ -442,6 +441,15 @@ class SyncEngine {
   static Duration? _seconds(int? seconds) =>
       seconds != null && seconds > 0 ? Duration(seconds: seconds) : null;
 }
+
+/// True when [row] creates its record: an upsert without a base revision
+/// that carries `workspace_id`, which `LocalWriter` requires only for a new
+/// record. An edit of a record not yet pulled also has no base revision, but
+/// no `workspace_id`; it is never re-pointed (D-198, PR 48 review B1).
+bool isCreate(OutboxData row, Map<String, Object?> fields) =>
+    row.op == 'upsert' &&
+    row.baseRevision == null &&
+    fields.containsKey('workspace_id');
 
 /// One outbox row as the contract's `Change`: server-stamped fields left
 /// out, JSON columns sent as JSON.
