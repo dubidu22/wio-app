@@ -17,6 +17,9 @@ use Wio\Auth\AuthContext;
  *   and edit, delete or restore the ones they created themselves; add,
  *   remove and restore labels on entries.
  * - Helpers: nothing until M6 defines what a helper link grants (D-182).
+ *
+ * Files (D-186, D-206): owners and customers may read upload states and
+ * upload; helpers get 403 forbidden until M6.
  */
 final class Rights
 {
@@ -55,6 +58,9 @@ final class Rights
     /** Fields no role may push, although the entity is allowed. */
     public const array READ_ONLY = ['workspaces' => ['plan']];
 
+    /** Roles that may use getFileState and putFileChunk. */
+    public const array FILES = ['owner', 'customer'];
+
     /** Entities a customer may change only where they created the record. */
     private const array OWN_RECORDS = ['pictures', 'notes'];
 
@@ -66,6 +72,11 @@ final class Rights
     public static function mayPush(AuthContext $caller, string $entity, string $op): bool
     {
         return \in_array($op, self::OPS[$caller->role][$entity] ?? [], true);
+    }
+
+    public static function mayUseFiles(AuthContext $caller): bool
+    {
+        return \in_array($caller->role, self::FILES, true);
     }
 
     /**

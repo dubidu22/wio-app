@@ -22,6 +22,8 @@ use Wio\Tests\Api\Operation;
 #[Operation('revokeDevice')]
 #[Operation('syncPush')]
 #[Operation('syncPull')]
+#[Operation('getFileState')]
+#[Operation('putFileChunk')]
 final class AuthCoverageTest extends DatabaseTestCase
 {
     /**

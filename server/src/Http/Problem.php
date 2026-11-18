@@ -40,6 +40,14 @@ final class Problem
             ->withHeader('WWW-Authenticate', 'Bearer');
     }
 
+    /**
+     * The caller's role may not use the operation (D-206).
+     */
+    public static function forbidden(ResponseInterface $response): ResponseInterface
+    {
+        return self::write($response, 403, 'forbidden', 'Not allowed for this role');
+    }
+
     public static function notFound(ResponseInterface $response): ResponseInterface
     {
         return self::write($response, 404, 'not_found', 'Not found');

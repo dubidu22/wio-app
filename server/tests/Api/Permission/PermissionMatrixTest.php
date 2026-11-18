@@ -23,6 +23,8 @@ use Wio\Tests\Support\AuthFixtures;
 #[Operation('revokeDevice')]
 #[Operation('syncPush')]
 #[Operation('syncPull')]
+#[Operation('getFileState')]
+#[Operation('putFileChunk')]
 final class PermissionMatrixTest extends DatabaseTestCase
 {
     /**
@@ -143,6 +145,8 @@ final class PermissionMatrixTest extends DatabaseTestCase
                 'device_time' => '2026-11-18T09:00:00.000Z',
             ]]], token: $token),
             'syncPull' => $this->call('GET', '/sync/pull?since=0', token: $token),
+            'getFileState' => $this->call('GET', '/files/' . hash('sha256', 'Kiste') . '/state', token: $token),
+            'putFileChunk' => $this->chunk(hash('sha256', 'Kiste'), 'Kiste', 0, 5, $token),
             default => self::fail("No request for {$operation}: add it here and a row to matrix.php"),
         };
     }
