@@ -57,14 +57,26 @@ jobs:
       - name: Build APK (release mode, debug-signed)
         run: flutter build apk --release
 
-      # D-46: the installed build may not reach the network.
-      - name: Check permissions
+      # D-46: the installed build may not reach the network, and its data
+      # may not leave the phone through Android backup or device transfer.
+      - name: Check permissions and backup
         run: |
+          apk=build/app/outputs/flutter-apk/app-release.apk
           aapt2="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)aapt2"
-          "$aapt2" dump permissions build/app/outputs/flutter-apk/app-release.apk | tee "$RUNNER_TEMP/perms.txt"
+          "$aapt2" dump permissions "$apk" | tee "$RUNNER_TEMP/perms.txt"
           grep -q 'android.permission.RECORD_AUDIO' "$RUNNER_TEMP/perms.txt"
           if grep -q 'android.permission.INTERNET' "$RUNNER_TEMP/perms.txt"; then
             echo "::error::The spike APK must not have the INTERNET permission (D-46)"
+            exit 1
+          fi
+          "$aapt2" dump xmltree --file AndroidManifest.xml "$apk" > "$RUNNER_TEMP/manifest.txt"
+          grep -E 'allowBackup|fullBackupContent|dataExtractionRules' "$RUNNER_TEMP/manifest.txt"
+          if ! grep -Eq 'allowBackup\(0x[0-9a-f]+\)=false' "$RUNNER_TEMP/manifest.txt"; then
+            echo "::error::The spike APK must set android:allowBackup=\"false\" (D-46)"
+            exit 1
+          fi
+          if ! grep -Eq 'dataExtractionRules\(0x[0-9a-f]+\)=@' "$RUNNER_TEMP/manifest.txt"; then
+            echo "::error::The spike APK must set android:dataExtractionRules (D-46)"
             exit 1
           fi
 

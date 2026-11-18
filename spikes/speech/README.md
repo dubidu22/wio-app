@@ -30,6 +30,14 @@ Plan: `plans/plan-009-app-speech-spike.md` in the project folder. Hand test:
   manifest; CI fails if it comes back).
 - Recordings and results stay in the app's private folder. **Ergebnis
   kopieren** only puts a text table on the clipboard.
+- Android backup is off: `allowBackup="false"`, `fullBackupContent="false"`
+  and `data_extraction_rules.xml` excluding every domain from cloud backup and
+  device transfer, so recordings and transcripts do not go to Google Drive or
+  to a new phone. CI checks the built APK's manifest for it.
+- iOS is not built yet. Before any iOS build, recordings and `results.json`
+  must be excluded from iCloud backup (`NSURLIsExcludedFromBackupKey`, or
+  stored outside Documents); otherwise the `Info.plist` usage text ("Nichts
+  wird ins Internet geschickt") is untrue.
 - The web build is deliberately not included: the browser's speech API sends
   audio to a server.
 

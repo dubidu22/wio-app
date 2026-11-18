@@ -5,8 +5,13 @@
     <!-- D-46: no network permission in the build Colin installs, even if a
          plugin asks for it. Debug builds add it back for hot reload. -->
     <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <!-- D-46: recordings and transcripts must not leave the phone through
+         Android backup (Google Drive) or device-to-device transfer. -->
     <application
         android:label="Sprach-Test"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
