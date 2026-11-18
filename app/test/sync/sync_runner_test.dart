@@ -39,15 +39,6 @@ Future<WioDatabase> seeded() async {
   return db;
 }
 
-/// Lets sync's database and HTTP work finish: it runs on short timers and
-/// microtasks that pumpAndSettle alone does not wait for.
-Future<void> settle(WidgetTester tester) async {
-  for (var i = 0; i < 30; i++) {
-    await tester.pump(const Duration(milliseconds: 1));
-  }
-  await tester.pumpAndSettle();
-}
-
 ProviderContainer containerOf(WidgetTester tester) =>
     ProviderScope.containerOf(tester.element(find.byType(JobListScreen)));
 

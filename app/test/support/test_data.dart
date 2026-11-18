@@ -180,3 +180,30 @@ Future<void> seedWithRejected(WioDatabase db) async {
     ]);
   });
 }
+
+/// [seedWithRejected] plus two uploads that failed (D-214): one refused
+/// for permission, one damaged.
+Future<void> seedWithRejectedAndUploads(WioDatabase db) async {
+  await seedWithRejected(db);
+  await seedUploads(db, <(String, int, String?)>[
+    ('a' * 64, 2500000, 'permission'),
+    ('b' * 64, 12900000, 'damaged'),
+  ]);
+}
+
+/// Upload rows as (sha256, size, failed reason); the copies do not exist.
+Future<void> seedUploads(
+  WioDatabase db,
+  List<(String, int, String?)> uploads,
+) => db.batch((b) {
+  b.insertAll(db.uploads, <UploadsCompanion>[
+    for (final (i, (sha256, size, reason)) in uploads.indexed)
+      UploadsCompanion.insert(
+        sha256: sha256,
+        path: '/nowhere/uploads/$sha256',
+        size: size,
+        createdAt: '2026-11-19T08:1$i:00.000Z',
+        failedReason: Value<String?>(reason),
+      ),
+  ]);
+});

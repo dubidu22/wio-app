@@ -9,6 +9,7 @@ import 'package:wio_api/wio_api.dart';
 import '../data/database.dart';
 import 'local_tables.dart';
 import 'rebuild.dart';
+import 'upload_queue.dart';
 
 /// Most changes in one push (D-191).
 const int maxPushChanges = 200;
@@ -44,12 +45,18 @@ enum SyncStop {
 
 /// How a sync step ended, with the wait the server asked for.
 class SyncResult {
-  const SyncResult(this.stop, {this.retryAfter});
+  const SyncResult(this.stop, {this.retryAfter, this.more = false});
 
   static const SyncResult done = SyncResult(SyncStop.done);
 
+  /// Done for now, but new changes wait: run again (D-211).
+  static const SyncResult runAgain = SyncResult(SyncStop.done, more: true);
+
   final SyncStop stop;
   final Duration? retryAfter;
+
+  /// Another run should follow at once.
+  final bool more;
 }
 
 /// Pushes the outbox and pulls the server's changes for one workspace (plan
@@ -61,6 +68,7 @@ class SyncEngine {
     required this.api,
     required this.workspaceId,
     required this.tooOld,
+    this.uploads,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
 
@@ -72,11 +80,17 @@ class SyncEngine {
   final bool Function() tooOld;
   final DateTime Function() _clock;
 
-  /// Push, then pull (D-201).
+  /// Sends queued files after push and pull (D-208); none in tests of the
+  /// record loop.
+  final UploadWorker? uploads;
+
+  /// Push, then pull, then uploads (D-201, D-208).
   Future<SyncResult> run() async {
     final pushed = await push();
     if (pushed.stop != SyncStop.done) return pushed;
-    return pull();
+    final pulled = await pull();
+    if (pulled.stop != SyncStop.done) return pulled;
+    return await uploads?.run() ?? SyncResult.done;
   }
 
   // ---------------------------------------------------------------- push

@@ -198,10 +198,12 @@ class _SyncStatusLine extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final pending = ref.watch(outboxCountProvider).value;
     if (pending == null) return const SizedBox.shrink();
+    final uploads = ref.watch(pendingUploadCountProvider).value ?? 0;
     final text = switch (ref.watch(syncProvider)) {
       SyncActivity.running => l10n.syncRunning,
-      SyncActivity.offline when pending > 0 => l10n.syncOffline,
+      SyncActivity.offline when pending > 0 || uploads > 0 => l10n.syncOffline,
       _ when pending > 0 => l10n.syncPending(pending),
+      _ when uploads > 0 => l10n.syncUploads(uploads),
       _ => l10n.syncAllSent,
     };
     return Padding(
