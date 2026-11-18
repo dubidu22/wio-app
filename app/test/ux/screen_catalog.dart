@@ -1,10 +1,22 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:wio_app/start/start_screen.dart';
+import 'package:wio_app/data/database.dart';
+
+import '../support/test_data.dart';
+
+/// One screen of the app, opened at [location] over [seed]ed data.
+class CatalogScreen {
+  const CatalogScreen(this.location, {this.seed = seedTestData});
+
+  final String location;
+  final Future<void> Function(WioDatabase db) seed;
+}
 
 /// Every screen of the app, keyed by its source file under lib/.
 /// screens_test.dart checks each one against the UX rules and fails when a
-/// file named *_screen.dart is missing here.
-final Map<String, Widget Function()> screenCatalog =
-    <String, Widget Function()>{
-      'lib/start/start_screen.dart': () => const StartScreen(),
-    };
+/// file named *_screen.dart is missing here. The golden tests render the
+/// same screens.
+const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
+  'lib/jobs/job_list_screen.dart': CatalogScreen('/'),
+  'lib/customers/customer_screen.dart': CatalogScreen(
+    '/customers/${TestIds.familieBeispiel}',
+  ),
+};

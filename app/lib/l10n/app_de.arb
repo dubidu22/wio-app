@@ -2,10 +2,101 @@
   "@@locale": "de",
   "appTitle": "wio",
   "@appTitle": {
-    "description": "Name of the app, shown in the window title and on the start screen."
+    "description": "Name of the app, shown in the window title."
   },
-  "startMessage": "Die neue App entsteht gerade.",
-  "@startMessage": {
-    "description": "Placeholder text on the start screen until the app shell exists."
+  "jobsTitle": "Aufträge",
+  "@jobsTitle": {
+    "description": "Title of level 1, the job list (KB workflows.md)."
+  },
+  "jobsToday": "Heute",
+  "@jobsToday": {
+    "description": "Heading above today's jobs."
+  },
+  "jobsUpcoming": "Kommend",
+  "@jobsUpcoming": {
+    "description": "Heading above the jobs after today."
+  },
+  "jobsTodayEmpty": "Heute keine Aufträge.",
+  "@jobsTodayEmpty": {
+    "description": "Hint when there is no job today."
+  },
+  "jobsUpcomingEmpty": "Keine kommenden Aufträge.",
+  "@jobsUpcomingEmpty": {
+    "description": "Hint when there is no job after today."
+  },
+  "jobDate": "{date}",
+  "@jobDate": {
+    "description": "Date of an upcoming job under the customer's name, e.g. 'Fr., 20. Nov.'.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "MMMEd"
+      }
+    }
+  },
+  "unnamedCustomer": "Kunde ohne Namen",
+  "@unnamedCustomer": {
+    "description": "Shown instead of a customer's name when it has none."
+  },
+  "sourceLink": "Quellcode",
+  "@sourceLink": {
+    "description": "Button that opens the app's public source code (AGPL-3.0 section 13, D-29, D-73)."
+  },
+  "sourceLinkFallback": "Den Quellcode gibt es hier: {url}",
+  "@sourceLinkFallback": {
+    "description": "Shown when no browser could open the source code address.",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "back": "Zurück",
+  "@back": {
+    "description": "Back button at the top left of every screen below level 1 (D-74)."
+  },
+  "customerSites": "Orte",
+  "@customerSites": {
+    "description": "Heading above the customer's sites and their rooms."
+  },
+  "customerSitesEmpty": "Noch keine Orte.",
+  "@customerSitesEmpty": {
+    "description": "Hint when the customer has no site yet."
+  },
+  "siteRoomsEmpty": "Noch keine Räume.",
+  "@siteRoomsEmpty": {
+    "description": "Hint under a site without rooms."
+  },
+  "unnamedSite": "Ort ohne Namen",
+  "@unnamedSite": {
+    "description": "Shown instead of a site's name when it has none."
+  },
+  "unnamedRoom": "Raum ohne Namen",
+  "@unnamedRoom": {
+    "description": "Shown instead of a room's name when it has none."
+  },
+  "customerEntries": "Einträge",
+  "@customerEntries": {
+    "description": "Heading above the customer's entries (boxes and things, D-1)."
+  },
+  "customerEntriesEmpty": "Noch keine Einträge.",
+  "@customerEntriesEmpty": {
+    "description": "Hint until entries exist (D-75)."
+  },
+  "customerPictures": "Fotos",
+  "@customerPictures": {
+    "description": "Heading above the customer's pictures."
+  },
+  "customerPicturesEmpty": "Noch keine Fotos.",
+  "@customerPicturesEmpty": {
+    "description": "Hint until pictures exist (D-75)."
+  },
+  "customerMissing": "Diesen Kunden gibt es nicht mehr.",
+  "@customerMissing": {
+    "description": "Shown when a customer was deleted or a link points to an unknown customer."
+  },
+  "loadFailed": "Die gespeicherten Daten konnten nicht gelesen werden. Bitte die App nicht deinstallieren, sonst gehen sie verloren.",
+  "@loadFailed": {
+    "description": "Shown when the local database cannot be opened or read (D-65); the data must not be deleted."
   }
 }
