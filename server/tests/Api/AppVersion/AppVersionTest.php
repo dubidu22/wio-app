@@ -24,6 +24,8 @@ use Wio\Tests\Support\AuthFixtures;
 #[Operation('getMe')]
 #[Operation('listDevices')]
 #[Operation('revokeDevice')]
+#[Operation('syncPush')]
+#[Operation('syncPull')]
 final class AppVersionTest extends DatabaseTestCase
 {
     private const string OLD = '1.9.9+40';
@@ -65,7 +67,7 @@ final class AppVersionTest extends DatabaseTestCase
         }
     }
 
-    private const array OPERATIONS = ['getHealth', 'signIn', 'signOut', 'getMe', 'listDevices', 'revokeDevice'];
+    private const array OPERATIONS = ['getHealth', 'signIn', 'signOut', 'getMe', 'listDevices', 'revokeDevice', 'syncPush', 'syncPull'];
 
     #[DataProvider('operations')]
     public function testAnOldAppGets426OnEveryOperation(string $operation): void
@@ -217,6 +219,16 @@ final class AppVersionTest extends DatabaseTestCase
             'getMe' => $this->call('GET', '/auth/me', token: $token, appVersion: $appVersion),
             'listDevices' => $this->call('GET', '/auth/devices', token: $token, appVersion: $appVersion),
             'revokeDevice' => $this->call('DELETE', '/auth/devices/' . $device['device_id'], token: $token, appVersion: $appVersion),
+            'syncPush' => $this->call('POST', '/sync/push', ['changes' => [[
+                'change_id' => '01990000-0000-7000-8000-00000000c001',
+                'entity' => 'labels',
+                'id' => '01990000-0000-7000-8000-00000000a001',
+                'op' => 'upsert',
+                'fields' => ['name' => 'Keller'],
+                'base_revision' => null,
+                'device_time' => '2026-11-18T09:00:00.000Z',
+            ]]], token: $token, appVersion: $appVersion),
+            'syncPull' => $this->call('GET', '/sync/pull?since=0', token: $token, appVersion: $appVersion),
             default => self::fail("No request for {$operation}"),
         };
     }

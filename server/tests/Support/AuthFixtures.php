@@ -9,6 +9,7 @@ use Wio\Auth\DeviceTokens;
 use Wio\Auth\PasswordHasher;
 use Wio\Database\Sql;
 use Wio\Schema\NameKey;
+use Wio\Schema\RevisionCounter;
 use Wio\Support\Time;
 use Wio\Tests\Db\Schema\Rows;
 
@@ -30,14 +31,35 @@ final class AuthFixtures
         $this->rows = new Rows($sql->pdo);
     }
 
+    /**
+     * A workspace with its revision counter, as CreateOwner makes one: the
+     * workspace row has revision 1, and every fixture row after it takes the
+     * counter's next revision, so pulls see them in order (D-52).
+     */
     public function workspace(string $name = 'Testraum', string $plan = 'professional'): string
     {
-        return $this->rows->insert('workspaces', ['name' => $name, 'plan' => $plan]);
+        $workspaceId = $this->rows->insert('workspaces', ['name' => $name, 'plan' => $plan]);
+        $this->sql->run('INSERT INTO workspace_counters (workspace_id, last_revision) VALUES (?, 1)', [$workspaceId]);
+
+        return $workspaceId;
     }
 
     public function customer(string $workspaceId): string
     {
-        return $this->rows->customer($workspaceId);
+        return $this->revise('customers', $workspaceId, $this->rows->customer($workspaceId));
+    }
+
+    /**
+     * Gives a fixture row the workspace's next revision.
+     */
+    public function revise(string $table, string $workspaceId, string $id): string
+    {
+        $this->sql->transaction(function () use ($table, $workspaceId, $id): void {
+            $revision = (new RevisionCounter($this->sql->pdo))->next($workspaceId);
+            $this->sql->run('UPDATE `' . str_replace('`', '``', $table) . '` SET revision = ? WHERE id = ?', [$revision, $id]);
+        });
+
+        return $id;
     }
 
     /**
@@ -65,6 +87,7 @@ final class AuthFixtures
             'email_key' => $email === null ? null : NameKey::of($email),
             'expires_at' => $role === 'helper' ? ($expiresAt ?? '2027-01-01 00:00:00.000') : null,
         ]);
+        $this->revise('users', $workspaceId, $userId);
         if ($password !== null) {
             $this->sql->run(
                 'INSERT INTO user_passwords (workspace_id, user_id, password_hash, changed_at) VALUES (?, ?, ?, ?)',

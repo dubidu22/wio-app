@@ -20,6 +20,8 @@ use Wio\Tests\Api\Operation;
 #[Operation('getMe')]
 #[Operation('listDevices')]
 #[Operation('revokeDevice')]
+#[Operation('syncPush')]
+#[Operation('syncPull')]
 final class AuthCoverageTest extends DatabaseTestCase
 {
     /**

@@ -35,7 +35,7 @@ final class RecordSchemas
     ];
 
     /** Tables that never sync. */
-    public const array SERVER_TABLES = ['schema_migrations', 'workspace_counters', 'user_passwords', 'device_tokens', 'sign_in_failures'];
+    public const array SERVER_TABLES = ['schema_migrations', 'workspace_counters', 'user_passwords', 'device_tokens', 'sign_in_failures', 'applied_changes', 'field_versions'];
 
     /** Columns the server derives and never sends (D-49, D-51). */
     public const array SERVER_COLUMNS = ['alive', 'no_customer', 'name_key', 'email_key'];
