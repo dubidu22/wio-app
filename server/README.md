@@ -19,7 +19,7 @@ docker run -d --name wio-mariadb -p 3306:3306 -e MARIADB_DATABASE=wio_test -e MA
 
 Psalm needs PHP 8.3.16 or newer at run time (CI has it).
 
-Configuration comes only from the environment: `WIO_DB_DSN`, `WIO_DB_USER`, `WIO_DB_PASSWORD`, and optionally `WIO_CORS_ORIGINS`. Required PHP extensions: `intl`, `mbstring`, `pdo_mysql`, `sodium` (Argon2id, D-108).
+Configuration comes only from the environment: `WIO_DB_DSN`, `WIO_DB_USER`, `WIO_DB_PASSWORD`, `WIO_FILES_DIR` (needed by the file operations only), and optionally `WIO_CORS_ORIGINS`. Required PHP extensions: `intl`, `mbstring`, `pdo_mysql`, `sodium` (Argon2id, D-108).
 
 ## Sync (plan 006, D-172 to D-191)
 
@@ -28,6 +28,14 @@ Configuration comes only from the environment: `WIO_DB_DSN`, `WIO_DB_USER`, `WIO
 - `GET /sync/pull` reads the synced tables by revision in one consistent snapshot, filtered by the token's role in SQL. `since` above the workspace counter answers `410 resync_required`.
 - Push validates `fields` against `src/Sync/RecordSchemas.php`, generated from `api/openapi.yaml`. After a change of a record schema, run `php bin/generate-record-schemas` and commit the result; a unit test fails until you do.
 - Rights for push are in `src/Sync/Rights.php`, one table per role.
+- `GET /sync/pull` pins REPEATABLE READ for its own transaction, because MariaDB ignores the snapshot under READ COMMITTED.
+
+## Files (plan 006, D-185, D-186, D-206, D-207)
+
+- `WIO_FILES_DIR` is the file store, outside the web root (the deploy uses `shared/files`). Files live in `<workspace_id>/<sha256>`; an upload in progress is `<sha256>.<total>.part`. The server never tells whether another workspace holds a file.
+- `PUT /files/{sha256}` takes chunks of at most 4 MiB, in order, with `Content-Range`, for files of at most 100 MiB. A chunk that does not start at the received size answers `409 offset_mismatch` with `received_bytes`. When the last byte arrives, the SHA-256 is checked: a match answers 200, a mismatch deletes the partial file and answers `422 hash_mismatch`. A chunk for a complete file answers 200 at once.
+- One lock file per workspace (`.lock`) serialises chunk writes. Partial files untouched for seven days are deleted during uploads, at most 20 per request.
+- Owners and customers may upload; helpers get `403 forbidden` until M6.
 
 ## CORS (plan 010 addendum, D-164 to D-171)
 

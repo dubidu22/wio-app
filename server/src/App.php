@@ -15,6 +15,8 @@ use Wio\Http\Auth\RevokeDeviceAction;
 use Wio\Http\Auth\SignInAction;
 use Wio\Http\Auth\SignOutAction;
 use Wio\Http\CorsMiddleware;
+use Wio\Http\Files\FileStateAction;
+use Wio\Http\Files\PutFileChunkAction;
 use Wio\Http\HealthAction;
 use Wio\Http\ProblemErrorHandler;
 use Wio\Http\Sync\PullAction;
@@ -58,6 +60,8 @@ final class App
         $app->delete('/auth/devices/{device_id}', new RevokeDeviceAction($tokens))->add($auth);
         $app->post('/sync/push', new PushAction($services->push(...)))->add($auth);
         $app->get('/sync/pull', new PullAction($services->pull(...)))->add($auth);
+        $app->get('/files/{sha256}/state', new FileStateAction($services->files(...)))->add($auth);
+        $app->put('/files/{sha256}', new PutFileChunkAction($services->files(...)))->add($auth);
 
         return $app;
     }

@@ -14,6 +14,7 @@ use Wio\Auth\SignIn;
 use Wio\Auth\SignInLimiter;
 use Wio\Database\Connection;
 use Wio\Database\Sql;
+use Wio\Files\FileStore;
 use Wio\Http\Cors;
 use Wio\Support\SystemClock;
 use Wio\Sync\Pull;
@@ -44,6 +45,7 @@ final class Services
      * @param \Closure(string): void $log one line to the server's error log; never a password, token or body
      * @param ?string $minimumAppVersion `major.minor.patch`; tests pass their own
      * @param string $corsOrigins the `WIO_CORS_ORIGINS` list, comma-separated
+     * @param string $filesDir `WIO_FILES_DIR`, the file store (D-207); file operations answer 500 without it
      */
     public function __construct(
         private readonly \Closure $connect,
@@ -52,6 +54,7 @@ final class Services
         ?\Closure $log = null,
         ?string $minimumAppVersion = MinimumAppVersion::VALUE,
         string $corsOrigins = '',
+        private readonly string $filesDir = '',
     ) {
         $this->log = $log ?? static function (string $line): void {
             error_log($line);
@@ -67,6 +70,7 @@ final class Services
             new SystemClock(),
             static fn(): PasswordHasher => new PasswordHasher(),
             corsOrigins: (string) getenv('WIO_CORS_ORIGINS'),
+            filesDir: (string) getenv('WIO_FILES_DIR'),
         );
     }
 
@@ -105,5 +109,10 @@ final class Services
     public function pull(): Pull
     {
         return new Pull($this->sql());
+    }
+
+    public function files(): FileStore
+    {
+        return new FileStore($this->filesDir, $this->clock);
     }
 }
