@@ -17,6 +17,8 @@ use Wio\Http\Auth\SignOutAction;
 use Wio\Http\CorsMiddleware;
 use Wio\Http\HealthAction;
 use Wio\Http\ProblemErrorHandler;
+use Wio\Http\Sync\PullAction;
+use Wio\Http\Sync\PushAction;
 
 /**
  * Builds the HTTP application. Routes follow api/openapi.yaml, the only
@@ -54,6 +56,8 @@ final class App
         $app->get('/auth/me', new MeAction($services->sql(...)))->add($auth);
         $app->get('/auth/devices', new ListDevicesAction($tokens))->add($auth);
         $app->delete('/auth/devices/{device_id}', new RevokeDeviceAction($tokens))->add($auth);
+        $app->post('/sync/push', new PushAction($services->push(...)))->add($auth);
+        $app->get('/sync/pull', new PullAction($services->pull(...)))->add($auth);
 
         return $app;
     }

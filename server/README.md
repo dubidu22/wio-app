@@ -21,6 +21,14 @@ Psalm needs PHP 8.3.16 or newer at run time (CI has it).
 
 Configuration comes only from the environment: `WIO_DB_DSN`, `WIO_DB_USER`, `WIO_DB_PASSWORD`, and optionally `WIO_CORS_ORIGINS`. Required PHP extensions: `intl`, `mbstring`, `pdo_mysql`, `sodium` (Argon2id, D-108).
 
+## Sync (plan 006, D-172 to D-191)
+
+- `POST /sync/push` applies each change in its own transaction and remembers every answer by `change_id` for 180 days (`applied_changes`). **A retry of a `change_id` always gets the stored answer, a rejection included:** the app fixes the cause and sends the change again with a new `change_id`.
+- Same-field clashes are found through `field_versions`; the later value wins, the earlier one goes to `conflicts`.
+- `GET /sync/pull` reads the synced tables by revision in one consistent snapshot, filtered by the token's role in SQL. `since` above the workspace counter answers `410 resync_required`.
+- Push validates `fields` against `src/Sync/RecordSchemas.php`, generated from `api/openapi.yaml`. After a change of a record schema, run `php bin/generate-record-schemas` and commit the result; a unit test fails until you do.
+- Rights for push are in `src/Sync/Rights.php`, one table per role.
+
 ## CORS (plan 010 addendum, D-164 to D-171)
 
 - `WIO_CORS_ORIGINS` lists the web app's origins, comma-separated, matched exactly: `https://host[:port]`, lower case, no path or trailing slash. `*`, `null`, wildcards, paths and other `http` origins are dropped. A full `http://localhost:<port>` is accepted for local and staging configs; **production's value never lists localhost.** Empty or missing means no CORS headers at all.
