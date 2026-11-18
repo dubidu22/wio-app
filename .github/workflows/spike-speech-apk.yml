@@ -62,7 +62,7 @@ jobs:
       - name: Check permissions and backup
         run: |
           apk=build/app/outputs/flutter-apk/app-release.apk
-          aapt2="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)aapt2"
+          aapt2="$(find "$ANDROID_HOME"/build-tools -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)/aapt2"
           "$aapt2" dump permissions "$apk" | tee "$RUNNER_TEMP/perms.txt"
           grep -q 'android.permission.RECORD_AUDIO' "$RUNNER_TEMP/perms.txt"
           if grep -q 'android.permission.INTERNET' "$RUNNER_TEMP/perms.txt"; then
