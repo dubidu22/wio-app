@@ -19,7 +19,12 @@ docker run -d --name wio-mariadb -p 3306:3306 -e MARIADB_DATABASE=wio_test -e MA
 
 Psalm needs PHP 8.3.16 or newer at run time (CI has it).
 
-Configuration comes only from the environment: `WIO_DB_DSN`, `WIO_DB_USER`, `WIO_DB_PASSWORD`. Required PHP extensions: `intl`, `mbstring`, `pdo_mysql`, `sodium` (Argon2id, D-108).
+Configuration comes only from the environment: `WIO_DB_DSN`, `WIO_DB_USER`, `WIO_DB_PASSWORD`, and optionally `WIO_CORS_ORIGINS`. Required PHP extensions: `intl`, `mbstring`, `pdo_mysql`, `sodium` (Argon2id, D-108).
+
+## CORS (plan 010 addendum, D-164 to D-171)
+
+- `WIO_CORS_ORIGINS` lists the web app's origins, comma-separated, matched exactly: `https://host[:port]`, lower case, no path or trailing slash. `*`, `null`, wildcards, paths and other `http` origins are dropped. A full `http://localhost:<port>` is accepted for local and staging configs; **production's value never lists localhost.** Empty or missing means no CORS headers at all.
+- `CorsMiddleware` is the outermost middleware. It answers preflights itself (204, before the app-version check and auth), and adds `Access-Control-Allow-Origin`, `Access-Control-Expose-Headers: Retry-After` and `Vary: Origin` to every answer for a listed origin, problem answers included. It never sends `Access-Control-Allow-Credentials`, because auth is a bearer token.
 
 ## App version (plan 033, D-140 to D-149)
 
