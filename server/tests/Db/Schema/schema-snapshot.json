@@ -1,0 +1,777 @@
+{
+    "conflicts": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "entity varchar(32) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "entity_id char(36) ascii ascii_bin NOT NULL",
+            "field varchar(64) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "lost_value longtext utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "lost_change_id char(36) ascii ascii_bin NULL",
+            "won_revision bigint(20) unsigned NOT NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_conflicts_record (workspace_id, entity, entity_id)",
+            "ix_conflicts_revision (workspace_id, revision)",
+            "uq_conflicts_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_conflicts_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_conflicts_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_conflicts_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_conflicts_entity: `entity` in ('workspaces','users','customers','sites','rooms','openings','fixtures','labels','property_keys','entity_labels','entity_properties','entries','place_history','pictures','notes','jobs','time_blocks','sign_offs','expenses')",
+            "ck_conflicts_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_conflicts_lost_value_json: `lost_value` is null or json_valid(`lost_value`)"
+        ]
+    },
+    "customers": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "name varchar(200) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "contact longtext utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "external_ref varchar(191) utf8mb4 utf8mb4_bin NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL",
+            "alive tinyint(3) unsigned NULL AS (if(`deleted_at` is null,1,NULL)) STORED GENERATED"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_customers_revision (workspace_id, revision)",
+            "uq_customers_external_ref UNIQUE (workspace_id, external_ref, alive)",
+            "uq_customers_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_customers_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_customers_contact_json: `contact` is null or json_valid(`contact`)",
+            "ck_customers_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'"
+        ]
+    },
+    "entity_labels": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "entity_type varchar(16) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "entity_id char(36) ascii ascii_bin NOT NULL",
+            "label_id char(36) ascii ascii_bin NOT NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL",
+            "alive tinyint(3) unsigned NULL AS (if(`deleted_at` is null,1,NULL)) STORED GENERATED"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_entity_labels_label (workspace_id, label_id)",
+            "ix_entity_labels_revision (workspace_id, revision)",
+            "uq_entity_labels_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_entity_labels_link UNIQUE (workspace_id, entity_type, entity_id, label_id, alive)",
+            "uq_entity_labels_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_entity_labels_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entity_labels_label (workspace_id, label_id) -> labels (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entity_labels_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_entity_labels_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_entity_labels_type: `entity_type` in ('entry','room','fixture','picture')"
+        ]
+    },
+    "entity_properties": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "entity_type varchar(16) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "entity_id char(36) ascii ascii_bin NOT NULL",
+            "key_id char(36) ascii ascii_bin NOT NULL",
+            "value_text varchar(1000) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "value_number decimal(20,6) NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL",
+            "alive tinyint(3) unsigned NULL AS (if(`deleted_at` is null,1,NULL)) STORED GENERATED"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_entity_properties_key (workspace_id, key_id)",
+            "ix_entity_properties_revision (workspace_id, revision)",
+            "uq_entity_properties_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_entity_properties_link UNIQUE (workspace_id, entity_type, entity_id, key_id, alive)",
+            "uq_entity_properties_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_entity_properties_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entity_properties_key (workspace_id, key_id) -> property_keys (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entity_properties_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_entity_properties_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_entity_properties_one_value: `value_text` is null or `value_number` is null",
+            "ck_entity_properties_type: `entity_type` in ('entry','room','fixture','picture')"
+        ]
+    },
+    "entries": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "code varchar(255) utf8mb4 utf8mb4_bin NULL",
+            "title varchar(200) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "site_id char(36) ascii ascii_bin NULL",
+            "room_id char(36) ascii ascii_bin NULL",
+            "fixture_id char(36) ascii ascii_bin NULL",
+            "level smallint(5) unsigned NULL",
+            "compartment smallint(5) unsigned NULL",
+            "floor_x_cm int(11) NULL",
+            "floor_y_cm int(11) NULL",
+            "target_site_id char(36) ascii ascii_bin NULL",
+            "target_room_id char(36) ascii ascii_bin NULL",
+            "target_fixture_id char(36) ascii ascii_bin NULL",
+            "target_level smallint(5) unsigned NULL",
+            "target_compartment smallint(5) unsigned NULL",
+            "target_floor_x_cm int(11) NULL",
+            "target_floor_y_cm int(11) NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL",
+            "alive tinyint(3) unsigned NULL AS (if(`deleted_at` is null,1,NULL)) STORED GENERATED"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_entries_fixture (workspace_id, room_id, fixture_id)",
+            "fk_entries_room (workspace_id, site_id, room_id)",
+            "fk_entries_site_customer (workspace_id, customer_id, site_id)",
+            "fk_entries_target_fixture (workspace_id, target_room_id, target_fixture_id)",
+            "fk_entries_target_room (workspace_id, target_site_id, target_room_id)",
+            "fk_entries_target_site_customer (workspace_id, customer_id, target_site_id)",
+            "ix_entries_revision (workspace_id, revision)",
+            "uq_entries_code UNIQUE (workspace_id, code, alive)",
+            "uq_entries_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_entries_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_entries_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_fixture (workspace_id, room_id, fixture_id) -> fixtures (workspace_id, room_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_room (workspace_id, site_id, room_id) -> rooms (workspace_id, site_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_site (workspace_id, site_id) -> sites (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_site_customer (workspace_id, customer_id, site_id) -> sites (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_target_fixture (workspace_id, target_room_id, target_fixture_id) -> fixtures (workspace_id, room_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_target_room (workspace_id, target_site_id, target_room_id) -> rooms (workspace_id, site_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_target_site (workspace_id, target_site_id) -> sites (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_target_site_customer (workspace_id, customer_id, target_site_id) -> sites (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_entries_fixture_room: `fixture_id` is null or `room_id` is not null",
+            "ck_entries_floor_or_fixture: `floor_x_cm` is null or `fixture_id` is null and `room_id` is not null",
+            "ck_entries_floor_pair: `floor_x_cm` is null = (`floor_y_cm` is null)",
+            "ck_entries_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_entries_site_room: `site_id` is null = (`room_id` is null)",
+            "ck_entries_slot_fixture: `level` is null and `compartment` is null or `fixture_id` is not null",
+            "ck_entries_slot_from_one: (`level` is null or `level` >= 1) and (`compartment` is null or `compartment` >= 1)",
+            "ck_entries_target_fixture_room: `target_fixture_id` is null or `target_room_id` is not null",
+            "ck_entries_target_floor_or_fixture: `target_floor_x_cm` is null or `target_fixture_id` is null and `target_room_id` is not null",
+            "ck_entries_target_floor_pair: `target_floor_x_cm` is null = (`target_floor_y_cm` is null)",
+            "ck_entries_target_site_room: `target_site_id` is null = (`target_room_id` is null)",
+            "ck_entries_target_slot_fixture: `target_level` is null and `target_compartment` is null or `target_fixture_id` is not null",
+            "ck_entries_target_slot_from_one: (`target_level` is null or `target_level` >= 1) and (`target_compartment` is null or `target_compartment` >= 1)"
+        ]
+    },
+    "expenses": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NOT NULL",
+            "job_id char(36) ascii ascii_bin NOT NULL",
+            "picture_id char(36) ascii ascii_bin NULL",
+            "amount_cents int(10) unsigned NULL",
+            "note varchar(1000) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_expenses_job (workspace_id, job_id)",
+            "fk_expenses_job_customer (workspace_id, customer_id, job_id)",
+            "fk_expenses_picture (workspace_id, picture_id)",
+            "fk_expenses_picture_customer (workspace_id, customer_id, picture_id)",
+            "ix_expenses_revision (workspace_id, revision)",
+            "uq_expenses_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_expenses_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_expenses_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_expenses_job (workspace_id, job_id) -> jobs (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_expenses_job_customer (workspace_id, customer_id, job_id) -> jobs (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_expenses_picture (workspace_id, picture_id) -> pictures (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_expenses_picture_customer (workspace_id, customer_id, picture_id) -> pictures (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_expenses_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_expenses_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'"
+        ]
+    },
+    "fixtures": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "room_id char(36) ascii ascii_bin NOT NULL",
+            "name varchar(200) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "x_cm int(11) NOT NULL DEFAULT 0",
+            "y_cm int(11) NOT NULL DEFAULT 0",
+            "rotation_deg smallint(5) unsigned NOT NULL DEFAULT 0",
+            "width_cm int(10) unsigned NULL",
+            "depth_cm int(10) unsigned NULL",
+            "height_cm int(10) unsigned NULL",
+            "levels longtext utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_fixtures_room_customer (workspace_id, customer_id, room_id)",
+            "ix_fixtures_revision (workspace_id, revision)",
+            "uq_fixtures_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_fixtures_room_scope UNIQUE (workspace_id, room_id, id)",
+            "uq_fixtures_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_fixtures_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_fixtures_room (workspace_id, room_id) -> rooms (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_fixtures_room_customer (workspace_id, customer_id, room_id) -> rooms (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_fixtures_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_fixtures_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_fixtures_levels_json: `levels` is null or json_valid(`levels`)",
+            "ck_fixtures_rotation: `rotation_deg` < 360"
+        ]
+    },
+    "jobs": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NOT NULL",
+            "date date NOT NULL",
+            "agreed_minutes int(10) unsigned NULL",
+            "report_sent_at datetime(3) NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_jobs_revision (workspace_id, revision)",
+            "uq_jobs_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_jobs_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_jobs_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_jobs_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_jobs_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'"
+        ]
+    },
+    "labels": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "name varchar(100) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "name_key varchar(200) utf8mb4 utf8mb4_bin NOT NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL",
+            "alive tinyint(3) unsigned NULL AS (if(`deleted_at` is null,1,NULL)) STORED GENERATED"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_labels_revision (workspace_id, revision)",
+            "uq_labels_name UNIQUE (workspace_id, name_key, alive)",
+            "uq_labels_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_labels_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_labels_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'"
+        ]
+    },
+    "notes": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "subject_type varchar(16) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "subject_id char(36) ascii ascii_bin NOT NULL",
+            "text text utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "audio_sha256 char(64) ascii ascii_bin NULL",
+            "audio_bytes int(10) unsigned NULL",
+            "audio_seconds int(10) unsigned NULL",
+            "transcript text utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "transcript_source varchar(16) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_notes_revision (workspace_id, revision)",
+            "ix_notes_subject (workspace_id, subject_type, subject_id)",
+            "uq_notes_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_notes_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_notes_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_notes_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_notes_audio_bytes: `audio_sha256` is null = (`audio_bytes` is null)",
+            "ck_notes_audio_sha256: `audio_sha256` is null or `audio_sha256` regexp '^[0-9a-f]{64}$'",
+            "ck_notes_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_notes_subject_type: `subject_type` in ('entry','room','picture','job','customer')",
+            "ck_notes_text_or_audio: `text` is not null or `audio_sha256` is not null",
+            "ck_notes_transcript_source: `transcript` is null = (`transcript_source` is null) and (`transcript_source` is null or `transcript_source` in ('device','manual'))"
+        ]
+    },
+    "openings": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "room_id char(36) ascii ascii_bin NOT NULL",
+            "kind varchar(16) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "wall_index smallint(5) unsigned NOT NULL",
+            "offset_cm int(10) unsigned NOT NULL",
+            "width_cm int(10) unsigned NOT NULL",
+            "height_cm int(10) unsigned NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_openings_room (workspace_id, room_id)",
+            "fk_openings_room_customer (workspace_id, customer_id, room_id)",
+            "ix_openings_revision (workspace_id, revision)",
+            "uq_openings_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_openings_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_openings_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_openings_room (workspace_id, room_id) -> rooms (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_openings_room_customer (workspace_id, customer_id, room_id) -> rooms (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_openings_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_openings_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_openings_kind: `kind` in ('door','window')"
+        ]
+    },
+    "pictures": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "file_sha256 char(64) ascii ascii_bin NOT NULL",
+            "file_bytes int(10) unsigned NOT NULL",
+            "file_mime varchar(100) ascii ascii_bin NOT NULL",
+            "width_px int(10) unsigned NOT NULL",
+            "height_px int(10) unsigned NOT NULL",
+            "taken_at datetime(3) NULL",
+            "room_id char(36) ascii ascii_bin NULL",
+            "entry_id char(36) ascii ascii_bin NULL",
+            "after_of char(36) ascii ascii_bin NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_pictures_after_of (workspace_id, after_of)",
+            "fk_pictures_after_of_customer (workspace_id, customer_id, after_of)",
+            "fk_pictures_entry (workspace_id, entry_id)",
+            "fk_pictures_entry_customer (workspace_id, customer_id, entry_id)",
+            "fk_pictures_room (workspace_id, room_id)",
+            "fk_pictures_room_customer (workspace_id, customer_id, room_id)",
+            "ix_pictures_revision (workspace_id, revision)",
+            "uq_pictures_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_pictures_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_pictures_after_of (workspace_id, after_of) -> pictures (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_pictures_after_of_customer (workspace_id, customer_id, after_of) -> pictures (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_pictures_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_pictures_entry (workspace_id, entry_id) -> entries (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_pictures_entry_customer (workspace_id, customer_id, entry_id) -> entries (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_pictures_room (workspace_id, room_id) -> rooms (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_pictures_room_customer (workspace_id, customer_id, room_id) -> rooms (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_pictures_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_pictures_file_sha256: `file_sha256` regexp '^[0-9a-f]{64}$'",
+            "ck_pictures_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_pictures_not_after_itself: `after_of` is null or `after_of` <> `id`"
+        ]
+    },
+    "place_history": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "entry_id char(36) ascii ascii_bin NOT NULL",
+            "from_site_id char(36) ascii ascii_bin NULL",
+            "from_room_id char(36) ascii ascii_bin NULL",
+            "from_fixture_id char(36) ascii ascii_bin NULL",
+            "from_level smallint(5) unsigned NULL",
+            "from_compartment smallint(5) unsigned NULL",
+            "from_floor_x_cm int(11) NULL",
+            "from_floor_y_cm int(11) NULL",
+            "to_site_id char(36) ascii ascii_bin NULL",
+            "to_room_id char(36) ascii ascii_bin NULL",
+            "to_fixture_id char(36) ascii ascii_bin NULL",
+            "to_level smallint(5) unsigned NULL",
+            "to_compartment smallint(5) unsigned NULL",
+            "to_floor_x_cm int(11) NULL",
+            "to_floor_y_cm int(11) NULL",
+            "moved_at datetime(3) NOT NULL",
+            "moved_by char(36) ascii ascii_bin NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_place_history_entry (workspace_id, entry_id)",
+            "fk_place_history_entry_customer (workspace_id, customer_id, entry_id)",
+            "fk_place_history_moved_by (workspace_id, moved_by)",
+            "fk_place_history_to_fixture (workspace_id, to_room_id, to_fixture_id)",
+            "fk_place_history_to_room (workspace_id, to_site_id, to_room_id)",
+            "fk_place_history_to_site_customer (workspace_id, customer_id, to_site_id)",
+            "ix_place_history_revision (workspace_id, revision)",
+            "uq_place_history_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_place_history_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_place_history_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_place_history_entry (workspace_id, entry_id) -> entries (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_place_history_entry_customer (workspace_id, customer_id, entry_id) -> entries (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_place_history_moved_by (workspace_id, moved_by) -> users (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_place_history_to_fixture (workspace_id, to_room_id, to_fixture_id) -> fixtures (workspace_id, room_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_place_history_to_room (workspace_id, to_site_id, to_room_id) -> rooms (workspace_id, site_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_place_history_to_site (workspace_id, to_site_id) -> sites (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_place_history_to_site_customer (workspace_id, customer_id, to_site_id) -> sites (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_place_history_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_place_history_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_place_history_to_fixture_room: `to_fixture_id` is null or `to_room_id` is not null",
+            "ck_place_history_to_floor_or_fixture: `to_floor_x_cm` is null or `to_fixture_id` is null and `to_room_id` is not null",
+            "ck_place_history_to_floor_pair: `to_floor_x_cm` is null = (`to_floor_y_cm` is null)",
+            "ck_place_history_to_site_room: `to_site_id` is null = (`to_room_id` is null)",
+            "ck_place_history_to_slot_fixture: `to_level` is null and `to_compartment` is null or `to_fixture_id` is not null",
+            "ck_place_history_to_slot_from_one: (`to_level` is null or `to_level` >= 1) and (`to_compartment` is null or `to_compartment` >= 1)"
+        ]
+    },
+    "property_keys": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "name varchar(100) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "name_key varchar(200) utf8mb4 utf8mb4_bin NOT NULL",
+            "unit varchar(32) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL",
+            "alive tinyint(3) unsigned NULL AS (if(`deleted_at` is null,1,NULL)) STORED GENERATED"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_property_keys_revision (workspace_id, revision)",
+            "uq_property_keys_name UNIQUE (workspace_id, name_key, alive)",
+            "uq_property_keys_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_property_keys_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_property_keys_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'"
+        ]
+    },
+    "rooms": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "site_id char(36) ascii ascii_bin NOT NULL",
+            "name varchar(200) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "outline longtext utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "height_cm int(10) unsigned NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_rooms_site_customer (workspace_id, customer_id, site_id)",
+            "ix_rooms_revision (workspace_id, revision)",
+            "uq_rooms_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_rooms_scope UNIQUE (workspace_id, id)",
+            "uq_rooms_site_scope UNIQUE (workspace_id, site_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_rooms_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_rooms_site (workspace_id, site_id) -> sites (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_rooms_site_customer (workspace_id, customer_id, site_id) -> sites (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_rooms_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_rooms_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_rooms_outline_json: `outline` is null or json_valid(`outline`)"
+        ]
+    },
+    "schema_migrations": {
+        "columns": [
+            "version varchar(191) utf8mb4 utf8mb4_bin NOT NULL",
+            "checksum char(64) utf8mb4 utf8mb4_bin NOT NULL",
+            "applied_at datetime(6) NOT NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (version)"
+        ],
+        "foreign_keys": [],
+        "checks": []
+    },
+    "sign_offs": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NOT NULL",
+            "job_id char(36) ascii ascii_bin NOT NULL",
+            "minutes_confirmed int(10) unsigned NOT NULL",
+            "signature longtext utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "signed_at datetime(3) NOT NULL",
+            "signed_by char(36) ascii ascii_bin NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_sign_offs_job (workspace_id, job_id)",
+            "fk_sign_offs_job_customer (workspace_id, customer_id, job_id)",
+            "fk_sign_offs_signed_by (workspace_id, signed_by)",
+            "ix_sign_offs_revision (workspace_id, revision)",
+            "uq_sign_offs_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_sign_offs_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_sign_offs_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_sign_offs_job (workspace_id, job_id) -> jobs (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_sign_offs_job_customer (workspace_id, customer_id, job_id) -> jobs (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_sign_offs_signed_by (workspace_id, signed_by) -> users (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_sign_offs_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_sign_offs_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_sign_offs_signature_json: json_valid(`signature`)"
+        ]
+    },
+    "sites": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "name varchar(200) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "address varchar(500) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_sites_revision (workspace_id, revision)",
+            "uq_sites_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_sites_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_sites_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_sites_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_sites_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'"
+        ]
+    },
+    "time_blocks": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NOT NULL",
+            "job_id char(36) ascii ascii_bin NOT NULL",
+            "started_at datetime(3) NOT NULL",
+            "ended_at datetime(3) NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "fk_time_blocks_job (workspace_id, job_id)",
+            "fk_time_blocks_job_customer (workspace_id, customer_id, job_id)",
+            "ix_time_blocks_revision (workspace_id, revision)",
+            "uq_time_blocks_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_time_blocks_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_time_blocks_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_time_blocks_job (workspace_id, job_id) -> jobs (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_time_blocks_job_customer (workspace_id, customer_id, job_id) -> jobs (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_time_blocks_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_time_blocks_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_time_blocks_order: `ended_at` is null or `ended_at` >= `started_at`"
+        ]
+    },
+    "users": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "customer_id char(36) ascii ascii_bin NULL",
+            "role varchar(16) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "display_name varchar(200) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "email varchar(254) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "email_key varchar(508) utf8mb4 utf8mb4_bin NULL",
+            "expires_at datetime(3) NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL",
+            "alive tinyint(3) unsigned NULL AS (if(`deleted_at` is null,1,NULL)) STORED GENERATED"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_users_revision (workspace_id, revision)",
+            "uq_users_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_users_email UNIQUE (workspace_id, email_key, alive)",
+            "uq_users_scope UNIQUE (workspace_id, id)"
+        ],
+        "foreign_keys": [
+            "fk_users_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_users_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": [
+            "ck_users_email_key: `email` is null = (`email_key` is null)",
+            "ck_users_helper_expires: `role` <> 'helper' or `expires_at` is not null",
+            "ck_users_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_users_role: `role` in ('owner','customer','helper')",
+            "ck_users_role_customer: `role` = 'owner' = (`customer_id` is null)"
+        ]
+    },
+    "workspace_counters": {
+        "columns": [
+            "workspace_id char(36) ascii ascii_bin NOT NULL",
+            "last_revision bigint(20) unsigned NOT NULL DEFAULT 0"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (workspace_id)"
+        ],
+        "foreign_keys": [
+            "fk_workspace_counters_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
+        ],
+        "checks": []
+    },
+    "workspaces": {
+        "columns": [
+            "id char(36) ascii ascii_bin NOT NULL",
+            "name varchar(200) utf8mb4 utf8mb4_unicode_520_ci NULL",
+            "plan varchar(16) utf8mb4 utf8mb4_unicode_520_ci NOT NULL",
+            "created_at datetime(3) NOT NULL",
+            "created_by char(36) ascii ascii_bin NULL",
+            "updated_at datetime(3) NOT NULL",
+            "updated_by char(36) ascii ascii_bin NULL",
+            "revision bigint(20) unsigned NOT NULL",
+            "deleted_at datetime(3) NULL"
+        ],
+        "indexes": [
+            "PRIMARY UNIQUE (id)",
+            "ix_workspaces_revision (id, revision)"
+        ],
+        "foreign_keys": [],
+        "checks": [
+            "ck_workspaces_id: `id` regexp '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'",
+            "ck_workspaces_plan: `plan` in ('personal','professional')"
+        ]
+    }
+}
