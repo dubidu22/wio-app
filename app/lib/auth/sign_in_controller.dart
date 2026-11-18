@@ -198,6 +198,10 @@ class SignInController extends Notifier<SignInState> {
         _fail(messageForCode(body.code));
       case TonikSuccess(value: SignInResponse503()):
         _fail(SignInMessage.maintenance);
+      // The update notice for upgrade_required is #38's (D-148); until then
+      // it is handled like any other code.
+      case TonikSuccess(value: SignInResponse426(:final body)):
+        _fail(messageForCode(body.code));
       case TonikSuccess(value: SignInResponseDefault(:final body)):
         _fail(messageForCode(body.code));
       // No answer at all is a connection failure, whatever the client

@@ -6,6 +6,8 @@ namespace Wio;
 
 use PDO;
 use Psr\Clock\ClockInterface;
+use Wio\AppVersion\AppVersion;
+use Wio\AppVersion\MinimumAppVersion;
 use Wio\Auth\DeviceTokens;
 use Wio\Auth\PasswordHasher;
 use Wio\Auth\SignIn;
@@ -27,20 +29,26 @@ final class Services
     /** @var \Closure(string): void */
     public readonly \Closure $log;
 
+    /** Apps below it get 426 (D-145); null for no minimum. */
+    public readonly ?AppVersion $minimumAppVersion;
+
     /**
      * @param \Closure(): PDO $connect
      * @param \Closure(): PasswordHasher $makeHasher
      * @param \Closure(string): void $log one line to the server's error log; never a password, token or body
+     * @param ?string $minimumAppVersion `major.minor.patch`; tests pass their own
      */
     public function __construct(
         private readonly \Closure $connect,
         public readonly ClockInterface $clock,
         private readonly \Closure $makeHasher,
         ?\Closure $log = null,
+        ?string $minimumAppVersion = MinimumAppVersion::VALUE,
     ) {
         $this->log = $log ?? static function (string $line): void {
             error_log($line);
         };
+        $this->minimumAppVersion = $minimumAppVersion === null ? null : AppVersion::minimum($minimumAppVersion);
     }
 
     public static function fromEnvironment(): self

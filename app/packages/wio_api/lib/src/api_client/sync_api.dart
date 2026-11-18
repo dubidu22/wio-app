@@ -25,17 +25,29 @@ class SyncApi {
 
   /// Send up to 200 changes from the outbox
   /// The server applies each change in its own transaction and answers one result per change, in request order. The app removes a change from its outbox only when its `change_id` comes back `applied` or `merged`; a `change_id` the server already applied is answered again, not applied twice (KB sync.md).
+  /// [wioAppVersion] Version of the app that sends the request (D-140), from its build. Only major.minor.patch is compared; +build is ignored (D-141). Missing: accepted. Malformed: 400 `invalid_request`. Below the server's minimum: 426 `upgrade_required` (D-142).
   _i4.Future<_i5.TonikResult<_i6.SyncPushResponse, _i7.Response>> syncPush({
     required _i8.PushRequest body,
+    _i4.String? wioAppVersion,
     _i5.TonikCancellation? cancellation,
-  }) async => this._syncPush(body: body, cancellation: cancellation);
+  }) async => this._syncPush(
+    body: body,
+    wioAppVersion: wioAppVersion,
+    cancellation: cancellation,
+  );
 
   /// Changed records since a revision, in revision order
   /// Repeat with `since` = `last_revision` until `has_more` is false, then store `last_revision` (KB sync.md). Records the token may not read are never returned; `last_revision` is the highest revision the server examined, so it can be above the last returned record, and it is greater than `since` whenever `has_more` is true. A 410 `resync_required` means: drop pulled records, keep the outbox, pull again from 0.
+  /// [wioAppVersion] Version of the app that sends the request (D-140), from its build. Only major.minor.patch is compared; +build is ignored (D-141). Missing: accepted. Malformed: 400 `invalid_request`. Below the server's minimum: 426 `upgrade_required` (D-142).
   _i4.Future<_i5.TonikResult<_i9.SyncPullResponse, _i7.Response>> syncPull({
     required _i4.int since,
     _i4.int limit = _i3.SyncPull.limitDefault,
+    _i4.String? wioAppVersion,
     _i5.TonikCancellation? cancellation,
-  }) async =>
-      this._syncPull(since: since, limit: limit, cancellation: cancellation);
+  }) async => this._syncPull(
+    since: since,
+    limit: limit,
+    wioAppVersion: wioAppVersion,
+    cancellation: cancellation,
+  );
 }

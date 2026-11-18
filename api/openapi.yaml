@@ -38,6 +38,8 @@ paths:
       tags:
         - system
       security: []
+      parameters:
+        - $ref: '#/components/parameters/WioAppVersion'
       responses:
         '200':
           description: The API is up.
@@ -47,6 +49,8 @@ paths:
                 $ref: '#/components/schemas/Health'
         '405':
           $ref: '#/components/responses/MethodNotAllowed'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
         default:
           $ref: '#/components/responses/Problem'
   /auth/sign-in:
@@ -61,6 +65,8 @@ paths:
       tags:
         - auth
       security: []
+      parameters:
+        - $ref: '#/components/parameters/WioAppVersion'
       requestBody:
         required: true
         content:
@@ -84,6 +90,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '503':
@@ -96,11 +104,15 @@ paths:
       summary: Revoke the calling device token
       tags:
         - auth
+      parameters:
+        - $ref: '#/components/parameters/WioAppVersion'
       responses:
         '204':
           description: The token is revoked.
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
         '503':
           $ref: '#/components/responses/Maintenance'
         default:
@@ -111,6 +123,8 @@ paths:
       summary: The signed-in user and workspace of this token
       tags:
         - auth
+      parameters:
+        - $ref: '#/components/parameters/WioAppVersion'
       responses:
         '200':
           description: The token is valid.
@@ -120,6 +134,8 @@ paths:
                 $ref: '#/components/schemas/Me'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
         '503':
           $ref: '#/components/responses/Maintenance'
         default:
@@ -130,6 +146,8 @@ paths:
       summary: The devices signed in as this user
       tags:
         - auth
+      parameters:
+        - $ref: '#/components/parameters/WioAppVersion'
       responses:
         '200':
           description: All live device tokens of this user.
@@ -139,6 +157,8 @@ paths:
                 $ref: '#/components/schemas/DeviceList'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
         '503':
           $ref: '#/components/responses/Maintenance'
         default:
@@ -156,6 +176,7 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: '#/components/parameters/WioAppVersion'
       responses:
         '204':
           description: The device token is revoked.
@@ -163,6 +184,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
         '503':
           $ref: '#/components/responses/Maintenance'
         default:
@@ -179,6 +202,8 @@ paths:
         twice (KB sync.md).
       tags:
         - sync
+      parameters:
+        - $ref: '#/components/parameters/WioAppVersion'
       requestBody:
         required: true
         content:
@@ -198,6 +223,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '413':
           $ref: '#/components/responses/PayloadTooLarge'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
         '503':
           $ref: '#/components/responses/Maintenance'
         default:
@@ -235,6 +262,7 @@ paths:
             minimum: 1
             maximum: 500
             default: 500
+        - $ref: '#/components/parameters/WioAppVersion'
       responses:
         '200':
           description: A page of records.
@@ -256,6 +284,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
         '503':
           $ref: '#/components/responses/Maintenance'
         default:
@@ -271,6 +301,7 @@ paths:
         - files
       parameters:
         - $ref: '#/components/parameters/Sha256'
+        - $ref: '#/components/parameters/WioAppVersion'
       responses:
         '200':
           description: The upload state.
@@ -282,6 +313,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
         '503':
           $ref: '#/components/responses/Maintenance'
         default:
@@ -306,6 +339,7 @@ paths:
           schema:
             type: string
             pattern: '^bytes [0-9]{1,15}-[0-9]{1,15}/[0-9]{1,15}$'
+        - $ref: '#/components/parameters/WioAppVersion'
       requestBody:
         required: true
         content:
@@ -344,6 +378,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
         '503':
           $ref: '#/components/responses/Maintenance'
         default:
@@ -355,6 +391,19 @@ components:
       scheme: bearer
       description: Opaque device token of at most 128 characters from sign-in (D-100).
   parameters:
+    WioAppVersion:
+      name: Wio-App-Version
+      in: header
+      required: false
+      description: >-
+        Version of the app that sends the request (D-140), from its build. Only
+        major.minor.patch is compared; +build is ignored (D-141). Missing:
+        accepted. Malformed: 400 `invalid_request`. Below the server's
+        minimum: 426 `upgrade_required` (D-142).
+      schema:
+        type: string
+        maxLength: 32
+        pattern: '^[0-9]{1,9}\.[0-9]{1,9}\.[0-9]{1,9}(\+[0-9]{1,9})?$'
     Sha256:
       name: sha256
       in: path
@@ -378,7 +427,7 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     BadRequest:
-      description: The request does not match the contract (`invalid_request`).
+      description: The request does not match the contract, or `Wio-App-Version` is malformed (`invalid_request`).
       content:
         application/problem+json:
           schema:
@@ -416,6 +465,15 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+    UpgradeRequired:
+      description: >-
+        This app version is older than the server's minimum
+        (`upgrade_required`, D-144). The app asks the user to update it, stops
+        syncing and keeps its local data and outbox.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
     Maintenance:
       description: The server is migrating (`maintenance`, D-56); retry later.
       headers:
@@ -443,8 +501,9 @@ components:
         workspace_choice_required, too_many_attempts, too_many_changes,
         payload_too_large, offset_mismatch, hash_mismatch, maintenance,
         not_found, method_not_allowed, resync_required (410 on pull: drop
-        pulled records, keep the outbox, pull from 0), internal. Apps treat an
-        unknown code as a server error.
+        pulled records, keep the outbox, pull from 0), upgrade_required (426:
+        update the app; local data stays), internal. Apps treat an unknown
+        code as a server error.
       required:
         - type
         - title
@@ -475,6 +534,11 @@ components:
           minimum: 0
           maximum: 9007199254740991
           description: Only with `offset_mismatch`.
+        minimum_app_version:
+          type: string
+          maxLength: 32
+          pattern: '^[0-9]{1,9}\.[0-9]{1,9}\.[0-9]{1,9}$'
+          description: Only with `upgrade_required`; the oldest version the server serves.
     WorkspaceRef:
       type: object
       required:

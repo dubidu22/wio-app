@@ -444,6 +444,10 @@ void main() {
       '401': FakeAnswer.problem(401, 'invalid_credentials'),
       '429': FakeAnswer.problem(429, 'too_many_attempts'),
       '503': FakeAnswer.problem(503, 'maintenance'),
+      '426 until #38 adds the update notice': FakeAnswer.problem(
+        426,
+        'upgrade_required',
+      ),
       'no signal': noSignal,
     };
     for (final MapEntry(key: name, value: answer) in answers.entries) {

@@ -21,6 +21,11 @@ Psalm needs PHP 8.3.16 or newer at run time (CI has it).
 
 Configuration comes only from the environment: `WIO_DB_DSN`, `WIO_DB_USER`, `WIO_DB_PASSWORD`. Required PHP extensions: `intl`, `mbstring`, `pdo_mysql`, `sodium` (Argon2id, D-108).
 
+## App version (plan 033, D-140 to D-149)
+
+- Every request may carry `Wio-App-Version: major.minor.patch[+build]`. `AppVersionMiddleware` checks it on every route, before auth: no header passes, a malformed one gets `400 invalid_request`, and a version below the minimum gets `426 upgrade_required` with `minimum_app_version`. Only `major.minor.patch` is compared.
+- **The minimum** is `src/AppVersion/MinimumAppVersion.php` (`null` = none). Raise it only in a reviewed PR, and only after the new app version is live in every store and on the web (D-145): every older app stops syncing until it is updated. Its local data stays on the device.
+
 ## Owner sign-in (plan 005, D-108 to D-120)
 
 - **Every request except `/health` and `/auth/sign-in` needs `Authorization: Bearer <token>`.** `Wio\Auth\AuthMiddleware` turns the token into an `AuthContext` (workspace, user, role, customer, device). Code takes the workspace and role from that context, never from the request (D-112). `public/.htaccess` passes the header on under CGI/FPM.
