@@ -35,6 +35,9 @@ abstract class DatabaseTestCase extends ContractTestCase
     /** The server's minimum app version in this test (D-145). */
     protected ?string $minimumAppVersion = null;
 
+    /** The server's WIO_CORS_ORIGINS in this test (D-164). */
+    protected string $corsOrigins = '';
+
     public static function setUpBeforeClass(): void
     {
         MigratedDatabase::migrate();
@@ -65,6 +68,7 @@ abstract class DatabaseTestCase extends ContractTestCase
                 $this->logged[] = $line;
             },
             $this->minimumAppVersion,
+            $this->corsOrigins,
         );
     }
 

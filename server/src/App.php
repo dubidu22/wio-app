@@ -14,6 +14,7 @@ use Wio\Http\Auth\MeAction;
 use Wio\Http\Auth\RevokeDeviceAction;
 use Wio\Http\Auth\SignInAction;
 use Wio\Http\Auth\SignOutAction;
+use Wio\Http\CorsMiddleware;
 use Wio\Http\HealthAction;
 use Wio\Http\ProblemErrorHandler;
 
@@ -22,7 +23,7 @@ use Wio\Http\ProblemErrorHandler;
  * contract between the app and the server (INV-02). Every route except the
  * contract's public operations (`security: []`) goes through the auth
  * middleware (D-112); every route goes through the app-version check first
- * (D-142).
+ * (D-142). CORS wraps everything (D-168).
  */
 final class App
 {
@@ -39,6 +40,9 @@ final class App
         $app->addRoutingMiddleware();
         $app->addErrorMiddleware(false, false, false)
             ->setDefaultErrorHandler(new ProblemErrorHandler($app->getResponseFactory(), $services->log));
+        // Outermost, so problem answers from the error handler carry the
+        // CORS headers too, and preflights never reach auth (D-165, D-168).
+        $app->add(new CorsMiddleware($services->cors, $app->getResponseFactory(), $services->log));
 
         // Public operations (security: [] in the contract).
         $app->get('/health', new HealthAction());

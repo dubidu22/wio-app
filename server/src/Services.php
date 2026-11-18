@@ -14,6 +14,7 @@ use Wio\Auth\SignIn;
 use Wio\Auth\SignInLimiter;
 use Wio\Database\Connection;
 use Wio\Database\Sql;
+use Wio\Http\Cors;
 use Wio\Support\SystemClock;
 
 /**
@@ -32,11 +33,15 @@ final class Services
     /** Apps below it get 426 (D-145); null for no minimum. */
     public readonly ?AppVersion $minimumAppVersion;
 
+    /** Origins allowed to read answers in a browser (D-164). */
+    public readonly Cors $cors;
+
     /**
      * @param \Closure(): PDO $connect
      * @param \Closure(): PasswordHasher $makeHasher
      * @param \Closure(string): void $log one line to the server's error log; never a password, token or body
      * @param ?string $minimumAppVersion `major.minor.patch`; tests pass their own
+     * @param string $corsOrigins the `WIO_CORS_ORIGINS` list, comma-separated
      */
     public function __construct(
         private readonly \Closure $connect,
@@ -44,11 +49,13 @@ final class Services
         private readonly \Closure $makeHasher,
         ?\Closure $log = null,
         ?string $minimumAppVersion = MinimumAppVersion::VALUE,
+        string $corsOrigins = '',
     ) {
         $this->log = $log ?? static function (string $line): void {
             error_log($line);
         };
         $this->minimumAppVersion = $minimumAppVersion === null ? null : AppVersion::minimum($minimumAppVersion);
+        $this->cors = Cors::fromConfig($corsOrigins);
     }
 
     public static function fromEnvironment(): self
@@ -57,6 +64,7 @@ final class Services
             static fn(): PDO => Connection::fromEnvironment(),
             new SystemClock(),
             static fn(): PasswordHasher => new PasswordHasher(),
+            corsOrigins: (string) getenv('WIO_CORS_ORIGINS'),
         );
     }
 
