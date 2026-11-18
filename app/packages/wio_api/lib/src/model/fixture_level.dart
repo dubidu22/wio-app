@@ -8,12 +8,13 @@ import 'dart:core' as _i3;
 import 'package:meta/meta.dart' as _i2;
 import 'package:tonik_util/tonik_util.dart' as _i1;
 
+/// One level of a fixture, counted from the bottom.
 @_i2.immutable
-class ArrayModel extends _i1.ObjectParameterEncodable
+class FixtureLevel extends _i1.ObjectParameterEncodable
     implements _i1.UriEncodable {
-  const ArrayModel({required this.heightCm, required this.compartments});
+  const FixtureLevel({required this.heightCm, required this.compartments});
 
-  factory ArrayModel.fromSimple(
+  factory FixtureLevel.fromSimple(
     _i3.String? value, {
     required _i3.bool explode,
     _i3.bool isHeader = false,
@@ -23,46 +24,49 @@ class ArrayModel extends _i1.ObjectParameterEncodable
       explodeSeparator: ',',
       expectedKeys: {r'height_cm', r'compartments'},
       listKeys: {},
-      context: r'ArrayModel',
+      context: r'FixtureLevel',
       isHeader: isHeader,
       percentDecodeKeys: false,
     );
-    return ArrayModel(
+    return FixtureLevel(
       heightCm: _$values[r'height_cm'].decodeSimpleInt(
-        context: r'ArrayModel.height_cm',
+        context: r'FixtureLevel.height_cm',
       ),
       compartments: _$values[r'compartments'].decodeSimpleInt(
-        context: r'ArrayModel.compartments',
+        context: r'FixtureLevel.compartments',
       ),
     );
   }
 
-  factory ArrayModel.fromJson(_i3.Object? json) {
-    final _$map = json.decodeMap(context: r'ArrayModel');
-    return ArrayModel(
+  factory FixtureLevel.fromJson(_i3.Object? json) {
+    final _$map = json.decodeMap(context: r'FixtureLevel');
+    return FixtureLevel(
       heightCm: _$map[r'height_cm'].decodeJsonInt(
-        context: r'ArrayModel.height_cm',
+        context: r'FixtureLevel.height_cm',
       ),
       compartments: _$map[r'compartments'].decodeJsonInt(
-        context: r'ArrayModel.compartments',
+        context: r'FixtureLevel.compartments',
       ),
     );
   }
 
-  factory ArrayModel.fromForm(_i3.String? value, {required _i3.bool explode}) {
+  factory FixtureLevel.fromForm(
+    _i3.String? value, {
+    required _i3.bool explode,
+  }) {
     final _$values = value.decodeObject(
       explode: explode,
       explodeSeparator: '&',
       expectedKeys: {r'height_cm', r'compartments'},
       listKeys: {},
-      context: r'ArrayModel',
+      context: r'FixtureLevel',
     );
-    return ArrayModel(
+    return FixtureLevel(
       heightCm: _$values[r'height_cm'].decodeFormInt(
-        context: r'ArrayModel.height_cm',
+        context: r'FixtureLevel.height_cm',
       ),
       compartments: _$values[r'compartments'].decodeFormInt(
-        context: r'ArrayModel.compartments',
+        context: r'FixtureLevel.compartments',
       ),
     );
   }
@@ -77,8 +81,9 @@ class ArrayModel extends _i1.ObjectParameterEncodable
     r'compartments': this.compartments,
   };
 
-  ArrayModel Function({_i3.int? heightCm, _i3.int? compartments}) get copyWith {
-    return ({_i3.int? heightCm, _i3.int? compartments}) => ArrayModel(
+  FixtureLevel Function({_i3.int? heightCm, _i3.int? compartments})
+  get copyWith {
+    return ({_i3.int? heightCm, _i3.int? compartments}) => FixtureLevel(
       heightCm: heightCm ?? this.heightCm,
       compartments: compartments ?? this.compartments,
     );
@@ -87,7 +92,7 @@ class ArrayModel extends _i1.ObjectParameterEncodable
   @_i3.override
   _i3.bool operator ==(_i3.Object other) {
     if (_i3.identical(this, other)) return true;
-    return other is ArrayModel &&
+    return other is FixtureLevel &&
         other.heightCm == this.heightCm &&
         other.compartments == this.compartments;
   }
@@ -119,7 +124,7 @@ class ArrayModel extends _i1.ObjectParameterEncodable
     _i3.bool allowReserved = false,
   }) {
     throw _i1.EncodingException(
-      r'Cannot uriEncode ArrayModel: complex types cannot be URI-encoded',
+      r'Cannot uriEncode FixtureLevel: complex types cannot be URI-encoded',
     );
   }
 }

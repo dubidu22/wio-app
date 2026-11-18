@@ -4,6 +4,6 @@
 
 import 'dart:core' as _i1;
 
-import 'package:wio_api/src/model/array_model.dart' as _i2;
+import 'package:wio_api/src/model/fixture_level.dart' as _i2;
 
-typedef FixtureLevels = _i1.List<_i2.ArrayModel>;
+typedef FixtureLevels = _i1.List<_i2.FixtureLevel>;

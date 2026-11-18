@@ -8,7 +8,7 @@ import 'dart:core' as _i3;
 import 'package:collection/collection.dart' as _i6;
 import 'package:meta/meta.dart' as _i2;
 import 'package:tonik_util/tonik_util.dart' as _i1;
-import 'package:wio_api/src/model/array_model.dart' as _i4;
+import 'package:wio_api/src/model/fixture_level.dart' as _i4;
 import 'package:wio_api/src/model/fixture_levels.dart' as _i5;
 
 @_i2.immutable
@@ -43,7 +43,7 @@ class $RawFixtureLevelsAllOfModel
     return $RawFixtureLevelsAllOfModel(
       fixtureLevels: json
           .decodeJsonList<_i3.Object?>(context: r'$RawFixtureLevelsAllOfModel')
-          .map(_i4.ArrayModel.fromJson)
+          .map(_i4.FixtureLevel.fromJson)
           .toList(),
     );
   }

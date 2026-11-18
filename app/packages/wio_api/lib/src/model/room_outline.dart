@@ -4,6 +4,6 @@
 
 import 'dart:core' as _i1;
 
-import 'package:wio_api/src/model/array_model2.dart' as _i2;
+import 'package:wio_api/src/model/outline_point.dart' as _i2;
 
-typedef RoomOutline = _i1.List<_i2.ArrayModel2>;
+typedef RoomOutline = _i1.List<_i2.OutlinePoint>;
