@@ -97,6 +97,9 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
+      - name: The network check can fail (fixtures)
+        working-directory: tools
+        run: npm run test:web-check
       - name: No request leaves the local server (D-40)
         working-directory: tools
         run: npm run check:web

@@ -16,4 +16,4 @@ The Flutter version is pinned once, in `pubspec.yaml` under `environment: flutte
 
 - UI text is German first and lives only in `lib/l10n/app_de.arb`.
 - A new screen goes in a file named `*_screen.dart` and into `test/ux/screen_catalog.dart`; a test fails otherwise.
-- Use `package:material_ui` and `package:cupertino_ui`, not the deprecated `package:flutter/material.dart` (Flutter 3.50).
+- Use `package:material_ui`, not the deprecated `package:flutter/material.dart` (Flutter 3.50). Localisation delegates come from `wioLocalizationsDelegates` in `lib/app.dart`.

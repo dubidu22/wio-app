@@ -44,5 +44,7 @@ risk:high:
           - app/lib/sync/**
           - "**/goldens/**"
           - .github/workflows/**
-          - LICENSE
+          - "**/LICENSE*"
+          - THIRD-PARTY-LICENCES.md
+          - server/bin/migrate
           - "**/privacy/**"

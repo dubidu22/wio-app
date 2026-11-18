@@ -10,8 +10,9 @@ Banned: SSPL, non-commercial, proprietary, GPL-2.0-only, other licences incompat
 | --- | --- | --- | --- |
 | Flutter SDK (`flutter`, `flutter_localizations`) | 3.50.0 | BSD-3-Clause | App framework (D-16) |
 | `material_ui` | 1.11.1 | BSD-3-Clause | Material widgets (decoupled from the SDK in Flutter 3.50) |
-| `cupertino_ui` | 1.1.7 | BSD-3-Clause | Cupertino localisations used by Material widgets |
+| Transitive: `cupertino_ui` | 1.1.7 | BSD-3-Clause | Cupertino localisations, part of `material_ui`'s delegate list |
 | `intl` | 0.20.3 | BSD-3-Clause | Localisation (ARB files) |
+| Material Icons font (`MaterialIcons-Regular.otf`, bundled by `uses-material-design: true`, tree-shaken in release builds) | from the Flutter 3.50.0 SDK | Apache-2.0 | Icons used by Material widgets (for example the back arrow) |
 | Roboto font, Regular and Medium (`app/assets/fonts/`) | googlefonts/roboto `main` at 38062f4, v2 hinted | Apache-2.0 (text in `app/assets/fonts/LICENSE.txt`) | Bundled so no platform fetches fonts from a CDN (D-40) |
 
 ## Shipped with the server (PHP)
@@ -37,6 +38,8 @@ Banned: SSPL, non-commercial, proprietary, GPL-2.0-only, other licences incompat
 | `playwright` | 1.63.0 | Apache-2.0 | Web network check in headless Chromium (D-40) |
 | actionlint | 1.7.12 | MIT | Workflow lint (D-42) |
 | ShellCheck | runner's version | GPL-3.0-or-later | Shell script lint; a tool only, never linked or shipped |
-| GitHub Actions: `actions/*`, `github/codeql-action` | pinned by SHA in `.github/workflows/` | MIT | CI |
+| GitHub Actions: `actions/*`, `github/codeql-action` (the action code) | pinned by SHA in `.github/workflows/` | MIT | CI |
+| CodeQL CLI and query packs (downloaded by `github/codeql-action`) | bundled with v4.39.3 | GitHub CodeQL Terms and Conditions | Workflow scanning in CI only (D-39); run as GitHub's service, never shipped |
+| Chromium (downloaded by `npx playwright install chromium`) | the build matching Playwright 1.63.0 | BSD-3-Clause, plus the licences of its bundled components | Headless browser for the web network check in CI only (D-40) |
 | GitHub Actions: `subosito/flutter-action`, `shivammathur/setup-php` | pinned by SHA | MIT | CI |
 | MariaDB container `mariadb:10.11` | 10.11 | GPL-2.0 (server, run as a separate program in CI) | Test database; not linked or shipped |

@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "lint:openapi": "REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true redocly lint ../api/openapi.yaml --config redocly.yaml",
-    "check:web": "node ci/web-network-check.mjs ../app/build/web"
+    "check:web": "node ci/web-network-check.mjs ../app/build/web",
+    "test:web-check": "node --test ci/test/web-network-check.test.mjs"
   },
   "devDependencies": {
     "@redocly/cli": "2.80.0",
