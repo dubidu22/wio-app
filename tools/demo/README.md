@@ -40,11 +40,11 @@ The next table takes 16, code `0010`.
 1. Edit the JSON by hand; keep one row per line, so a review diff shows whole rows.
 2. A migration that adds a column to a table in the file makes the server test fail until every row of that table lists the column. Set `schema_up_to` to the newest migration the file was checked against.
 3. Pictures and voice notes (M2), time blocks, sign-offs and expenses (M5) and conflicts (sync) are added by the issue that first needs them.
-4. Run `cd server && composer test` (needs MariaDB); the test is `tests/Db/DemoWorkspaceTest.php`.
+4. Run `cd server && composer test` (needs MariaDB); the test is `tests/Db/DemoWorkspaceTest.php`. Run `cd app && flutter test test/data/demo_workspace_test.dart` too: a column added to a table the app holds fails there until the app's local table has it (D-84).
 
 ## Users
 
 | Who | How |
 | --- | --- |
 | Server tests | `Wio\Tests\Support\DemoWorkspace::fromFile()->load($pdo)` on a migrated database |
-| App tests | A loader for the app's local tables follows in a lane:app issue (D-82) |
+| App tests | `DemoWorkspace.fromFile().load(db)` from `app/test/support/demo_workspace.dart` loads the rows of the app's local tables into an in-memory database and sets `sync_state` (D-84) |
