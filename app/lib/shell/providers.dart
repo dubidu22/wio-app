@@ -3,13 +3,17 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../auth/session_provider.dart';
 import '../data/database.dart';
 import '../data/open_database.dart';
 import '../data/queries.dart';
 
 /// The device's database. Tests override it with an in-memory one (D-68).
+/// A new database deletes a session left by an earlier install (D-122).
 final databaseProvider = Provider<WioDatabase>((ref) {
-  final db = openWioDatabase();
+  final db = openWioDatabase(
+    onFirstCreate: () => ref.read(tokenStoreProvider).delete(),
+  );
   ref.onDispose(db.close);
   return db;
 });

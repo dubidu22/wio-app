@@ -2,14 +2,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../auth/session.dart';
+import '../auth/session_provider.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
+import '../shell/router.dart';
 import '../shell/source_link_button.dart';
 
 /// Level 1, "Aufträge": today's and later jobs (KB workflows.md). Tapping a
 /// job opens its customer. The "Quellcode" button sits top right (D-73).
+/// Signed out, a plain hint with "Anmelden" sits on top and the list stays
+/// usable (D-130); signed in, "Abmelden" sits at the end (D-132).
 class JobListScreen extends ConsumerWidget {
   const JobListScreen({super.key});
 
@@ -30,7 +35,10 @@ class JobListScreen extends ConsumerWidget {
           message: l10n.loadFailed,
           error: error,
         ),
-        AsyncValue(:final value?) => _JobListBody(list: value),
+        AsyncValue(:final value?) => _JobListBody(
+          list: value,
+          session: ref.watch(sessionProvider),
+        ),
         _ => const SizedBox.shrink(),
       },
     );
@@ -38,9 +46,12 @@ class JobListScreen extends ConsumerWidget {
 }
 
 class _JobListBody extends StatelessWidget {
-  const _JobListBody({required this.list});
+  const _JobListBody({required this.list, required this.session});
 
   final JobList list;
+
+  /// Loading shows neither the hint nor Abmelden.
+  final AsyncValue<Session?> session;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +60,7 @@ class _JobListBody extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         children: <Widget>[
+          if (session case AsyncData(value: null)) const _SignedOutHint(),
           SectionHeading(l10n.jobsToday),
           if (list.today.isEmpty)
             HintText(l10n.jobsTodayEmpty)
@@ -60,6 +72,8 @@ class _JobListBody extends StatelessWidget {
           else
             for (final job in list.upcoming)
               _JobButton(job: job, showDate: true),
+          if (session case AsyncData(value: final Session signedIn))
+            _SignOutFooter(session: signedIn),
         ],
       ),
     );
@@ -101,6 +115,78 @@ class _JobButton extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Signed out (D-130): a plain hint and a labelled button, never a gate.
+class _SignedOutHint extends StatelessWidget {
+  const _SignedOutHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          HintText(l10n.signedOutHint),
+          FilledButton(
+            onPressed: () => context.go(signInLocation),
+            child: Text(l10n.signInButton),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Angemeldet als … bei …" and "Abmelden" at the end of the list (D-132).
+/// While signing out the button says "Abmelden …" and ignores taps (D-75).
+class _SignOutFooter extends ConsumerStatefulWidget {
+  const _SignOutFooter({required this.session});
+
+  final Session session;
+
+  @override
+  ConsumerState<_SignOutFooter> createState() => _SignOutFooterState();
+}
+
+class _SignOutFooterState extends ConsumerState<_SignOutFooter> {
+  bool _busy = false;
+
+  Future<void> _signOut() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(sessionProvider.notifier).signOut();
+    messenger.showSnackBar(SnackBar(content: Text(l10n.signedOut)));
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final workspace = widget.session.workspace.name ?? l10n.unnamedWorkspace;
+    final name = widget.session.user.displayName;
+    return Padding(
+      padding: const EdgeInsets.only(top: 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          HintText(
+            name == null
+                ? l10n.signedInAt(workspace)
+                : l10n.signedInAs(name, workspace),
+          ),
+          OutlinedButton(
+            onPressed: _signOut,
+            child: Text(_busy ? l10n.signOutSending : l10n.signOut),
+          ),
+        ],
       ),
     );
   }
