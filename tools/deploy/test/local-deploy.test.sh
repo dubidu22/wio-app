@@ -117,6 +117,8 @@ status=0; run_deploy aaaaaaa "$work/good.tar.gz" WIO_CREATE_SMOKE_OWNER=true || 
 check "first deploy exit" 0 "$status"
 check "current is aaaaaaa" aaaaaaa "$(live)"
 check "config.php is 0600" 600 "$(stat -c %a "$root/shared/config.php")"
+check "files directory is 0700" 700 "$(stat -c %a "$root/shared/files")"
+log_has "config names the files directory" "WIO_FILES_DIR" "$root/shared/config.php"
 check "config linked into the release" "../../shared/config.php" "$(readlink "$root/releases/aaaaaaa/config.php")"
 check "tarball removed after unpack" 0 "$(find "$root/incoming" -type f | wc -l)"
 log_has "H2 printed" "H2 argon2id hash" "$work/deploy-aaaaaaa.log"

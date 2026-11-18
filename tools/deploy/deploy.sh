@@ -64,9 +64,16 @@ config_file() {
   WIO_DB_DSN="mysql:host=${WIO_DB_HOST:-localhost};dbname=${WIO_DB_NAME:?};charset=utf8mb4" \
   WIO_DB_USER="${WIO_DB_USER:?}" \
   WIO_DB_PASSWORD="${WIO_DB_PASSWORD:?}" \
+  WIO_FILES_DIR="$root/shared/files" \
+  WIO_CORS_ORIGINS="${WIO_WEB_ORIGIN:-}" \
     php -r '
       $c = [];
-      foreach (["WIO_DB_DSN", "WIO_DB_USER", "WIO_DB_PASSWORD"] as $n) { $c[$n] = (string) getenv($n); }
+      // Uploaded files survive releases, outside the web root (D-207).
+      // The CORS allow-list is the web origin, when one is set (D-163).
+      foreach (["WIO_DB_DSN", "WIO_DB_USER", "WIO_DB_PASSWORD", "WIO_FILES_DIR", "WIO_CORS_ORIGINS"] as $n) {
+          $v = (string) getenv($n);
+          if ($v !== "") { $c[$n] = $v; }
+      }
       echo "<?php\n\n// Written by the deploy (D-161). Do not edit: the next deploy overwrites it.\nreturn ", var_export($c, true), ";\n";
     '
 }

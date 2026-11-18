@@ -13,6 +13,7 @@
 #   previous               the sha that was current before the last switch
 #                          (the rollback target)
 #   shared/config.php      host config (D-161), mode 0600
+#   shared/files/          uploaded files, kept across releases (D-207), mode 0700
 #   incoming/              uploads waiting to be used, removed after use
 set -euo pipefail
 
@@ -71,8 +72,8 @@ PHP
 case "$command" in
   prepare)
     # Creates the layout. Prints the PHP version, so a wrong CLI shows early.
-    mkdir -p "$root/releases" "$root/shared" "$root/incoming" "$root/web"
-    chmod 700 "$root/shared" "$root/incoming"
+    mkdir -p "$root/releases" "$root/shared/files" "$root/incoming" "$root/web"
+    chmod 700 "$root/shared" "$root/shared/files" "$root/incoming"
     "$php" -r 'echo "php ", PHP_VERSION, PHP_EOL;'
     ;;
 
