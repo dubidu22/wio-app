@@ -31,7 +31,7 @@ class SyncApi {
   }) async => this._syncPush(body: body, cancellation: cancellation);
 
   /// Changed records since a revision, in revision order
-  /// Repeat with `since` = `last_revision` until `has_more` is false, then store `last_revision` (KB sync.md). Records the token may not read are never returned.
+  /// Repeat with `since` = `last_revision` until `has_more` is false, then store `last_revision` (KB sync.md). Records the token may not read are never returned; `last_revision` is the highest revision the server examined, so it can be above the last returned record, and it is greater than `since` whenever `has_more` is true. A 410 `resync_required` means: drop pulled records, keep the outbox, pull again from 0.
   _i4.Future<_i5.TonikResult<_i9.SyncPullResponse, _i7.Response>> syncPull({
     required _i4.int since,
     _i4.int limit = _i3.SyncPull.limitDefault,

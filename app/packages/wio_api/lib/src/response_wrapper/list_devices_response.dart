@@ -60,3 +60,19 @@ class ListDevicesResponse503 extends ListDevicesResponse {
   @_i3.override
   _i3.int get hashCode => this.body.hashCode;
 }
+
+@_i1.immutable
+class ListDevicesResponseDefault extends ListDevicesResponse {
+  const ListDevicesResponseDefault({required this.body});
+
+  final _i4.Problem body;
+
+  @_i3.override
+  _i3.bool operator ==(_i3.Object other) {
+    if (_i3.identical(this, other)) return true;
+    return other is ListDevicesResponseDefault && other.body == this.body;
+  }
+
+  @_i3.override
+  _i3.int get hashCode => this.body.hashCode;
+}

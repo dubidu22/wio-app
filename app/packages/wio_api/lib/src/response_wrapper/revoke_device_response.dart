@@ -73,3 +73,19 @@ class RevokeDeviceResponse503 extends RevokeDeviceResponse {
   @_i2.override
   _i2.int get hashCode => this.body.hashCode;
 }
+
+@_i1.immutable
+class RevokeDeviceResponseDefault extends RevokeDeviceResponse {
+  const RevokeDeviceResponseDefault({required this.body});
+
+  final _i3.Problem body;
+
+  @_i2.override
+  _i2.bool operator ==(_i2.Object other) {
+    if (_i2.identical(this, other)) return true;
+    return other is RevokeDeviceResponseDefault && other.body == this.body;
+  }
+
+  @_i2.override
+  _i2.int get hashCode => this.body.hashCode;
+}

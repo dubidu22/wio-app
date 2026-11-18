@@ -62,6 +62,22 @@ class SyncPullResponse401 extends SyncPullResponse {
 }
 
 @_i1.immutable
+class SyncPullResponse410 extends SyncPullResponse {
+  const SyncPullResponse410({required this.body});
+
+  final _i4.Problem body;
+
+  @_i3.override
+  _i3.bool operator ==(_i3.Object other) {
+    if (_i3.identical(this, other)) return true;
+    return other is SyncPullResponse410 && other.body == this.body;
+  }
+
+  @_i3.override
+  _i3.int get hashCode => this.body.hashCode;
+}
+
+@_i1.immutable
 class SyncPullResponse503 extends SyncPullResponse {
   const SyncPullResponse503({required this.body});
 
@@ -71,6 +87,22 @@ class SyncPullResponse503 extends SyncPullResponse {
   _i3.bool operator ==(_i3.Object other) {
     if (_i3.identical(this, other)) return true;
     return other is SyncPullResponse503 && other.body == this.body;
+  }
+
+  @_i3.override
+  _i3.int get hashCode => this.body.hashCode;
+}
+
+@_i1.immutable
+class SyncPullResponseDefault extends SyncPullResponse {
+  const SyncPullResponseDefault({required this.body});
+
+  final _i4.Problem body;
+
+  @_i3.override
+  _i3.bool operator ==(_i3.Object other) {
+    if (_i3.identical(this, other)) return true;
+    return other is SyncPullResponseDefault && other.body == this.body;
   }
 
   @_i3.override

@@ -55,7 +55,7 @@ class PullResult extends _i1.ObjectParameterEncodable
 
   final _i3.bool hasMore;
 
-  /// Revision of the last record, or `since` when the page is empty.
+  /// The highest revision the server examined for this page. It can be higher than the last returned record, because records this token may not read are skipped. Store it and pass it as `since`. When `has_more` is true it is greater than `since`.
   final _i3.int lastRevision;
 
   @_i3.override

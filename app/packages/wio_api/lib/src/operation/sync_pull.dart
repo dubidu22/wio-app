@@ -114,6 +114,17 @@ final class SyncPull extends _i1.HttpOperation<_i2.SyncPullResponse> {
         throw _i4.ResponseDecodingException(
           'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
         );
+      case (410, r'application/problem+json'):
+        final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
+        final _$body = _i8.Problem.fromJson(_$json);
+        return _i2.SyncPullResponse410(body: _$body);
+      case (410, _):
+        final _$content = response.headers['content-type'] ?? 'not specified';
+        final _$matched = _$mediaType ?? 'none';
+        final _$status = response.statusCode;
+        throw _i4.ResponseDecodingException(
+          'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
+        );
       case (503, r'application/problem+json'):
         final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
         final _$body = _i8.Problem.fromJson(_$json);
@@ -124,6 +135,17 @@ final class SyncPull extends _i1.HttpOperation<_i2.SyncPullResponse> {
                 .decodeSimpleNullableInt(context: r'Retry-After'),
           ),
         );
+      case (503, _):
+        final _$content = response.headers['content-type'] ?? 'not specified';
+        final _$matched = _$mediaType ?? 'none';
+        final _$status = response.statusCode;
+        throw _i4.ResponseDecodingException(
+          'Unexpected content type: ${_$content} (matched as: ${_$matched}) for status code: ${_$status}',
+        );
+      case (_, r'application/problem+json'):
+        final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
+        final _$body = _i8.Problem.fromJson(_$json);
+        return _i2.SyncPullResponseDefault(body: _$body);
       default:
         final _$content = response.headers['content-type'] ?? 'not specified';
         final _$matched = _$mediaType ?? 'none';
