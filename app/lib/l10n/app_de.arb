@@ -1,0 +1,11 @@
+{
+  "@@locale": "de",
+  "appTitle": "wio",
+  "@appTitle": {
+    "description": "Name of the app, shown in the window title and on the start screen."
+  },
+  "startMessage": "Die neue App entsteht gerade.",
+  "@startMessage": {
+    "description": "Placeholder text on the start screen until the app shell exists."
+  }
+}

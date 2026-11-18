@@ -1,0 +1,6 @@
+# Test tags. CI runs each set as its own step and fails a step that ran no tests (D-35).
+tags:
+  # Golden image tests: Linux only, bundled font, 390 x 844 (plan 002).
+  golden:
+  # UX rule checks: 56-px touch targets and labelled buttons (KB ux-rules.md).
+  ux:
