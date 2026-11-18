@@ -83,11 +83,78 @@ final class MigrationRunnerTest extends TestCase
         (new Runner($this->pdo, self::FIXTURES . '/ok'))->migrate();
     }
 
-    public function testTheRealMigrationsApplyToAnEmptyDatabase(): void
+    public function testRefusesADatabaseThatHasTablesButNoMigrationHistory(): void
     {
-        (new Runner($this->pdo, __DIR__ . '/../../migrations'))->migrate();
+        $this->pdo->exec('CREATE TABLE stray (id INT PRIMARY KEY)');
 
-        self::assertContains('schema_migrations', $this->tables());
+        try {
+            (new Runner($this->pdo, self::FIXTURES . '/ok'))->migrate();
+            self::fail('A database with foreign tables and no history must be refused.');
+        } catch (MigrationException $e) {
+            self::assertStringContainsString('no migration history', $e->getMessage());
+        }
+
+        self::assertSame([], $this->recordedVersions());
+        self::assertSame(['schema_migrations', 'stray'], $this->tables());
+    }
+
+    public function testRefusesToRunWhileAnotherRunOnTheSameDatabaseHoldsTheLock(): void
+    {
+        // Spelled out rather than taken from Runner, so the test pins the name.
+        $name = "CONCAT('wio_migrate_', LEFT(SHA2(DATABASE(), 256), 32))";
+        $other = Connection::fromEnvironment();
+        $lock = $other->query("SELECT GET_LOCK({$name}, 0)");
+        self::assertNotFalse($lock);
+        self::assertSame('1', $this->scalar($lock->fetchColumn()));
+
+        try {
+            (new Runner($this->pdo, self::FIXTURES . '/ok', 0))->migrate();
+            self::fail('A second run must not start while the lock is held.');
+        } catch (MigrationException $e) {
+            self::assertStringContainsString('holds the lock', $e->getMessage());
+        } finally {
+            $other->query("SELECT RELEASE_LOCK({$name})");
+        }
+
+        self::assertNotContains('alpha', $this->tables());
+    }
+
+    public function testTheLockOfAnotherDatabaseDoesNotBlock(): void
+    {
+        $other = Connection::fromEnvironment();
+        $name = "CONCAT('wio_migrate_', LEFT(SHA2('wio_other_database', 256), 32))";
+        $lock = $other->query("SELECT GET_LOCK({$name}, 0)");
+        self::assertNotFalse($lock);
+        self::assertSame('1', $this->scalar($lock->fetchColumn()));
+
+        try {
+            $applied = (new Runner($this->pdo, self::FIXTURES . '/ok', 0))->migrate();
+        } finally {
+            $other->query("SELECT RELEASE_LOCK({$name})");
+        }
+
+        self::assertSame(['0001_create_alpha', '0002_create_beta'], $applied);
+    }
+
+    public function testTheRealMigrationsApplyToAnEmptyDatabaseOnce(): void
+    {
+        $applied = (new Runner($this->pdo, __DIR__ . '/../../migrations'))->migrate();
+
+        self::assertSame([
+            '0001_workspaces_users',
+            '0002_customers_places',
+            '0003_vocabulary',
+            '0004_entries_history',
+            '0005_pictures_notes',
+            '0006_jobs',
+            '0007_sync_support',
+        ], $applied);
+        self::assertSame([
+            'conflicts', 'customers', 'entity_labels', 'entity_properties', 'entries', 'expenses', 'fixtures', 'jobs',
+            'labels', 'notes', 'openings', 'pictures', 'place_history', 'property_keys', 'rooms', 'schema_migrations',
+            'sign_offs', 'sites', 'time_blocks', 'users', 'workspace_counters', 'workspaces',
+        ], $this->tables());
+        self::assertSame([], (new Runner($this->pdo, __DIR__ . '/../../migrations'))->migrate());
     }
 
     /**
@@ -121,6 +188,11 @@ final class MigrationRunnerTest extends TestCase
             static fn(mixed $value): string => is_scalar($value) ? (string) $value : '',
             $statement->fetchAll(PDO::FETCH_COLUMN),
         ));
+    }
+
+    private function scalar(mixed $value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
     }
 
     private function dropAllTables(): void

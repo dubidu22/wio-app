@@ -13,6 +13,16 @@ use RuntimeException;
  */
 final class Connection
 {
+    /**
+     * Shared hosting defaults vary, so every connection sets UTC and a strict
+     * SQL mode itself (D-53): an invalid value fails instead of being silently
+     * changed, and server times never depend on the host's time zone.
+     */
+    public const string SQL_MODE = 'STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,'
+        . 'ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+    private const string SESSION_SETUP = "SET time_zone = '+00:00', sql_mode = '" . self::SQL_MODE . "'";
+
     private function __construct() {}
 
     public static function fromEnvironment(): PDO
@@ -24,6 +34,7 @@ final class Connection
         return new PDO($dsn, $user, $password, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::MYSQL_ATTR_INIT_COMMAND => self::SESSION_SETUP,
         ]);
     }
 

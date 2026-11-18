@@ -15,17 +15,27 @@ use PDOStatement;
  * therefore records a file only after all of its statements succeeded, stops
  * at the first error, and refuses to run when an applied file was changed.
  * It is plain PHP so that it can run from the command line, a cron job or a
- * protected endpoint (O-6).
+ * protected endpoint (O-6, D-56).
+ *
+ * Further guards (D-55): a run refuses a database that has tables but no
+ * migration history, because the first files expect an empty database; and a
+ * lock keeps two runs from interleaving.
  */
 final class Runner
 {
     private const string TABLE = 'schema_migrations';
-    private const string LOCK = 'wio_schema_migrations';
+    /**
+     * GET_LOCK names are global to the MariaDB server, so the name carries a
+     * hash of the database name: staging and production on one server do not
+     * block each other (44 characters, under the limit of 64).
+     */
+    public const string LOCK_NAME_SQL = "CONCAT('wio_migrate_', LEFT(SHA2(DATABASE(), 256), 32))";
     private const int LOCK_TIMEOUT_SECONDS = 30;
 
     public function __construct(
         private readonly PDO $pdo,
         private readonly string $directory,
+        private readonly int $lockTimeoutSeconds = self::LOCK_TIMEOUT_SECONDS,
     ) {
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         // Files with several statements need emulated prepares.
@@ -43,6 +53,9 @@ final class Runner
             $this->createTable();
             $applied = $this->appliedChecksums();
             $this->assertAppliedUnchanged($migrations, $applied);
+            if ($applied === [] && $migrations !== []) {
+                $this->assertNoOtherTables();
+            }
 
             $done = [];
             foreach ($migrations as $migration) {
@@ -143,10 +156,24 @@ final class Runner
         }
     }
 
+    private function assertNoOtherTables(): void
+    {
+        $statement = $this->prepare(
+            'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME <> ?',
+        );
+        $statement->execute([self::TABLE]);
+        if ((string) $statement->fetchColumn() !== '0') {
+            throw new MigrationException(
+                'The database has tables but no migration history; migrations run only on an empty database '
+                . 'or on one they created.',
+            );
+        }
+    }
+
     private function lock(): void
     {
-        $statement = $this->prepare('SELECT GET_LOCK(?, ?)');
-        $statement->execute([self::LOCK, self::LOCK_TIMEOUT_SECONDS]);
+        $statement = $this->prepare('SELECT GET_LOCK(' . self::LOCK_NAME_SQL . ', ?)');
+        $statement->execute([$this->lockTimeoutSeconds]);
         if ((string) $statement->fetchColumn() !== '1') {
             throw new MigrationException('Another migration run holds the lock.');
         }
@@ -154,7 +181,7 @@ final class Runner
 
     private function unlock(): void
     {
-        $this->prepare('SELECT RELEASE_LOCK(?)')->execute([self::LOCK]);
+        $this->prepare('SELECT RELEASE_LOCK(' . self::LOCK_NAME_SQL . ')')->execute();
     }
 
     private function prepare(string $sql): PDOStatement
