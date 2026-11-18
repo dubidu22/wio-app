@@ -98,12 +98,14 @@ final class MigrationRunnerTest extends TestCase
         self::assertSame(['schema_migrations', 'stray'], $this->tables());
     }
 
-    public function testRefusesToRunWhileAnotherRunHoldsTheLock(): void
+    public function testRefusesToRunWhileAnotherRunOnTheSameDatabaseHoldsTheLock(): void
     {
+        // Spelled out rather than taken from Runner, so the test pins the name.
+        $name = "CONCAT('wio_migrate_', LEFT(SHA2(DATABASE(), 256), 32))";
         $other = Connection::fromEnvironment();
-        $lock = $other->query("SELECT GET_LOCK('wio_schema_migrations', 0)");
+        $lock = $other->query("SELECT GET_LOCK({$name}, 0)");
         self::assertNotFalse($lock);
-        self::assertSame('1', (string) $lock->fetchColumn());
+        self::assertSame('1', $this->scalar($lock->fetchColumn()));
 
         try {
             (new Runner($this->pdo, self::FIXTURES . '/ok', 0))->migrate();
@@ -111,10 +113,27 @@ final class MigrationRunnerTest extends TestCase
         } catch (MigrationException $e) {
             self::assertStringContainsString('holds the lock', $e->getMessage());
         } finally {
-            $other->query("SELECT RELEASE_LOCK('wio_schema_migrations')");
+            $other->query("SELECT RELEASE_LOCK({$name})");
         }
 
         self::assertNotContains('alpha', $this->tables());
+    }
+
+    public function testTheLockOfAnotherDatabaseDoesNotBlock(): void
+    {
+        $other = Connection::fromEnvironment();
+        $name = "CONCAT('wio_migrate_', LEFT(SHA2('wio_other_database', 256), 32))";
+        $lock = $other->query("SELECT GET_LOCK({$name}, 0)");
+        self::assertNotFalse($lock);
+        self::assertSame('1', $this->scalar($lock->fetchColumn()));
+
+        try {
+            $applied = (new Runner($this->pdo, self::FIXTURES . '/ok', 0))->migrate();
+        } finally {
+            $other->query("SELECT RELEASE_LOCK({$name})");
+        }
+
+        self::assertSame(['0001_create_alpha', '0002_create_beta'], $applied);
     }
 
     public function testTheRealMigrationsApplyToAnEmptyDatabaseOnce(): void
@@ -169,6 +188,11 @@ final class MigrationRunnerTest extends TestCase
             static fn(mixed $value): string => is_scalar($value) ? (string) $value : '',
             $statement->fetchAll(PDO::FETCH_COLUMN),
         ));
+    }
+
+    private function scalar(mixed $value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
     }
 
     private function dropAllTables(): void

@@ -24,7 +24,12 @@ use PDOStatement;
 final class Runner
 {
     private const string TABLE = 'schema_migrations';
-    private const string LOCK = 'wio_schema_migrations';
+    /**
+     * GET_LOCK names are global to the MariaDB server, so the name carries a
+     * hash of the database name: staging and production on one server do not
+     * block each other (44 characters, under the limit of 64).
+     */
+    public const string LOCK_NAME_SQL = "CONCAT('wio_migrate_', LEFT(SHA2(DATABASE(), 256), 32))";
     private const int LOCK_TIMEOUT_SECONDS = 30;
 
     public function __construct(
@@ -167,8 +172,8 @@ final class Runner
 
     private function lock(): void
     {
-        $statement = $this->prepare('SELECT GET_LOCK(?, ?)');
-        $statement->execute([self::LOCK, $this->lockTimeoutSeconds]);
+        $statement = $this->prepare('SELECT GET_LOCK(' . self::LOCK_NAME_SQL . ', ?)');
+        $statement->execute([$this->lockTimeoutSeconds]);
         if ((string) $statement->fetchColumn() !== '1') {
             throw new MigrationException('Another migration run holds the lock.');
         }
@@ -176,7 +181,7 @@ final class Runner
 
     private function unlock(): void
     {
-        $this->prepare('SELECT RELEASE_LOCK(?)')->execute([self::LOCK]);
+        $this->prepare('SELECT RELEASE_LOCK(' . self::LOCK_NAME_SQL . ')')->execute();
     }
 
     private function prepare(string $sql): PDOStatement

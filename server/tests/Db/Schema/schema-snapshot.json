@@ -161,19 +161,23 @@
             "updated_by char(36) ascii ascii_bin NULL",
             "revision bigint(20) unsigned NOT NULL",
             "deleted_at datetime(3) NULL",
-            "alive tinyint(3) unsigned NULL AS (if(`deleted_at` is null,1,NULL)) STORED GENERATED"
+            "alive tinyint(3) unsigned NULL AS (if(`deleted_at` is null,1,NULL)) STORED GENERATED",
+            "no_customer tinyint(3) unsigned NULL AS (`customer_id` <=> NULL) STORED GENERATED"
         ],
         "indexes": [
             "PRIMARY UNIQUE (id)",
             "fk_entries_fixture (workspace_id, room_id, fixture_id)",
             "fk_entries_room (workspace_id, site_id, room_id)",
             "fk_entries_site_customer (workspace_id, customer_id, site_id)",
+            "fk_entries_site_no_customer (workspace_id, no_customer, site_id)",
             "fk_entries_target_fixture (workspace_id, target_room_id, target_fixture_id)",
             "fk_entries_target_room (workspace_id, target_site_id, target_room_id)",
             "fk_entries_target_site_customer (workspace_id, customer_id, target_site_id)",
+            "fk_entries_target_site_no_customer (workspace_id, no_customer, target_site_id)",
             "ix_entries_revision (workspace_id, revision)",
             "uq_entries_code UNIQUE (workspace_id, code, alive)",
             "uq_entries_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_entries_no_customer_scope UNIQUE (workspace_id, no_customer, id)",
             "uq_entries_scope UNIQUE (workspace_id, id)"
         ],
         "foreign_keys": [
@@ -182,10 +186,12 @@
             "fk_entries_room (workspace_id, site_id, room_id) -> rooms (workspace_id, site_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_entries_site (workspace_id, site_id) -> sites (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_entries_site_customer (workspace_id, customer_id, site_id) -> sites (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_site_no_customer (workspace_id, no_customer, site_id) -> sites (workspace_id, no_customer, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_entries_target_fixture (workspace_id, target_room_id, target_fixture_id) -> fixtures (workspace_id, room_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_entries_target_room (workspace_id, target_site_id, target_room_id) -> rooms (workspace_id, site_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_entries_target_site (workspace_id, target_site_id) -> sites (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_entries_target_site_customer (workspace_id, customer_id, target_site_id) -> sites (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_entries_target_site_no_customer (workspace_id, no_customer, target_site_id) -> sites (workspace_id, no_customer, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_entries_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
         ],
         "checks": [
@@ -261,11 +267,13 @@
             "updated_at datetime(3) NOT NULL",
             "updated_by char(36) ascii ascii_bin NULL",
             "revision bigint(20) unsigned NOT NULL",
-            "deleted_at datetime(3) NULL"
+            "deleted_at datetime(3) NULL",
+            "no_customer tinyint(3) unsigned NULL AS (`customer_id` <=> NULL) STORED GENERATED"
         ],
         "indexes": [
             "PRIMARY UNIQUE (id)",
             "fk_fixtures_room_customer (workspace_id, customer_id, room_id)",
+            "fk_fixtures_room_no_customer (workspace_id, no_customer, room_id)",
             "ix_fixtures_revision (workspace_id, revision)",
             "uq_fixtures_customer_scope UNIQUE (workspace_id, customer_id, id)",
             "uq_fixtures_room_scope UNIQUE (workspace_id, room_id, id)",
@@ -275,6 +283,7 @@
             "fk_fixtures_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_fixtures_room (workspace_id, room_id) -> rooms (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_fixtures_room_customer (workspace_id, customer_id, room_id) -> rooms (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_fixtures_room_no_customer (workspace_id, no_customer, room_id) -> rooms (workspace_id, no_customer, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_fixtures_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
         ],
         "checks": [
@@ -395,12 +404,14 @@
             "updated_at datetime(3) NOT NULL",
             "updated_by char(36) ascii ascii_bin NULL",
             "revision bigint(20) unsigned NOT NULL",
-            "deleted_at datetime(3) NULL"
+            "deleted_at datetime(3) NULL",
+            "no_customer tinyint(3) unsigned NULL AS (`customer_id` <=> NULL) STORED GENERATED"
         ],
         "indexes": [
             "PRIMARY UNIQUE (id)",
             "fk_openings_room (workspace_id, room_id)",
             "fk_openings_room_customer (workspace_id, customer_id, room_id)",
+            "fk_openings_room_no_customer (workspace_id, no_customer, room_id)",
             "ix_openings_revision (workspace_id, revision)",
             "uq_openings_customer_scope UNIQUE (workspace_id, customer_id, id)",
             "uq_openings_scope UNIQUE (workspace_id, id)"
@@ -409,6 +420,7 @@
             "fk_openings_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_openings_room (workspace_id, room_id) -> rooms (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_openings_room_customer (workspace_id, customer_id, room_id) -> rooms (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_openings_room_no_customer (workspace_id, no_customer, room_id) -> rooms (workspace_id, no_customer, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_openings_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
         ],
         "checks": [
@@ -435,28 +447,36 @@
             "updated_at datetime(3) NOT NULL",
             "updated_by char(36) ascii ascii_bin NULL",
             "revision bigint(20) unsigned NOT NULL",
-            "deleted_at datetime(3) NULL"
+            "deleted_at datetime(3) NULL",
+            "no_customer tinyint(3) unsigned NULL AS (`customer_id` <=> NULL) STORED GENERATED"
         ],
         "indexes": [
             "PRIMARY UNIQUE (id)",
             "fk_pictures_after_of (workspace_id, after_of)",
             "fk_pictures_after_of_customer (workspace_id, customer_id, after_of)",
+            "fk_pictures_after_of_no_customer (workspace_id, no_customer, after_of)",
             "fk_pictures_entry (workspace_id, entry_id)",
             "fk_pictures_entry_customer (workspace_id, customer_id, entry_id)",
+            "fk_pictures_entry_no_customer (workspace_id, no_customer, entry_id)",
             "fk_pictures_room (workspace_id, room_id)",
             "fk_pictures_room_customer (workspace_id, customer_id, room_id)",
+            "fk_pictures_room_no_customer (workspace_id, no_customer, room_id)",
             "ix_pictures_revision (workspace_id, revision)",
             "uq_pictures_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_pictures_no_customer_scope UNIQUE (workspace_id, no_customer, id)",
             "uq_pictures_scope UNIQUE (workspace_id, id)"
         ],
         "foreign_keys": [
             "fk_pictures_after_of (workspace_id, after_of) -> pictures (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_pictures_after_of_customer (workspace_id, customer_id, after_of) -> pictures (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_pictures_after_of_no_customer (workspace_id, no_customer, after_of) -> pictures (workspace_id, no_customer, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_pictures_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_pictures_entry (workspace_id, entry_id) -> entries (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_pictures_entry_customer (workspace_id, customer_id, entry_id) -> entries (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_pictures_entry_no_customer (workspace_id, no_customer, entry_id) -> entries (workspace_id, no_customer, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_pictures_room (workspace_id, room_id) -> rooms (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_pictures_room_customer (workspace_id, customer_id, room_id) -> rooms (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_pictures_room_no_customer (workspace_id, no_customer, room_id) -> rooms (workspace_id, no_customer, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_pictures_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
         ],
         "checks": [
@@ -492,16 +512,19 @@
             "updated_at datetime(3) NOT NULL",
             "updated_by char(36) ascii ascii_bin NULL",
             "revision bigint(20) unsigned NOT NULL",
-            "deleted_at datetime(3) NULL"
+            "deleted_at datetime(3) NULL",
+            "no_customer tinyint(3) unsigned NULL AS (`customer_id` <=> NULL) STORED GENERATED"
         ],
         "indexes": [
             "PRIMARY UNIQUE (id)",
             "fk_place_history_entry (workspace_id, entry_id)",
             "fk_place_history_entry_customer (workspace_id, customer_id, entry_id)",
+            "fk_place_history_entry_no_customer (workspace_id, no_customer, entry_id)",
             "fk_place_history_moved_by (workspace_id, moved_by)",
             "fk_place_history_to_fixture (workspace_id, to_room_id, to_fixture_id)",
             "fk_place_history_to_room (workspace_id, to_site_id, to_room_id)",
             "fk_place_history_to_site_customer (workspace_id, customer_id, to_site_id)",
+            "fk_place_history_to_site_no_customer (workspace_id, no_customer, to_site_id)",
             "ix_place_history_revision (workspace_id, revision)",
             "uq_place_history_customer_scope UNIQUE (workspace_id, customer_id, id)",
             "uq_place_history_scope UNIQUE (workspace_id, id)"
@@ -510,11 +533,13 @@
             "fk_place_history_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_place_history_entry (workspace_id, entry_id) -> entries (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_place_history_entry_customer (workspace_id, customer_id, entry_id) -> entries (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_place_history_entry_no_customer (workspace_id, no_customer, entry_id) -> entries (workspace_id, no_customer, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_place_history_moved_by (workspace_id, moved_by) -> users (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_place_history_to_fixture (workspace_id, to_room_id, to_fixture_id) -> fixtures (workspace_id, room_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_place_history_to_room (workspace_id, to_site_id, to_room_id) -> rooms (workspace_id, site_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_place_history_to_site (workspace_id, to_site_id) -> sites (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_place_history_to_site_customer (workspace_id, customer_id, to_site_id) -> sites (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_place_history_to_site_no_customer (workspace_id, no_customer, to_site_id) -> sites (workspace_id, no_customer, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_place_history_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
         ],
         "checks": [
@@ -569,13 +594,16 @@
             "updated_at datetime(3) NOT NULL",
             "updated_by char(36) ascii ascii_bin NULL",
             "revision bigint(20) unsigned NOT NULL",
-            "deleted_at datetime(3) NULL"
+            "deleted_at datetime(3) NULL",
+            "no_customer tinyint(3) unsigned NULL AS (`customer_id` <=> NULL) STORED GENERATED"
         ],
         "indexes": [
             "PRIMARY UNIQUE (id)",
             "fk_rooms_site_customer (workspace_id, customer_id, site_id)",
+            "fk_rooms_site_no_customer (workspace_id, no_customer, site_id)",
             "ix_rooms_revision (workspace_id, revision)",
             "uq_rooms_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_rooms_no_customer_scope UNIQUE (workspace_id, no_customer, id)",
             "uq_rooms_scope UNIQUE (workspace_id, id)",
             "uq_rooms_site_scope UNIQUE (workspace_id, site_id, id)"
         ],
@@ -583,6 +611,7 @@
             "fk_rooms_customer (workspace_id, customer_id) -> customers (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_rooms_site (workspace_id, site_id) -> sites (workspace_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_rooms_site_customer (workspace_id, customer_id, site_id) -> sites (workspace_id, customer_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
+            "fk_rooms_site_no_customer (workspace_id, no_customer, site_id) -> sites (workspace_id, no_customer, id) ON DELETE RESTRICT ON UPDATE RESTRICT",
             "fk_rooms_workspace (workspace_id) -> workspaces (id) ON DELETE RESTRICT ON UPDATE RESTRICT"
         ],
         "checks": [
@@ -652,12 +681,14 @@
             "updated_at datetime(3) NOT NULL",
             "updated_by char(36) ascii ascii_bin NULL",
             "revision bigint(20) unsigned NOT NULL",
-            "deleted_at datetime(3) NULL"
+            "deleted_at datetime(3) NULL",
+            "no_customer tinyint(3) unsigned NULL AS (`customer_id` <=> NULL) STORED GENERATED"
         ],
         "indexes": [
             "PRIMARY UNIQUE (id)",
             "ix_sites_revision (workspace_id, revision)",
             "uq_sites_customer_scope UNIQUE (workspace_id, customer_id, id)",
+            "uq_sites_no_customer_scope UNIQUE (workspace_id, no_customer, id)",
             "uq_sites_scope UNIQUE (workspace_id, id)"
         ],
         "foreign_keys": [

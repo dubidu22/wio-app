@@ -94,6 +94,10 @@ final class SchemaRulesTest extends SchemaTestCase
             "SELECT TABLE_NAME FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE() AND COLUMN_NAME = 'customer_id'",
         );
+        $nullable = $this->column(
+            "SELECT TABLE_NAME FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND COLUMN_NAME = 'customer_id' AND IS_NULLABLE = 'YES'",
+        );
         foreach ($withCustomer as $table) {
             $keys = $this->foreignKeys($table);
             self::assertContains('workspace_id,customer_id -> customers.workspace_id,id', $keys, $table);
@@ -110,6 +114,30 @@ final class SchemaRulesTest extends SchemaTestCase
                 }
                 $expected = "workspace_id,customer_id,{$column} -> {$parent}.workspace_id,customer_id,id";
                 self::assertContains($expected, $keys, "{$table}.{$column} points at {$parent}, which has a customer");
+                if (in_array($table, $nullable, true) && in_array($parent, $nullable, true)) {
+                    $flagged = "workspace_id,no_customer,{$column} -> {$parent}.workspace_id,no_customer,id";
+                    self::assertContains($flagged, $keys, "{$table}.{$column}: a null customer must not hang under {$parent}");
+                }
+            }
+        }
+    }
+
+    public function testAChildOfACustomerScopedParentHasACustomer(): void
+    {
+        $withCustomer = $this->column(
+            "SELECT TABLE_NAME FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND COLUMN_NAME = 'customer_id'",
+        );
+        foreach ($this->tables() as $table) {
+            foreach ($this->foreignKeys($table) as $key) {
+                if (preg_match('/^workspace_id,[a-z_]+ -> ([a-z_]+)\.workspace_id,id$/', $key, $m) !== 1) {
+                    continue;
+                }
+                $parent = $m[1];
+                if (in_array($parent, self::ACTOR_TABLES, true) || !in_array($parent, $withCustomer, true)) {
+                    continue;
+                }
+                self::assertContains($table, $withCustomer, "{$table} links to {$parent}, which has a customer, so it needs customer_id");
             }
         }
     }
