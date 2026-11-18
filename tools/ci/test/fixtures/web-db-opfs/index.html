@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8"><title>database in OPFS</title></head>
+<body><flutter-view></flutter-view>
+<script>
+setTimeout(async () => {
+  const root = await navigator.storage.getDirectory();
+  const dir = await root.getDirectoryHandle('drift_db', { create: true });
+  await dir.getFileHandle('wio', { create: true });
+}, 300);
+</script>
+</body>
+</html>

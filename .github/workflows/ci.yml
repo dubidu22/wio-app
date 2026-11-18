@@ -50,6 +50,11 @@ jobs:
       - name: Turn off tool analytics
         run: flutter config --no-analytics && dart --disable-analytics
       - run: flutter pub get --enforce-lockfile
+      - name: Generated code is fresh (D-85)
+        run: >-
+          ../tools/ci/generated-code-fresh.sh .
+          -- dart run drift_dev make-migrations
+          -- dart run build_runner build
       - name: Format
         run: dart format --output=none --set-exit-if-changed lib test
       - name: Analyze
@@ -103,6 +108,12 @@ jobs:
       - name: No request leaves the local server (D-40)
         working-directory: tools
         run: npm run check:web
+      - name: The database check can fail (fixtures, D-86)
+        working-directory: tools
+        run: npm run test:web-db
+      - name: The web database opens in a browser (D-87)
+        working-directory: tools
+        run: npm run check:web-db
 
   app-macos:
     name: app-macos
@@ -250,6 +261,7 @@ jobs:
         run: |
           tools/ci/test/check-needs.test.sh
           tools/ci/test/flutter-test.test.sh
+          tools/ci/test/generated-code-fresh.test.sh
 
   ci-passed:
     name: ci-passed
