@@ -11,7 +11,9 @@ namespace Wio\Tests\Db\Schema;
  */
 final class SchemaRulesTest extends SchemaTestCase
 {
-    private const array NOT_SYNCED = ['schema_migrations', 'workspace_counters'];
+    private const array NOT_SYNCED = ['schema_migrations', 'workspace_counters', 'user_passwords', 'device_tokens', 'sign_in_failures'];
+    /** Server-only tables that belong to no workspace: the migration history, and sign-in failures for e-mails that may not exist (D-113). */
+    private const array WITHOUT_WORKSPACE = ['schema_migrations', 'sign_in_failures'];
     /** Users are actors, not records a customer owns, so links to them need no customer key. */
     private const array ACTOR_TABLES = ['users'];
 
@@ -64,7 +66,7 @@ final class SchemaRulesTest extends SchemaTestCase
     public function testEveryTableBelongsToAWorkspace(): void
     {
         foreach ($this->tables() as $table) {
-            if (in_array($table, ['schema_migrations', 'workspaces'], true)) {
+            if ($table === 'workspaces' || in_array($table, self::WITHOUT_WORKSPACE, true)) {
                 continue;
             }
             self::assertContains(

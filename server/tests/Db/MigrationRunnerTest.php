@@ -148,11 +148,16 @@ final class MigrationRunnerTest extends TestCase
             '0005_pictures_notes',
             '0006_jobs',
             '0007_sync_support',
+            '0008_user_passwords',
+            '0009_device_tokens',
+            '0010_sign_in_failures',
+            '0011_users_email_key_index',
         ], $applied);
         self::assertSame([
-            'conflicts', 'customers', 'entity_labels', 'entity_properties', 'entries', 'expenses', 'fixtures', 'jobs',
-            'labels', 'notes', 'openings', 'pictures', 'place_history', 'property_keys', 'rooms', 'schema_migrations',
-            'sign_offs', 'sites', 'time_blocks', 'users', 'workspace_counters', 'workspaces',
+            'conflicts', 'customers', 'device_tokens', 'entity_labels', 'entity_properties', 'entries', 'expenses',
+            'fixtures', 'jobs', 'labels', 'notes', 'openings', 'pictures', 'place_history', 'property_keys', 'rooms',
+            'schema_migrations', 'sign_in_failures', 'sign_offs', 'sites', 'time_blocks', 'user_passwords', 'users',
+            'workspace_counters', 'workspaces',
         ], $this->tables());
         self::assertSame([], (new Runner($this->pdo, __DIR__ . '/../../migrations'))->migrate());
     }

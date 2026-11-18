@@ -1,0 +1,15 @@
+# PHP behind CGI or FPM on shared hosting often drops the Authorization header,
+# so the device token would never arrive (D-112). The rewrite below passes it
+# on as HTTP_AUTHORIZATION; the server also reads REDIRECT_HTTP_AUTHORIZATION.
+# (CGIPassAuth is not used: it needs AllowOverride AuthConfig, which a host
+# may not grant, and then every request would fail.) Proved on staging (#10).
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP:Authorization} .+
+  RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  # Every request that is not an existing file goes to the app.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>
