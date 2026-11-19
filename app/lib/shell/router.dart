@@ -6,6 +6,7 @@ import '../customers/customer_screen.dart';
 import '../jobs/job_list_screen.dart';
 import '../notes/note_screen.dart';
 import '../pictures/picture_screen.dart';
+import '../planning/place_routes.dart';
 import '../rooms/room_screen.dart';
 import '../sync/rejected_screen.dart';
 import '../update/update_required_screen.dart';
@@ -103,6 +104,8 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                   ..._notesRoutes(),
                 ],
               ),
+              // An entry and its place pickers (D-451).
+              entryRoute(),
               // Pictures without a room (Q3, D-271).
               GoRoute(
                 path: 'kamera',

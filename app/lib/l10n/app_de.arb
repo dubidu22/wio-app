@@ -1010,5 +1010,88 @@
         "type": "String"
       }
     }
+  },
+  "placeTitle": "Ort ändern",
+  "@placeTitle": {
+    "description": "Title of the place picker (plan 107, D-452)."
+  },
+  "targetTitle": "Ziel",
+  "@targetTitle": {
+    "description": "Title of the target picker (D-9, D-452)."
+  },
+  "placeFloor": "Boden",
+  "@placeFloor": {
+    "description": "The only spot in a room in M3: on its floor (D-450)."
+  },
+  "placeClear": "Nicht abgelegt",
+  "@placeClear": {
+    "description": "Button: the entry has no place any more (D-452)."
+  },
+  "targetClear": "Kein Ziel",
+  "@targetClear": {
+    "description": "Button: the entry has no target any more (D-452)."
+  },
+  "placeHere": "jetzt hier",
+  "@placeHere": {
+    "description": "Word on the room or spot the entry is in now (D-455)."
+  },
+  "targetHere": "jetziges Ziel",
+  "@targetHere": {
+    "description": "Word on the room that is the entry's target now (D-455)."
+  },
+  "placeTargetMark": "Ziel",
+  "@placeTargetMark": {
+    "description": "Word on the entry's target room in the place picker (D-455)."
+  },
+  "placeOnFloor": "{room}, Boden",
+  "@placeOnFloor": {
+    "description": "Place in words: on the floor of a room (D-450, D-456).",
+    "placeholders": {
+      "room": {
+        "type": "String"
+      }
+    }
+  },
+  "placeNone": "Noch nicht abgelegt",
+  "@placeNone": {
+    "description": "Place in words: the entry has no place (D-456)."
+  },
+  "placeRoomDeleted": "Raum gelöscht",
+  "@placeRoomDeleted": {
+    "description": "Place in words: the room was deleted (D-456)."
+  },
+  "targetWords": "Ziel: {room}",
+  "@targetWords": {
+    "description": "Target in words (D-456).",
+    "placeholders": {
+      "room": {
+        "type": "String"
+      }
+    }
+  },
+  "targetNone": "Kein Ziel",
+  "@targetNone": {
+    "description": "Target in words: the entry has no target (D-456)."
+  },
+  "placeNow": "Jetzt: {place}",
+  "@placeNow": {
+    "description": "The entry's current place or target, above the room list.",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "unnamedEntry": "Eintrag ohne Namen",
+  "@unnamedEntry": {
+    "description": "Name of an entry without title or code."
+  },
+  "entryMissing": "Diesen Eintrag gibt es nicht mehr.",
+  "@entryMissing": {
+    "description": "Shown when an entry does not exist (or was deleted)."
+  },
+  "placeFailed": "Das ging nicht. Diesen Raum gibt es nicht mehr.",
+  "@placeFailed": {
+    "description": "Shown when a room was deleted while the picker was open."
   }
 }

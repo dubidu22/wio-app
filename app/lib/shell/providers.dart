@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../auth/session_provider.dart';
 import '../data/database.dart';
+import '../data/entry_writer.dart';
+import '../data/local_writer.dart';
 import '../data/open_database.dart';
 import '../data/queries.dart';
 
@@ -27,6 +29,13 @@ const String wioSourceUrl = String.fromEnvironment(
   'WIO_SOURCE_URL',
   defaultValue: 'https://github.com/dubidu22/wio-app',
 );
+
+/// Writes entries, their places and targets, labels and properties with
+/// their outbox changes (D-434..D-447); the place pickers use it (plan 107).
+final entryWriterProvider = Provider<EntryWriter>((ref) {
+  final db = ref.watch(databaseProvider);
+  return EntryWriter(db, LocalWriter(db, clock: ref.watch(clockProvider)));
+});
 
 /// The source code address used by the app.
 final sourceUrlProvider = Provider<Uri>((ref) => Uri.parse(wioSourceUrl));
