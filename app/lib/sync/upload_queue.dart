@@ -137,6 +137,8 @@ Future<void> discardUpload(WioDatabase db, Upload row) =>
 Future<void> keepUpload(WioDatabase db, Upload row) =>
     db.into(db.uploads).insertOnConflictUpdate(row);
 
+bool _never() => false;
+
 /// Sends pending uploads one at a time, oldest first, each from the size
 /// the server already holds (D-208, D-211, D-212).
 class UploadWorker {
@@ -145,12 +147,16 @@ class UploadWorker {
     required this.api,
     required this.store,
     required this.tooOld,
-  });
+    bool Function()? stopped,
+  }) : stopped = stopped ?? _never;
 
   final WioDatabase db;
   final FilesApi api;
   final UploadStore store;
   final bool Function() tooOld;
+
+  /// True once the run should end before its next chunk (D-375).
+  final bool Function() stopped;
 
   /// Files restarted after a 422 in this worker's life (once each).
   final Set<String> _restarted = <String>{};
@@ -159,6 +165,7 @@ class UploadWorker {
   /// when new changes wait in the outbox (D-211).
   Future<SyncResult> run() async {
     while (true) {
+      if (stopped()) return SyncResult.interrupted;
       final row =
           await (db.select(db.uploads)
                 ..where((u) => u.failedReason.isNull())
@@ -206,6 +213,8 @@ class UploadWorker {
             await _fail(row, UploadFailure.invalid);
             return null;
           }
+          // The server keeps what it has; the next run resumes here.
+          if (stopped()) return SyncResult.interrupted;
           offset = await _chunk(row, bytes);
           if (offset case _At(bytes: final next) when next <= bytes) {
             // A 409 or 202 that does not move forward; bounded.

@@ -28,14 +28,49 @@ void main() {
     );
   });
 
-  test('the app declares the microphone itself, and nothing for the '
-      'background (D-291, D-294)', () {
+  test('the app declares the microphone itself, and no foreground service '
+      '(D-291, D-294, D-379)', () {
     expect(
       element('android.permission.RECORD_AUDIO'),
       isNot(contains('tools:node')),
     );
-    expect(manifest, isNot(contains('FOREGROUND_SERVICE')));
     expect(manifest, isNot(contains('MODIFY_AUDIO_SETTINGS')));
+    // WorkManager brings FOREGROUND_SERVICE and its service; both go.
+    expect(
+      element('android.permission.FOREGROUND_SERVICE'),
+      contains('tools:node="remove"'),
+    );
+    expect(
+      RegExp('android:name="android.permission.FOREGROUND_SERVICE_[A-Z_]+"')
+          .hasMatch(manifest),
+      isFalse,
+    );
+    expect(
+      RegExp(
+        '<service\\s+android:name="androidx.work.impl.foreground.'
+        'SystemForegroundService"\\s+tools:node="remove"/>',
+      ).hasMatch(manifest),
+      isTrue,
+    );
+  });
+
+  test('background sync permissions are in the allow-list (D-379)', () {
+    final allowed = File('android/permissions.txt').readAsLinesSync();
+    for (final name in <String>[
+      'android.permission.WAKE_LOCK',
+      'android.permission.RECEIVE_BOOT_COMPLETED',
+    ]) {
+      expect(allowed, contains('uses-permission $name'), reason: name);
+    }
+    expect(
+      allowed.where(
+        (l) =>
+            l ==
+            'uses-permission android.permission.'
+                'FOREGROUND_SERVICE',
+      ),
+      isEmpty,
+    );
   });
 
   test('a camera is not required to install the app', () {

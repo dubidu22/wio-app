@@ -1,6 +1,9 @@
 import AVFoundation
+import BackgroundTasks
+import Flutter
 import Foundation
 import Testing
+import UIKit
 
 @testable import Runner
 
@@ -130,5 +133,63 @@ struct M4aWriterTests {
     let converter = try #require(AVAudioConverter(from: pcm, to: out))
     let offered = (converter.applicableEncodeBitRates ?? []).map(\.intValue)
     #expect(offered.contains(M4aWriter.bitRate), "AAC-LC 16 kHz mono offers: \(offered)")
+  }
+}
+
+/// Background sync on iOS (plan 052 T8, D-376, D-378, D-380).
+struct BackgroundPlanTests {
+  @Test func inactiveCancelsEverything() {
+    #expect(BackgroundPlan.steps(active: false, pending: true, files: true) == [.cancelAll])
+  }
+
+  @Test func signedInKeepsTheRefreshAndAsksForProcessingWhenWorkWaits() {
+    #expect(BackgroundPlan.steps(active: true, pending: false, files: false) == [.refresh])
+    #expect(BackgroundPlan.steps(active: true, pending: true, files: false) == [.refresh, .processing])
+    #expect(BackgroundPlan.steps(active: true, pending: false, files: true) == [.refresh, .processing])
+  }
+
+  @Test func refreshIsAboutHourly() {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let request = BackgroundPlan.refreshRequest(now: now)
+    #expect(request.identifier == "de.wiederinordnung.app.refresh")
+    #expect(request.earliestBeginDate == now.addingTimeInterval(3_600))
+  }
+
+  @Test func processingNeedsANetworkButNoCharger() {
+    let request = BackgroundPlan.processingRequest()
+    #expect(request.identifier == "de.wiederinordnung.app.sync")
+    #expect(request.requiresNetworkConnectivity)
+    #expect(!request.requiresExternalPower)
+  }
+
+  @Test func filesOnlyOnAnUnmeteredNetwork() {
+    #expect(BackgroundPlan.filesAllowed(satisfied: true, expensive: false, constrained: false))
+    #expect(!BackgroundPlan.filesAllowed(satisfied: true, expensive: true, constrained: false))
+    #expect(!BackgroundPlan.filesAllowed(satisfied: true, expensive: false, constrained: true))
+    #expect(!BackgroundPlan.filesAllowed(satisfied: false, expensive: false, constrained: false))
+  }
+
+  @Test func processingIsAskedForAgainOnlyWhenWorkIsLeft() {
+    #expect(BackgroundPlan.retry("retry"))
+    #expect(BackgroundPlan.retry(nil))
+    #expect(!BackgroundPlan.retry("done"))
+    #expect(!BackgroundPlan.retry("skip"))
+  }
+
+  @Test func infoPlistAllowsExactlyTheTwoTasksAndModes() throws {
+    let info = try #require(Bundle.main.infoDictionary)
+    #expect(
+      info["BGTaskSchedulerPermittedIdentifiers"] as? [String]
+        == [BackgroundPlan.syncTask, BackgroundPlan.refreshTask])
+    #expect(info["UIBackgroundModes"] as? [String] == ["fetch", "processing"])
+  }
+
+  @MainActor @Test func theSceneShowsTheSharedEngine() throws {
+    let app = try #require(UIApplication.shared.delegate as? AppDelegate)
+    let scene = try #require(
+      UIApplication.shared.connectedScenes.first as? UIWindowScene)
+    let window = try #require(scene.windows.first)
+    let controller = try #require(window.rootViewController as? FlutterViewController)
+    #expect(controller.engine === app.engine)
   }
 }

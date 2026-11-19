@@ -42,6 +42,10 @@ enum SyncStop {
   /// The server broke a promise of the contract (no progress, another
   /// workspace): stop and try again later.
   failed,
+
+  /// Asked to stop, or out of background time, at a safe point: nothing is
+  /// half applied, and the next run goes on from there (D-375).
+  interrupted,
 }
 
 /// How a sync step ended, with the wait the server asked for.
@@ -53,12 +57,17 @@ class SyncResult {
   /// Done for now, but new changes wait: run again (D-211).
   static const SyncResult runAgain = SyncResult(SyncStop.done, more: true);
 
+  /// Ended at a safe point because it was asked to stop (D-375).
+  static const SyncResult interrupted = SyncResult(SyncStop.interrupted);
+
   final SyncStop stop;
   final Duration? retryAfter;
 
   /// Another run should follow at once.
   final bool more;
 }
+
+bool _never() => false;
 
 /// Pushes the outbox and pulls the server's changes for one workspace (plan
 /// 044, D-192 to D-200). Every step that changes local data runs in one
@@ -71,8 +80,11 @@ class SyncEngine {
     required this.tooOld,
     this.uploads,
     this.downloads,
+    this.files = true,
+    bool Function()? stopped,
     DateTime Function()? clock,
-  }) : _clock = clock ?? DateTime.now;
+  }) : stopped = stopped ?? _never,
+       _clock = clock ?? DateTime.now;
 
   final WioDatabase db;
   final SyncApi api;
@@ -89,12 +101,21 @@ class SyncEngine {
   /// Fetches missing files last (D-326); none in tests of the record loop.
   final DownloadWorker? downloads;
 
+  /// Whether this run sends and fetches files; a background run on a
+  /// metered network does not (D-378).
+  final bool files;
+
+  /// True once the run should end at its next safe point: before a push
+  /// page, a pull page, an upload chunk or a download range (D-375).
+  final bool Function() stopped;
+
   /// Push, then pull, then uploads, then downloads (D-201, D-208, D-326).
   Future<SyncResult> run() async {
     final pushed = await push();
     if (pushed.stop != SyncStop.done) return pushed;
     final pulled = await pull();
     if (pulled.stop != SyncStop.done) return pulled;
+    if (!files) return SyncResult.done;
     final sent = await uploads?.run() ?? SyncResult.done;
     // New changes wait: the next run pushes them before any download.
     if (sent.stop != SyncStop.done || sent.more) return sent;
@@ -108,6 +129,7 @@ class SyncEngine {
   Future<SyncResult> push() async {
     while (true) {
       if (tooOld()) return const SyncResult(SyncStop.tooOld);
+      if (stopped()) return SyncResult.interrupted;
       final rows =
           await (db.select(db.outbox)
                 ..orderBy(<OrderClauseGenerator<$OutboxTable>>[
@@ -356,6 +378,7 @@ class SyncEngine {
     var resyncs = 0;
     while (true) {
       if (tooOld()) return const SyncResult(SyncStop.tooOld);
+      if (stopped()) return SyncResult.interrupted;
       final TonikResult<SyncPullResponse, http.Response> response;
       try {
         response = await api

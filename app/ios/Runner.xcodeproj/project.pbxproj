@@ -22,6 +22,7 @@
 		7A63D0072F00000100A0B0C1 /* M4aWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A63D0062F00000100A0B0C1 /* M4aWriter.swift */; };
 		7A63D0092F00000100A0B0C1 /* NotePlayerChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A63D0082F00000100A0B0C1 /* NotePlayerChannel.swift */; };
 		7A63D00B2F00000100A0B0C1 /* BackupExclusion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A63D00A2F00000100A0B0C1 /* BackupExclusion.swift */; };
+		7A63D0532F00000100A0B0C1 /* BackgroundSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A63D0522F00000100A0B0C1 /* BackgroundSync.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,6 +72,7 @@
 		7A63D0062F00000100A0B0C1 /* M4aWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = M4aWriter.swift; sourceTree = "<group>"; };
 		7A63D0082F00000100A0B0C1 /* NotePlayerChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotePlayerChannel.swift; sourceTree = "<group>"; };
 		7A63D00A2F00000100A0B0C1 /* BackupExclusion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupExclusion.swift; sourceTree = "<group>"; };
+		7A63D0522F00000100A0B0C1 /* BackgroundSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSync.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -141,6 +143,7 @@
 				7A63D0062F00000100A0B0C1 /* M4aWriter.swift */,
 				7A63D0082F00000100A0B0C1 /* NotePlayerChannel.swift */,
 				7A63D00A2F00000100A0B0C1 /* BackupExclusion.swift */,
+				7A63D0522F00000100A0B0C1 /* BackgroundSync.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
@@ -308,6 +311,7 @@
 				7A63D0072F00000100A0B0C1 /* M4aWriter.swift in Sources */,
 				7A63D0092F00000100A0B0C1 /* NotePlayerChannel.swift in Sources */,
 				7A63D00B2F00000100A0B0C1 /* BackupExclusion.swift in Sources */,
+				7A63D0532F00000100A0B0C1 /* BackgroundSync.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

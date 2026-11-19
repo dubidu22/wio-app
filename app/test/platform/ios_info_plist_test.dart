@@ -27,8 +27,46 @@ void main() {
     );
   });
 
-  test('no background modes: no recording in the background (D-344)', () {
-    expect(plist, isNot(contains('UIBackgroundModes')));
+  test('background modes are only fetch and processing: no recording in '
+      'the background (D-344, D-380)', () {
+    final modes = RegExp(
+      '<key>UIBackgroundModes</key>\\s*<array>(.*?)</array>',
+      dotAll: true,
+    ).firstMatch(plist);
+    expect(modes, isNotNull);
+    expect(
+      RegExp('<string>([^<]*)</string>')
+          .allMatches(modes!.group(1)!)
+          .map((m) => m.group(1))
+          .toList(),
+      <String>['fetch', 'processing'],
+    );
+  });
+
+  test('exactly the two background tasks are allowed (D-380)', () {
+    final ids = RegExp(
+      '<key>BGTaskSchedulerPermittedIdentifiers</key>\\s*<array>(.*?)</array>',
+      dotAll: true,
+    ).firstMatch(plist);
+    expect(ids, isNotNull);
+    expect(
+      RegExp('<string>([^<]*)</string>')
+          .allMatches(ids!.group(1)!)
+          .map((m) => m.group(1))
+          .toList(),
+      <String>['de.wiederinordnung.app.sync', 'de.wiederinordnung.app.refresh'],
+    );
+    final swift = File('ios/Runner/BackgroundSync.swift').readAsStringSync();
+    expect(swift, contains('"de.wiederinordnung.app.sync"'));
+    expect(swift, contains('"de.wiederinordnung.app.refresh"'));
+  });
+
+  test('the scene shows the shared engine, not a storyboard (D-373)', () {
+    expect(plist, isNot(contains('UISceneStoryboardFile')));
+    expect(plist, isNot(contains('UIMainStoryboardFile')));
+    final scene = File('ios/Runner/SceneDelegate.swift').readAsStringSync();
+    expect(scene, contains('FlutterViewController('));
+    expect(scene, contains('engine: app.engine'));
   });
 
   test('every recognition request stays on the device (D-339)', () {
