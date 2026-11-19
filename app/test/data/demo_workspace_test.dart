@@ -267,6 +267,13 @@ void main() {
       expect(bytes.sublist(0, 2), <int>[0xFF, 0xD8], reason: 'JPEG');
       expect(_jpegSize(bytes), (row['width_px'], row['height_px']));
       expect(_hasApp1(bytes), isFalse, reason: 'no EXIF in $sha');
+      expect(
+        RegExp(r'\d{7}').hasMatch(sha),
+        isFalse,
+        reason:
+            'the server test reads 7 digits in a row as a phone number '
+            '(D-81); draw the picture again until its hash has none',
+      );
     }
   });
 
