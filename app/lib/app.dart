@@ -7,6 +7,8 @@ import 'package:material_ui/material_ui.dart';
 import 'auth/session_provider.dart';
 import 'camera/camera_providers.dart';
 import 'l10n/app_localizations.dart';
+import 'media/media_store.dart';
+import 'media/media_sweep.dart';
 import 'shell/providers.dart';
 import 'shell/router.dart';
 import 'sync/background_sync.dart';
@@ -109,6 +111,12 @@ class _WioAppState extends ConsumerState<WioApp> {
         ref.read(captureQueueProvider).sweep().catchError((Object _) {}),
       );
     }
+    // Media files nothing names go at start; this start's first sync waits
+    // for it, so a 410 resync cannot empty the tables under it (D-421).
+    final swept = sweepMedia(
+      ref.read(databaseProvider),
+      ref.read(mediaStoreProvider),
+    ).catchError((Object _) {});
     // Copies of discarded uploads go at start (D-215).
     unawaited(
       sweepUploads(
@@ -121,6 +129,7 @@ class _WioAppState extends ConsumerState<WioApp> {
       if (!mounted) return;
       if (session != null) {
         await ref.read(sessionProvider.notifier).check();
+        await swept;
         // Sync starts once getMe has run (D-129, D-201).
         if (mounted) ref.read(syncProvider.notifier).trigger();
       } else if (widget.initialLocation == '/' &&
