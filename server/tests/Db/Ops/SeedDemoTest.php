@@ -275,6 +275,33 @@ final class SeedDemoTest extends TestCase
         }
     }
 
+    /**
+     * T4b (review M1): another run commits data after this run's first read
+     * but before it takes the counter lock. The emptiness check must see the
+     * committed row, not the transaction's older snapshot.
+     */
+    public function testARunThatCommittedWhileThisOneWaitedIsSeen(): void
+    {
+        $ids = $this->owner();
+        $pdo = HookedPdo::fromEnvironment();
+        $pdo->before('FOR UPDATE', function () use ($ids): void {
+            // Committed on another connection, after the snapshot was taken.
+            $this->sql->run(
+                'INSERT INTO customers (id, workspace_id, name, created_at, updated_at, revision) VALUES (?, ?, ?, ?, ?, ?)',
+                ['01990000-1111-7000-8000-000000000003', $ids['workspace_id'], 'Erster Lauf', '2026-11-19 08:00:00.000', '2026-11-19 08:00:00.000', 3],
+            );
+        });
+
+        try {
+            $this->seed($ids['workspace_id'], null, 'staging', DemoWorkspace::FILE, new Sql($pdo));
+            self::fail('seeded a workspace that another run had just filled');
+        } catch (OpsException $e) {
+            self::assertSame(SeedDemo::REFUSED_NOT_EMPTY, $e->getMessage());
+        }
+        self::assertTrue($pdo->ran(), 'the other run committed between the first read and the lock');
+        self::assertSame(['customers' => 1], $this->tableCounts($ids['workspace_id']));
+    }
+
     /** T6 */
     public function testItRefusesEveryEnvironmentButStagingBeforeTouchingTheDatabase(): void
     {

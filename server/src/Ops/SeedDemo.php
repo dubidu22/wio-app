@@ -251,8 +251,11 @@ final class SeedDemo
         if ($this->sql->row('SELECT last_revision FROM workspace_counters WHERE workspace_id = ? FOR UPDATE', [$workspaceId]) === null) {
             throw new OpsException('The workspace has no revision counter.');
         }
+        // Locking reads: under REPEATABLE READ a plain read would see the
+        // snapshot of this transaction's first read, taken before the counter
+        // lock, and miss a run that committed while this one waited for it.
         foreach (self::CONTENT_TABLES as $table) {
-            if ($this->sql->row("SELECT 1 FROM {$table} WHERE workspace_id = ? LIMIT 1", [$workspaceId]) !== null) {
+            if ($this->sql->row("SELECT 1 FROM {$table} WHERE workspace_id = ? LIMIT 1 LOCK IN SHARE MODE", [$workspaceId]) !== null) {
                 throw new OpsException(self::REFUSED_NOT_EMPTY);
             }
         }
