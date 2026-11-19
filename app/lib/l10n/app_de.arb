@@ -355,6 +355,26 @@
   "@entityJob": {
     "description": "Record kind: jobs."
   },
+  "entityEntry": "Eintrag",
+  "@entityEntry": {
+    "description": "Record kind: entries."
+  },
+  "entityLabel": "Label",
+  "@entityLabel": {
+    "description": "Record kind: labels."
+  },
+  "entityPropertyKey": "Eigenschaft",
+  "@entityPropertyKey": {
+    "description": "Record kind: property keys."
+  },
+  "entityLabelLink": "Label an Eintrag",
+  "@entityLabelLink": {
+    "description": "Record kind: a label on an entry (entity_labels)."
+  },
+  "entityPropertyValue": "Eigenschaft an Eintrag",
+  "@entityPropertyValue": {
+    "description": "Record kind: a property value on an entry (entity_properties)."
+  },
   "entityOther": "Eintrag",
   "@entityOther": {
     "description": "Record kind without its own word yet."
@@ -370,6 +390,10 @@
   "rejectedRestoredOp": "Wiederhergestellt",
   "@rejectedRestoredOp": {
     "description": "What a refused change did: restored the record."
+  },
+  "rejectedMovedOp": "Ort geändert",
+  "@rejectedMovedOp": {
+    "description": "What a refused change did: moved the entry (move_entry)."
   },
   "rejectedChanged": "Geändert: {fields}",
   "@rejectedChanged": {
@@ -423,6 +447,30 @@
   "fieldSite": "Adresse",
   "@fieldSite": {
     "description": "Field name in Nicht gesendet."
+  },
+  "fieldCode": "Code",
+  "@fieldCode": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldTitle": "Titel",
+  "@fieldTitle": {
+    "description": "Field name in Nicht gesendet."
+  },
+  "fieldPlace": "Ort",
+  "@fieldPlace": {
+    "description": "Field name in Nicht gesendet: an entry's place."
+  },
+  "fieldTarget": "Ziel",
+  "@fieldTarget": {
+    "description": "Field name in Nicht gesendet: an entry's target place."
+  },
+  "fieldUnit": "Einheit",
+  "@fieldUnit": {
+    "description": "Field name in Nicht gesendet: a property key's unit."
+  },
+  "fieldValue": "Wert",
+  "@fieldValue": {
+    "description": "Field name in Nicht gesendet: a property value."
   },
   "fieldOther": "weitere Angaben",
   "@fieldOther": {

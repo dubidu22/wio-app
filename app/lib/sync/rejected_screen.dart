@@ -302,6 +302,11 @@ String _kind(AppLocalizations l10n, String entity) => switch (entity) {
   'sites' => l10n.entitySite,
   'rooms' => l10n.entityRoom,
   'jobs' => l10n.entityJob,
+  'entries' => l10n.entityEntry,
+  'labels' => l10n.entityLabel,
+  'property_keys' => l10n.entityPropertyKey,
+  'entity_labels' => l10n.entityLabelLink,
+  'entity_properties' => l10n.entityPropertyValue,
   _ => l10n.entityOther,
 };
 
@@ -312,6 +317,8 @@ String _what(AppLocalizations l10n, RejectedEntry entry) {
       return l10n.rejectedDeletedOp;
     case 'restore':
       return l10n.rejectedRestoredOp;
+    case 'move_entry':
+      return l10n.rejectedMovedOp;
   }
   final fields = entry.fields;
   if (fields.containsKey('workspace_id')) return l10n.rejectedCreated;
@@ -332,6 +339,19 @@ String _field(AppLocalizations l10n, String key) => switch (key) {
   'report_sent_at' => l10n.fieldReportSent,
   'customer_id' => l10n.fieldCustomer,
   'site_id' => l10n.fieldSite,
+  'code' => l10n.fieldCode,
+  'title' => l10n.fieldTitle,
+  'room_id' ||
+  'fixture_id' ||
+  'level' ||
+  'compartment' ||
+  'floor_x_cm' ||
+  'floor_y_cm' => l10n.fieldPlace,
+  final target when target.startsWith('target_') => l10n.fieldTarget,
+  'unit' => l10n.fieldUnit,
+  'value_text' || 'value_number' => l10n.fieldValue,
+  'label_id' => l10n.entityLabel,
+  'key_id' => l10n.entityPropertyKey,
   _ => l10n.fieldOther,
 };
 

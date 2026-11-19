@@ -96,6 +96,94 @@ class Notes extends Table with SyncedColumns {
   TextColumn get transcriptSource => text().nullable()();
 }
 
+/// One QR code or one manual entry (D-1, D-434), with its place and target
+/// place (D-9). The seven place fields change only through `move_entry`
+/// (D-176); the seven target fields through a normal upsert (D-426).
+class Entries extends Table with SyncedColumns {
+  TextColumn get customerId => text().nullable()();
+
+  /// Taken byte for byte, at most 255 UTF-8 bytes (D-51).
+  TextColumn get code => text().nullable()();
+  TextColumn get title => text().nullable()();
+  TextColumn get siteId => text().nullable()();
+  TextColumn get roomId => text().nullable()();
+  TextColumn get fixtureId => text().nullable()();
+  IntColumn get level => integer().nullable()();
+  IntColumn get compartment => integer().nullable()();
+  IntColumn get floorXCm => integer().nullable()();
+  IntColumn get floorYCm => integer().nullable()();
+  TextColumn get targetSiteId => text().nullable()();
+  TextColumn get targetRoomId => text().nullable()();
+  TextColumn get targetFixtureId => text().nullable()();
+  IntColumn get targetLevel => integer().nullable()();
+  IntColumn get targetCompartment => integer().nullable()();
+  IntColumn get targetFloorXCm => integer().nullable()();
+  IntColumn get targetFloorYCm => integer().nullable()();
+}
+
+/// One change of an entry's place, written only by the server's
+/// `move_entry` (D-54, D-176); read only on the device (D-434). A move not
+/// yet confirmed is shown from the outbox, never stored here (D-440).
+class PlaceHistory extends Table with SyncedColumns {
+  TextColumn get customerId => text().nullable()();
+  TextColumn get entryId => text()();
+  TextColumn get fromSiteId => text().nullable()();
+  TextColumn get fromRoomId => text().nullable()();
+  TextColumn get fromFixtureId => text().nullable()();
+  IntColumn get fromLevel => integer().nullable()();
+  IntColumn get fromCompartment => integer().nullable()();
+  IntColumn get fromFloorXCm => integer().nullable()();
+  IntColumn get fromFloorYCm => integer().nullable()();
+  TextColumn get toSiteId => text().nullable()();
+  TextColumn get toRoomId => text().nullable()();
+  TextColumn get toFixtureId => text().nullable()();
+  IntColumn get toLevel => integer().nullable()();
+  IntColumn get toCompartment => integer().nullable()();
+  IntColumn get toFloorXCm => integer().nullable()();
+  IntColumn get toFloorYCm => integer().nullable()();
+  TextColumn get movedAt => text()();
+  TextColumn get movedBy => text().nullable()();
+
+  @override
+  String get tableName => 'place_history';
+}
+
+/// A word of the workspace's vocabulary (D-5). The server's `name_key` is
+/// never sent, so the device has none (D-434).
+class Labels extends Table with SyncedColumns {
+  TextColumn get name => text()();
+}
+
+/// A property key of the workspace's vocabulary (D-5).
+class PropertyKeys extends Table with SyncedColumns {
+  TextColumn get name => text()();
+  TextColumn get unit => text().nullable()();
+}
+
+/// A label on an entry, room, fixture or picture (D-50).
+class EntityLabels extends Table with SyncedColumns {
+  TextColumn get customerId => text().nullable()();
+
+  /// `entry`, `room`, `fixture` or `picture`.
+  TextColumn get entityType => text()();
+  TextColumn get entityId => text()();
+  TextColumn get labelId => text()();
+}
+
+/// One property value of an entry, room, fixture or picture (D-50).
+class EntityProperties extends Table with SyncedColumns {
+  TextColumn get customerId => text().nullable()();
+
+  /// `entry`, `room`, `fixture` or `picture`.
+  TextColumn get entityType => text()();
+  TextColumn get entityId => text()();
+  TextColumn get keyId => text()();
+  TextColumn get valueText => text().nullable()();
+
+  /// The contract's decimal as text, never a float (D-434).
+  TextColumn get valueNumber => text().nullable()();
+}
+
 /// The ops of contract v1 (D-176); schema v2 adds the column (D-192).
 const List<String> outboxOps = <String>[
   'upsert',

@@ -44,6 +44,11 @@ class FakeSyncServer {
   /// above 0), as after a restore of the server's database.
   int? resyncOnPull;
 
+  /// The server's name key for labels and property keys (D-51). The
+  /// default has no NFC step; a test that needs one sets its own.
+  String Function(String name) nameKey = (name) =>
+      name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
   /// Refuse a change with this reason (for example `permission`).
   String? Function(Map<String, Object?> change)? refuse;
 
@@ -255,9 +260,56 @@ class FakeSyncServer {
     if (fields.keys.any(_readOnly.contains)) {
       return _result(changeId, 'rejected', reason: 'invalid');
     }
+    // Only move_entry writes the history (D-54); only it changes a place
+    // (D-176).
+    if (entity == 'place_history') {
+      return _result(changeId, 'rejected', reason: 'permission');
+    }
+    if (op == 'move_entry' && entity != 'entries') {
+      return _result(changeId, 'rejected', reason: 'invalid');
+    }
+    if (op == 'upsert' &&
+        entity == 'entries' &&
+        fields.keys.any(placeFields.contains)) {
+      return _result(changeId, 'rejected', reason: 'invalid');
+    }
     final table = records[entity] ??= <String, Map<String, Object?>>{};
     final record = table[id];
     switch (op) {
+      case 'move_entry':
+        if (record == null) {
+          return _result(changeId, 'rejected', reason: 'not_found');
+        }
+        if (record['deleted_at'] != null) {
+          return _result(changeId, 'rejected', reason: 'deleted');
+        }
+        if (fields.keys.any((f) => !placeFields.contains(f))) {
+          return _result(changeId, 'rejected', reason: 'invalid');
+        }
+        final place = <String, Object?>{
+          for (final field in placeFields) field: fields[field],
+        };
+        if (placeFields.every((f) => record[f] == place[f])) {
+          return _result(changeId, 'applied', revision: record['revision']);
+        }
+        final revision = ++counter;
+        final from = <String, Object?>{
+          for (final field in placeFields) 'from_$field': record[field],
+        };
+        record
+          ..addAll(place)
+          ..['revision'] = revision;
+        _stamp(entity, id, placeFields, changeId, device, revision: revision);
+        put('place_history', 'history-${++_histories}', <String, Object?>{
+          'customer_id': record['customer_id'],
+          'entry_id': id,
+          ...from,
+          for (final field in placeFields) 'to_$field': place[field],
+          'moved_at':
+              '2026-11-19T12:00:${(_histories % 60).toString().padLeft(2, '0')}.000Z',
+          'moved_by': null,
+        }, device: device);
+        return _result(changeId, 'applied', revision: revision);
       case 'delete' || 'restore':
         if (record == null) {
           return _result(changeId, 'rejected', reason: 'not_found');
@@ -282,7 +334,7 @@ class FakeSyncServer {
           ..['deleted_at'] = deleted ? '2026-11-19T12:00:00.000Z' : null
           ..['revision'] = revision;
         return _result(changeId, 'applied', revision: revision);
-      case 'upsert' || 'move_entry':
+      case 'upsert':
         if (record == null) {
           final created = <String, Object?>{...fields, 'id': id};
           for (final field in _required[entity] ?? const <String>[]) {
@@ -351,6 +403,18 @@ class FakeSyncServer {
   }
 
   int _conflicts = 0;
+  int _histories = 0;
+
+  /// An entry's place fields (D-176).
+  static const List<String> placeFields = <String>[
+    'site_id',
+    'room_id',
+    'fixture_id',
+    'level',
+    'compartment',
+    'floor_x_cm',
+    'floor_y_cm',
+  ];
 
   void _stamp(
     String entity,
@@ -371,12 +435,17 @@ class FakeSyncServer {
   }
 
   /// The live record of [entity] that already holds a unique value of
-  /// [record] (D-51): label names, customers' external_ref.
+  /// [record] (D-51): label and key names by their name key, entry codes
+  /// byte for byte, customers' external_ref.
   String? _duplicateOf(String entity, Map<String, Object?> record, String id) {
     final key = _unique[entity];
     if (key == null || record[key] == null) return null;
+    final named = entity == 'labels' || entity == 'property_keys';
+    Object? valueOf(Map<String, Object?> r) =>
+        named ? nameKey(r[key]! as String) : r[key];
+    final value = valueOf(record);
     for (final other in live(entity).values) {
-      if (other['id'] != id && other[key] == record[key]) {
+      if (other['id'] != id && other[key] != null && valueOf(other) == value) {
         return other['id']! as String;
       }
     }
@@ -385,6 +454,8 @@ class FakeSyncServer {
 
   static const Map<String, String> _unique = <String, String>{
     'labels': 'name',
+    'property_keys': 'name',
+    'entries': 'code',
     'customers': 'external_ref',
   };
 

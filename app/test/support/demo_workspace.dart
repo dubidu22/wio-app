@@ -118,7 +118,9 @@ class DemoWorkspace {
           table,
           RawValuesInsertable<Never>(<String, Expression<Object>>{
             for (final MapEntry(:key, :value) in row.entries)
-              key: Variable<Object>(_sqlValue(value)),
+              key: Variable<Object>(
+                key == 'value_number' ? _decimalText(value) : _sqlValue(value),
+              ),
           }),
         );
       }
@@ -129,6 +131,14 @@ class DemoWorkspace {
         ]);
       }
     });
+  }
+
+  /// The file holds `value_number` as the database column (a number); sync
+  /// carries it as decimal text without trailing zeros (contract, D-434).
+  static String? _decimalText(Object? value) {
+    if (value == null) return null;
+    final text = value is int ? '$value' : (value as num).toString();
+    return text.contains('.') ? text.replaceFirst(RegExp(r'\.?0+$'), '') : text;
   }
 
   /// Times and dates stay ISO text; nested JSON is stored as JSON text, as

@@ -9,7 +9,7 @@ import 'package:wio_app/data/ids.dart';
 import '../support/test_data.dart';
 
 void main() {
-  test('schema v3 creates the eleven tables', () async {
+  test('schema v4 creates the seventeen tables', () async {
     final db = memoryDatabase();
     addTearDown(db.close);
     final rows = await db
@@ -20,10 +20,16 @@ void main() {
         .get();
     expect(rows.map((r) => r.read<String>('name')), <String>[
       'customers',
+      'entity_labels',
+      'entity_properties',
+      'entries',
       'jobs',
+      'labels',
       'notes',
       'outbox',
       'pictures',
+      'place_history',
+      'property_keys',
       'rejected_changes',
       'rooms',
       'server_records',

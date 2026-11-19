@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 
 import '../media/media_store.dart';
@@ -328,20 +326,9 @@ class MediaWriter {
   }
 
   /// The customer of record [id] in [table], which must exist on the device
-  /// and be alive. Entries have no typed table yet; their server copy is
-  /// read (D-194).
+  /// and be alive. Entries are read from their typed table, so an entry not
+  /// yet sent can have pictures and notes (D-445).
   Future<({String? customerId})> _alive(String table, String id) async {
-    if (table == 'entries') {
-      final copy =
-          await (_db.select(_db.serverRecords)
-                ..where((r) => r.entity.equals('entries') & r.id.equals(id)))
-              .getSingleOrNull();
-      if (copy == null || copy.deletedAt != null) {
-        throw ArgumentError.value(id, 'entryId', 'no such live entry');
-      }
-      final fields = jsonDecode(copy.fields) as Map<String, Object?>;
-      return (customerId: fields['customer_id'] as String?);
-    }
     final column = table == 'customers' ? 'id' : 'customer_id';
     final row = await _db
         .customSelect(

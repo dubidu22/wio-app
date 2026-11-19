@@ -9,9 +9,10 @@ import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
+import 'generated/schema_v4.dart' as v4;
 
-/// Local schema steps (D-65, D-192, D-239; plan 044 test T1, plan 054
-/// tests T1 and T2). Every version can be
+/// Local schema steps (D-65, D-192, D-239, D-435; plan 044 test T1, plan
+/// 054 tests T1 and T2, plan 101 tests T1 and T2). Every version can be
 /// reached from every older one, and the unsent outbox survives each step.
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -201,6 +202,130 @@ void main() {
         expect(notes.last.revision, isNull);
         expect(await newDb.select(newDb.outbox).get(), hasLength(1));
         expect(await newDb.select(newDb.serverRecords).get(), hasLength(3));
+      },
+    );
+  });
+
+  test('v3 to v4 rebuilds pulled entries, history and vocabulary '
+      '(D-435)', () async {
+    const ws = '01970000-0000-7000-8000-0000000000a1';
+    const customer = '01970000-0000-7000-8000-0000000000c1';
+    const site = '01970000-0000-7000-8000-0000000000a2';
+    const room = '01970000-0000-7000-8000-0000000000b1';
+    const entry = '01970000-0000-7000-8000-0000000000e1';
+    const history = '01970000-0000-7000-8000-0000000000e2';
+    const label = '01970000-0000-7000-8000-0000000000e3';
+    const key = '01970000-0000-7000-8000-0000000000e4';
+    const labelLink = '01970000-0000-7000-8000-0000000000e5';
+    const value = '01970000-0000-7000-8000-0000000000e6';
+    v3.ServerRecordsData copy(
+      String entity,
+      String id,
+      int revision,
+      Map<String, Object?> fields,
+    ) => v3.ServerRecordsData(
+      entity: entity,
+      id: id,
+      revision: revision,
+      fields: jsonEncode(<String, Object?>{
+        'id': id,
+        'workspace_id': ws,
+        'revision': revision,
+        'deleted_at': null,
+        ...fields,
+      }),
+    );
+    final copies = <v3.ServerRecordsData>[
+      copy('entries', entry, 7, <String, Object?>{
+        'customer_id': customer,
+        'code': 'WIO-0001',
+        'title': 'Bücherkiste',
+        'site_id': site,
+        'room_id': room,
+        'fixture_id': null,
+        'level': null,
+        'compartment': null,
+        'floor_x_cm': null,
+        'floor_y_cm': null,
+        'target_site_id': null,
+        'target_room_id': null,
+      }),
+      copy('place_history', history, 8, <String, Object?>{
+        'customer_id': customer,
+        'entry_id': entry,
+        'from_site_id': null,
+        'from_room_id': null,
+        'to_site_id': site,
+        'to_room_id': room,
+        'moved_at': '2026-11-19T08:00:00.000Z',
+      }),
+      copy('labels', label, 9, <String, Object?>{'name': 'Bücher'}),
+      copy('property_keys', key, 10, <String, Object?>{
+        'name': 'Gewicht',
+        'unit': 'kg',
+      }),
+      copy('entity_labels', labelLink, 11, <String, Object?>{
+        'customer_id': customer,
+        'entity_type': 'entry',
+        'entity_id': entry,
+        'label_id': label,
+      }),
+      copy('entity_properties', value, 12, <String, Object?>{
+        'customer_id': customer,
+        'entity_type': 'entry',
+        'entity_id': entry,
+        'key_id': key,
+        'value_text': null,
+        'value_number': '12.5',
+      }),
+    ];
+    const outbox = <v3.OutboxData>[
+      v3.OutboxData(
+        seq: 1,
+        changeId: '01970000-0000-7000-8000-0000000000f1',
+        entity: 'entries',
+        entityId: entry,
+        op: 'upsert',
+        fields: '{"title":"Bücher und Spiele"}',
+        baseRevision: 7,
+        deviceTime: '2026-11-19T09:05:00.000Z',
+      ),
+    ];
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 3,
+      newVersion: 4,
+      createOld: v3.DatabaseAtV3.new,
+      createNew: v4.DatabaseAtV4.new,
+      openTestedDatabase: WioDatabase.new,
+      createItems: (batch, oldDb) {
+        batch
+          ..insertAll(oldDb.serverRecords, copies)
+          ..insertAll(oldDb.outbox, outbox);
+      },
+      validateItems: (newDb) async {
+        final entries = await newDb.select(newDb.entries).get();
+        expect(entries.single.id, entry);
+        expect(entries.single.code, 'WIO-0001');
+        expect(entries.single.title, 'Bücher und Spiele');
+        expect(entries.single.roomId, room);
+        expect(entries.single.revision, 7);
+        final steps = await newDb.select(newDb.placeHistory).get();
+        expect(steps.single.toRoomId, room);
+        expect(steps.single.fromRoomId, isNull);
+        expect(steps.single.movedAt, '2026-11-19T08:00:00.000Z');
+        expect((await newDb.select(newDb.labels).getSingle()).name, 'Bücher');
+        expect((await newDb.select(newDb.propertyKeys).getSingle()).unit, 'kg');
+        expect(
+          (await newDb.select(newDb.entityLabels).getSingle()).labelId,
+          label,
+        );
+        expect(
+          (await newDb.select(newDb.entityProperties).getSingle()).valueNumber,
+          '12.5',
+        );
+        expect(await newDb.select(newDb.outbox).get(), hasLength(1));
+        expect(await newDb.select(newDb.serverRecords).get(), hasLength(6));
       },
     );
   });
