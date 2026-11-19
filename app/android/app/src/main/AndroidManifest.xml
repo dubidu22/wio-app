@@ -19,9 +19,6 @@
     <!-- The manifest merger adds READ_EXTERNAL_STORAGE on its own because a
          library asks for WRITE; it goes with WRITE (D-313). CI compares the
          APK's list with android/permissions.txt (D-310). -->
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"
-        tools:node="remove"/>
     <uses-feature
         android:name="android.hardware.camera.any"
         android:required="false"

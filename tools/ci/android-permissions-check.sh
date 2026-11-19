@@ -93,6 +93,10 @@ done < <(comm -13 "$tmp/actual.txt" "$tmp/allowed.txt")
 # a declared not-required feature is "uses-feature-not-required: name='X'".
 echo "--- features (aapt2 dump badging)"
 grep -E "^(uses-feature|uses-feature-not-required|uses-implied-feature):" "$tmp/badging.txt" || true
+echo "--- TEMP PROOF: badging feature lines"; grep -in "feature" "$tmp/badging.txt" || true
+echo "--- TEMP PROOF: badging head"; head -40 "$tmp/badging.txt"
+echo "--- TEMP PROOF: blame"; for n in android.permission.ACCESS_NETWORK_STATE android.permission.READ_EXTERNAL_STORAGE android.permission.CAMERA; do echo "$n: $(blame "$n")"; done
+[[ -n "$report" ]] && { ls -la "$(dirname "$report")" || true; grep -n -A4 "ACCESS_NETWORK_STATE" "$report" || true; }
 for feature in android.hardware.camera android.hardware.camera.any android.hardware.camera.autofocus android.hardware.microphone; do
   if grep -E "^(uses-feature|uses-implied-feature): name='${feature//./\\.}'" "$tmp/badging.txt" | grep -qv "required='false'"; then
     echo "::error::The APK requires $feature to install. Declare <uses-feature android:name=\"$feature\" android:required=\"false\"/> in the app manifest (D-272)."
