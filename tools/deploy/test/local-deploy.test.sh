@@ -39,6 +39,7 @@ cat > "$work/bin/ssh" << 'SSH'
 #!/usr/bin/env bash
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -O) exit 0 ;;
     -i | -p | -o) shift 2 ;;
     -*) shift ;;
     *) break ;;

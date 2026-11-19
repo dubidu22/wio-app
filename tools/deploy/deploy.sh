@@ -37,6 +37,12 @@ ssh_opts=(
   -o IdentitiesOnly=yes
   -o BatchMode=yes
   -o ConnectTimeout=20
+  # One SSH connection for the whole deploy: shared hosting may refuse many
+  # quick logins from one address (T3, second run: connection timed out).
+  -o ControlMaster=auto
+  -o "ControlPath=${TMPDIR:-/tmp}/wio-deploy-%C"
+  -o ControlPersist=120
+  -o ServerAliveInterval=15
 )
 target="${WIO_SSH_USER:?}@${WIO_SSH_HOST:?}"
 
@@ -100,6 +106,11 @@ smoke() {
   fi
 }
 
+close_ssh() {
+  ssh "${ssh_opts[@]}" -O exit "$target" 2> /dev/null || true
+}
+trap close_ssh EXIT
+
 case "$mode" in
   deploy)
     tarball="${1:?tarball}"
@@ -110,7 +121,7 @@ case "$mode" in
     upload "$tarball" "$sha.tar.gz"
     host unpack "$sha"
     tmp="$(mktemp)"
-    trap 'rm -f -- "${tmp:?}"' EXIT
+    trap 'rm -f -- "${tmp:?}"; close_ssh' EXIT
     config_file > "$tmp"
     upload "$tmp" config.php
     host config
