@@ -118,10 +118,10 @@ final class AfterOfTest extends SyncTestCase
         $this->assertChanged($this->pushOne(self::change('pictures', $after, fields: ['after_of' => null])), 'to none');
         $this->assertChanged($this->pushOne(self::change('pictures', $plain, fields: ['after_of' => $first])), 'set on an existing picture');
         $this->assertChanged($this->pushOne(self::change('pictures', $first, fields: ['after_of' => $after])), 'a loop');
-        self::assertSame($first, $this->pulled('pictures', $after)['after_of'] ?? null);
+        self::assertSame($first, $this->linkOf($after));
 
         $this->write('pictures', $after, ['after_of' => $first, 'width_px' => 800]);
-        self::assertSame($first, $this->pulled('pictures', $after)['after_of'] ?? null, 'resending the same value is fine');
+        self::assertSame($first, $this->linkOf($after), 'resending the same value is fine');
         $this->write('pictures', $plain, ['after_of' => null, 'width_px' => 800]);
     }
 
@@ -150,6 +150,11 @@ final class AfterOfTest extends SyncTestCase
 
         self::assertRejected('invalid', $this->pushOne(self::change('pictures', $after, fields: ['room_id' => $this->ben['rooms']])), 'after picture');
         self::assertRejected('invalid', $this->pushOne(self::change('pictures', $before, fields: ['room_id' => $this->ben['rooms']])), 'before picture with an after picture');
+    }
+
+    private function linkOf(string $picture): mixed
+    {
+        return $this->pulled('pictures', $picture)['after_of'] ?? null;
     }
 
     /**
