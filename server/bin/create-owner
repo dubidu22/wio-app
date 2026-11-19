@@ -13,10 +13,14 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use Wio\Config\HostConfig;
 use Wio\Ops\CreateOwner;
 use Wio\Ops\OpsException;
 use Wio\Ops\PasswordPrompt;
 use Wio\Services;
+
+// On the hosting: config.php outside the web root, written by the deploy (D-161).
+HostConfig::load(__DIR__ . '/../config.php');
 
 $options = getopt('', ['workspace-name:', 'plan:', 'email:', 'display-name:']);
 $text = static fn(string $name): ?string => is_string($options[$name] ?? null) ? $options[$name] : null;

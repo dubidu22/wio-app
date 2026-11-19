@@ -293,12 +293,13 @@ jobs:
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
           "$(go env GOPATH)/bin/actionlint" -color
       - name: shellcheck
-        run: shellcheck tools/ci/*.sh tools/ci/test/*.sh
+        run: shellcheck tools/ci/*.sh tools/ci/test/*.sh tools/deploy/*.sh tools/deploy/test/*.sh
       - name: Tests of the CI scripts
         run: |
           tools/ci/test/check-needs.test.sh
           tools/ci/test/flutter-test.test.sh
           tools/ci/test/generated-code-fresh.test.sh
+          tools/deploy/test/resolve.test.sh
 
   ci-passed:
     name: ci-passed

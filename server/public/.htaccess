@@ -4,6 +4,11 @@
 # (CGIPassAuth is not used: it needs AllowOverride AuthConfig, which a host
 # may not grant, and then every request would fail.) Proved on staging (#10).
 
+# Request bodies above 5 MiB end at Apache with 413 (a file chunk is at most
+# 4 MiB, D-186). Needs AllowOverride Limit or All; the deploy's smoke test
+# fails at once if the host refuses the line (plan 010, S5).
+LimitRequestBody 5242880
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteCond %{HTTP:Authorization} .+
