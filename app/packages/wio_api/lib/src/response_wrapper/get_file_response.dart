@@ -9,7 +9,8 @@ import 'package:wio_api/src/model/problem.dart' as _i6;
 import 'package:wio_api/src/response/files_sha256_get200_response.dart' as _i2;
 import 'package:wio_api/src/response/files_sha256_get206_response.dart' as _i4;
 import 'package:wio_api/src/response/files_sha256_get304_response.dart' as _i5;
-import 'package:wio_api/src/response/maintenance.dart' as _i7;
+import 'package:wio_api/src/response/files_sha256_get416_response.dart' as _i7;
+import 'package:wio_api/src/response/maintenance.dart' as _i8;
 
 sealed class GetFileResponse {
   const GetFileResponse();
@@ -131,7 +132,7 @@ class GetFileResponse404 extends GetFileResponse {
 class GetFileResponse416 extends GetFileResponse {
   const GetFileResponse416({required this.body});
 
-  final _i6.Problem body;
+  final _i7.FilesSha256Get416Response body;
 
   @_i3.override
   _i3.bool operator ==(_i3.Object other) {
@@ -163,7 +164,7 @@ class GetFileResponse426 extends GetFileResponse {
 class GetFileResponse503 extends GetFileResponse {
   const GetFileResponse503({required this.body});
 
-  final _i7.Maintenance body;
+  final _i8.Maintenance body;
 
   @_i3.override
   _i3.bool operator ==(_i3.Object other) {
