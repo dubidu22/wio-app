@@ -69,7 +69,7 @@ android {
     buildTypes {
         release {
             // Keep rules for what R8 would remove, see proguard-rules.pro.
-            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName(if (hasReleaseKey) "handtest" else "debug")
         }
     }
