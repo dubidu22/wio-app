@@ -254,6 +254,59 @@ void main() {
     expect(server.downloads.length, before);
   });
 
+  group('a part that already holds the whole file (#82)', () {
+    test('416 with the total: the part is checked and named, no new '
+        'download', () async {
+      final bytes = fileBytes(1000, 21);
+      final sha = picture(bytes);
+      phone.part(sha)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(bytes);
+      await phone.engine.run();
+      expect(phone.file(sha).readAsBytesSync(), bytes);
+      expect(phone.part(sha).existsSync(), isFalse);
+      expect(server.downloads, hasLength(1));
+      expect(server.downloads.single.range, 'bytes=1000-4195303');
+    });
+
+    test('a wrong hash deletes the part and starts from 0', () async {
+      final bytes = fileBytes(1000, 22);
+      final sha = picture(bytes);
+      phone.part(sha)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(fileBytes(1000, 23));
+      await phone.engine.run();
+      expect(phone.file(sha).readAsBytesSync(), bytes);
+      expect(server.downloads.map((d) => d.range), <String?>[
+        'bytes=1000-4195303',
+        'bytes=0-4194303',
+      ]);
+    });
+
+    test('a part bigger than the file starts from 0', () async {
+      final bytes = fileBytes(1000, 24);
+      final sha = picture(bytes);
+      phone.part(sha)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(fileBytes(1500, 24));
+      await phone.engine.run();
+      expect(phone.file(sha).readAsBytesSync(), bytes);
+      expect(server.downloads.last.range, 'bytes=0-4194303');
+    });
+
+    test('a missing size starts from 0 as before (D-331)', () async {
+      final bytes = fileBytes(1000, 25);
+      final sha = picture(bytes);
+      server.hideRangeSize.add(sha);
+      phone.part(sha)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(bytes);
+      await phone.engine.run();
+      expect(phone.file(sha).readAsBytesSync(), bytes);
+      expect(server.downloads.last.range, 'bytes=0-4194303');
+    });
+  });
+
   test('403 and 400 leave the file until restart', () async {
     picture(fileBytes(10, 10));
     server.fileStatus = 403;
