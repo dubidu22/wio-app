@@ -35,6 +35,10 @@ abstract final class TestIds {
   static const String notizGeloescht = '01970000-0000-7000-8000-0000000000d4';
   static const String notizKunde = '01970000-0000-7000-8000-0000000000d5';
   static const String notizFoto = '01970000-0000-7000-8000-0000000000d6';
+  static const String wohnzimmer = '01970000-0000-7000-8000-0000000000b4';
+  static const String kiste = '01970000-0000-7000-8000-0000000000e5';
+  static const String kisteOhneOrt = '01970000-0000-7000-8000-0000000000e6';
+  static const String fremdeKiste = '01970000-0000-7000-8000-0000000000e7';
 }
 
 PicturesCompanion _picture(
@@ -390,3 +394,55 @@ Future<void> seedUploads(
       ),
   ]);
 });
+
+/// [seedTestData] plus entries (plan 107): Neue Wohnung gets a Wohnzimmer;
+/// the "Kiste Geschirr" of Familie Beispiel lies on the floor of the Küche
+/// (Alte Wohnung) with the Wohnzimmer as its target; a second entry of
+/// Familie Beispiel has no place, no target and no title; Frau Muster has
+/// one entry. Typed rows only, as the server sent them (no outbox).
+Future<void> seedWithEntries(WioDatabase db) async {
+  await seedTestData(db);
+  await db.batch((b) {
+    b.insert(
+      db.rooms,
+      RoomsCompanion.insert(
+        id: TestIds.wohnzimmer,
+        workspaceId: TestIds.workspace,
+        customerId: const Value<String?>(TestIds.familieBeispiel),
+        siteId: TestIds.neueWohnung,
+        name: const Value<String?>('Wohnzimmer'),
+        revision: const Value<int?>(1),
+      ),
+    );
+    b.insertAll(db.entries, <EntriesCompanion>[
+      EntriesCompanion.insert(
+        id: TestIds.kiste,
+        workspaceId: TestIds.workspace,
+        customerId: const Value<String?>(TestIds.familieBeispiel),
+        code: const Value<String?>('WIO-0042'),
+        title: const Value<String?>('Kiste Geschirr'),
+        siteId: const Value<String?>(TestIds.alteWohnung),
+        roomId: const Value<String?>(TestIds.kueche),
+        targetSiteId: const Value<String?>(TestIds.neueWohnung),
+        targetRoomId: const Value<String?>(TestIds.wohnzimmer),
+        createdAt: const Value<String?>('2026-11-19T08:00:00.000Z'),
+        revision: const Value<int?>(2),
+      ),
+      EntriesCompanion.insert(
+        id: TestIds.kisteOhneOrt,
+        workspaceId: TestIds.workspace,
+        customerId: const Value<String?>(TestIds.familieBeispiel),
+        createdAt: const Value<String?>('2026-11-19T08:05:00.000Z'),
+        revision: const Value<int?>(3),
+      ),
+      EntriesCompanion.insert(
+        id: TestIds.fremdeKiste,
+        workspaceId: TestIds.workspace,
+        customerId: const Value<String?>(TestIds.frauMuster),
+        title: const Value<String?>('Kiste Muster'),
+        createdAt: const Value<String?>('2026-11-19T08:10:00.000Z'),
+        revision: const Value<int?>(4),
+      ),
+    ]);
+  });
+}

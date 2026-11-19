@@ -39,6 +39,15 @@ const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
     '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}/kamera',
     seed: seedWithPictures,
   ),
+  'lib/planning/place_screen.dart': CatalogScreen(
+    '/customers/${TestIds.familieBeispiel}/entries/${TestIds.kiste}/ort',
+    seed: seedWithEntries,
+  ),
+  'lib/planning/spot_screen.dart': CatalogScreen(
+    '/customers/${TestIds.familieBeispiel}/entries/${TestIds.kiste}/ort'
+    '/${TestIds.kueche}',
+    seed: seedWithEntries,
+  ),
   'lib/sync/rejected_screen.dart': CatalogScreen(
     '/nicht-gesendet',
     seed: seedWithRejectedAndUploads,

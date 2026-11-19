@@ -108,6 +108,29 @@ void main() {
     });
   }
 
+  // The target picker of an entry (plan 107, D-452, D-455).
+  for (final MapEntry(key: sizeName, value: size) in sizes.entries) {
+    testWidgets('place_screen target at $sizeName size', skip: _notLinux, (
+      tester,
+    ) async {
+      final db = memoryDatabase();
+      addTearDown(db.close);
+      await seedWithEntries(db);
+      await pumpWioApp(
+        tester,
+        db: db,
+        location:
+            '/customers/${TestIds.familieBeispiel}/entries/${TestIds.kiste}'
+            '/ziel',
+        size: size,
+      );
+      await expectLater(
+        find.byType(WidgetsApp),
+        matchesGoldenFile('goldens/place_screen_target_$sizeName.png'),
+      );
+    });
+  }
+
   // An after picture with its before picture under "Vorher" (D-280), and
   // the after camera with the before picture over the live image (D-277).
   final extra = <String, String>{
