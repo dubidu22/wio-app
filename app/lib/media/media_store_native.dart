@@ -33,23 +33,67 @@ class MediaStore {
   /// Copies [source] into the folder, named by the hash of the copy itself,
   /// so a source that changes while it is copied cannot give a file whose
   /// name does not match its bytes. The copy appears whole or not at all;
-  /// an existing file with the same bytes stays.
+  /// an existing file with the same bytes stays and gets the current time,
+  /// so a start-up sweep that read the rows before this file's row spares
+  /// it (D-420).
   Future<({String sha256, int size, String path})> keep(String source) async {
     final folder = (await _folder()).path;
     final stamp = DateTime.now().microsecondsSinceEpoch;
     final temporary = await File(source)
         .copy('$folder/$stamp-${_random.nextInt(1 << 32)}.tmp');
+    try {
+      // The sweep spares recent files; a copy may keep the source's time.
+      await temporary.setLastModified(DateTime.now());
+    } on FileSystemException {
+      // The copy keeps its own time; the row follows within seconds.
+    }
     final size = await temporary.length();
     final digest = (await crypto.sha256.bind(temporary.openRead()).first)
         .toString();
     final target = File('$folder/$digest');
     if (target.existsSync()) {
-      await temporary.delete();
-    } else {
-      await temporary.rename(target.path);
+      try {
+        await target.setLastModified(DateTime.now());
+        await temporary.delete();
+        return (sha256: digest, size: size, path: target.path);
+      } on FileSystemException {
+        // Swept meanwhile: the new copy takes its place.
+      }
     }
+    await temporary.rename(target.path);
     return (sha256: digest, size: size, path: target.path);
   }
+
+  /// Deletes files the app wrote here that no name in [keep] covers and
+  /// that were last changed before [before] (D-415, D-418, D-419): a
+  /// finished file `<sha256>`, an unfinished download `<sha256>.part`
+  /// (kept while its hash is named, so it resumes, D-329) and a copy a
+  /// crash left, `<digits>-<digits>.tmp`. Any other entry stays.
+  Future<void> sweep(Set<String> keep, {required DateTime before}) async {
+    final folder = await _folder();
+    await for (final entry in folder.list(followLinks: false)) {
+      if (entry is! File) continue;
+      final name = entry.uri.pathSegments.last;
+      final match = _sweepable.firstMatch(name);
+      if (match == null) continue;
+      final hash = match.group(1);
+      if (hash != null && keep.contains(hash)) continue;
+      try {
+        // A keep of the same bytes between this check and the delete would
+        // lose its file; camera and voice never make identical bytes, and
+        // the hour margin makes it unreachable in practice (PR 98 N1).
+        if (entry.lastModifiedSync().isBefore(before)) {
+          await entry.delete();
+        }
+      } on FileSystemException {
+        // Renamed or deleted meanwhile.
+      }
+    }
+  }
+
+  static final RegExp _sweepable = RegExp(
+    r'^(?:([0-9a-f]{64})(?:\.part)?|\d+-\d+\.tmp)$',
+  );
 
   /// The media folder itself, created when missing (D-240).
   Future<String> folder() async => (await _folder()).path;
