@@ -80,13 +80,15 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // The permission prompt makes the app inactive too; only a running
-    // recording is ended, and kept (D-291).
+    // Only going to the background ends a running recording, and keeps it
+    // (D-291). Android reports "inactive" on any focus loss (notification
+    // shade, a call's heads-up, a system dialog, the permission prompt);
+    // recording goes on then (PR 73 review S1).
     switch (state) {
-      case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
         if (_state == _VoiceState.recording) unawaited(_stop());
+      case AppLifecycleState.inactive:
       case AppLifecycleState.resumed:
       case AppLifecycleState.detached:
         break;

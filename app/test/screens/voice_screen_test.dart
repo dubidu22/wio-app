@@ -251,12 +251,33 @@ void main() {
     expect(await notes(tester), hasLength(1));
   });
 
-  testWidgets('leaving the app keeps the note (D-291)', (tester) async {
+  testWidgets('a focus loss keeps recording; leaving the app keeps the note '
+      '(D-291)', (tester) async {
     await pumpVoice(tester);
     await openFrom(tester);
+    String clock() =>
+        tester.widget<Text>(find.textContaining('Aufnahme läuft')).data!;
+    final before = clock();
+    // Notification shade, a call's heads-up, a system dialog.
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump(const Duration(seconds: 2));
+    expect(recorder.stopped, 0);
+    expect(recorder.recording, isTrue);
+    expect(clock(), isNot(before), reason: 'the seconds run on');
+    expect(find.byType(VoiceScreen), findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    expect(recorder.stopped, 1, reason: 'stopped on paused');
+    // Back in the app, so the test gets frames again.
+    for (final state in <AppLifecycleState>[
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
     await leave(tester);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     expect(recorder.stopped, 1);
     expect(await notes(tester), hasLength(1));
   });

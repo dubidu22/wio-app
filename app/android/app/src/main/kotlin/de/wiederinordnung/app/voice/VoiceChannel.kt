@@ -104,10 +104,28 @@ class VoiceChannel(
         session = next
         keepScreenOn(true)
         result.success(null)
-        guard { status ->
-            if (session !== next) return@guard
-            if (status == VoiceGuard.READY && Build.VERSION.SDK_INT >= 33) next.transcribe() else next.drop()
-            channel.invokeMethod("onTranscription", status)
+        // The call is answered: from here on nothing may throw back into
+        // onMethodCall's catch (PR 73 review S2).
+        val apply = { status: String ->
+            if (session === next) {
+                var answer = status
+                if (status == VoiceGuard.READY && Build.VERSION.SDK_INT >= 33) {
+                    try {
+                        next.transcribe()
+                    } catch (e: Exception) {
+                        next.drop()
+                        answer = VoiceGuard.NO_ON_DEVICE
+                    }
+                } else {
+                    next.drop()
+                }
+                channel.invokeMethod("onTranscription", answer)
+            }
+        }
+        try {
+            guard(apply)
+        } catch (e: Exception) {
+            main.post { apply(VoiceGuard.NO_ON_DEVICE) }
         }
     }
 
@@ -165,37 +183,44 @@ class VoiceChannel(
 
     @TargetApi(33)
     private fun checkGerman(answer: (String) -> Unit) {
-        val recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(activity)
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, LANGUAGE)
         var answered = false
+        var recognizer: SpeechRecognizer? = null
+        var executor: java.util.concurrent.ExecutorService? = null
         fun once(status: String) = main.post {
             if (!answered) {
                 answered = true
-                recognizer.destroy()
+                try { recognizer?.destroy() } catch (_: Exception) {}
+                executor?.shutdown()
                 answer(status)
             }
         }
-        val executor = Executors.newSingleThreadExecutor()
-        recognizer.checkRecognitionSupport(intent, executor,
-            object : RecognitionSupportCallback {
-                override fun onSupportResult(support: RecognitionSupport) {
-                    once(
-                        VoiceGuard.fromLanguages(
-                            support.installedOnDeviceLanguages,
-                            support.pendingOnDeviceLanguages,
-                            support.supportedOnDeviceLanguages,
-                        )
-                    )
-                    executor.shutdown()
-                }
-
-                override fun onError(error: Int) {
-                    once(VoiceGuard.NO_ON_DEVICE)
-                    executor.shutdown()
-                }
-            })
         main.postDelayed({ once(VoiceGuard.NO_ON_DEVICE) }, GUARD_TIMEOUT_MS)
+        try {
+            val r = SpeechRecognizer.createOnDeviceSpeechRecognizer(activity)
+            recognizer = r
+            val pool = Executors.newSingleThreadExecutor()
+            executor = pool
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE, LANGUAGE)
+            r.checkRecognitionSupport(intent, pool,
+                object : RecognitionSupportCallback {
+                    override fun onSupportResult(support: RecognitionSupport) {
+                        once(
+                            VoiceGuard.fromLanguages(
+                                support.installedOnDeviceLanguages,
+                                support.pendingOnDeviceLanguages,
+                                support.supportedOnDeviceLanguages,
+                            )
+                        )
+                    }
+
+                    override fun onError(error: Int) {
+                        once(VoiceGuard.NO_ON_DEVICE)
+                    }
+                })
+        } catch (e: Exception) {
+            once(VoiceGuard.NO_ON_DEVICE)
+        }
     }
 
     private fun downloadGerman(result: MethodChannel.Result) {
