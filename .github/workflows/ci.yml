@@ -127,7 +127,7 @@ jobs:
     name: app-macos
     if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci') }}
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: app
@@ -148,6 +148,33 @@ jobs:
         run: ../tools/ci/flutter-test.sh --tags ux
       - name: iOS build without signing
         run: flutter build ios --debug --no-codesign
+      # D-348: the app's own Swift (voice guard, backup exclusion, M4A
+      # writer) is tested on one iOS simulator; only the RunnerTests target.
+      - name: Swift tests on one iOS simulator
+        timeout-minutes: 15
+        run: |
+          udid="$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          for runtime in sorted(devices, reverse=True):
+              if "iOS" not in runtime:
+                  continue
+              for device in devices[runtime]:
+                  if device["name"].startswith("iPhone"):
+                      print(device["udid"])
+                      sys.exit(0)
+          sys.exit("no iPhone simulator available")
+          ')"
+          echo "Simulator: $udid"
+          xcodebuild test \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Debug \
+            -destination "id=$udid" \
+            -only-testing:RunnerTests \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee "$RUNNER_TEMP/runner-tests.log" | grep -E 'Test|error:|\*\*' || true
+          grep -q '\*\* TEST SUCCEEDED \*\*' "$RUNNER_TEMP/runner-tests.log"
 
   app-android:
     name: app-android

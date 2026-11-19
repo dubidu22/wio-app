@@ -124,6 +124,11 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
         onPartial: (text) {
           if (mounted && attempt == _attempt) setState(() => _partial = text);
         },
+        // The phone ended the recording (a call, Siri, an alarm,
+        // headphones out): save it as with Stopp (D-343).
+        onInterrupted: () {
+          if (mounted && attempt == _attempt) unawaited(_stop());
+        },
       );
       next = _VoiceState.recording;
     } on VoiceRefused {
@@ -335,7 +340,10 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
             HintText(l10n.voiceListening),
           if (_partial.isNotEmpty)
             Text(_partial, style: theme.textTheme.headlineSmall),
-          if (status != null && status != TranscriptStatus.ready)
+          if (status == TranscriptStatus.speechRefused) ...<Widget>[
+            HintText(l10n.voiceSpeechRefused),
+            HintText(l10n.voiceSpeechRefusedHelp),
+          ] else if (status != null && status != TranscriptStatus.ready)
             HintText(l10n.voiceNoTranscript),
           if (status == TranscriptStatus.germanMissing) ...<Widget>[
             HintText(l10n.voiceGermanMissing),

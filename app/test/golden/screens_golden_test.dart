@@ -141,7 +141,8 @@ void main() {
 
   // The voice note while speaking (D-62), without a transcript on this
   // phone (D-61), with German to load (D-287), with the microphone refused
-  // (D-293); Sprechen on the room, customer and picture screens is in the
+  // (D-293), with speech recognition refused on an iPhone (D-340); Sprechen
+  // on the room, customer and picture screens is in the
   // catalogue goldens above (D-295).
   final voice = <String, void Function(FakeVoiceRecorder recorder)>{
     'voice_screen_text': (r) => r
@@ -149,6 +150,8 @@ void main() {
       ..partial('Kiste mit Wintersachen im Keller, 180 cm hoch'),
     'voice_screen_no_text': (r) => r.transcript(TranscriptStatus.noOnDevice),
     'voice_screen_german': (r) => r.transcript(TranscriptStatus.germanMissing),
+    'voice_screen_speech_refused': (r) =>
+        r.transcript(TranscriptStatus.speechRefused),
     'voice_screen_denied': (r) {},
   };
   for (final MapEntry(key: name, value: drive) in voice.entries) {

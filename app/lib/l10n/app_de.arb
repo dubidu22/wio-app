@@ -745,6 +745,14 @@
   "@voiceGermanLoading": {
     "description": "Line after Deutsch laden was tapped."
   },
+  "voiceSpeechRefused": "Wio darf die Spracherkennung nicht benutzen. Die Aufnahme wird trotzdem gespeichert.",
+  "@voiceSpeechRefused": {
+    "description": "iPhone: hint while recording when the speech recognition permission was refused; it records anyway (D-340)."
+  },
+  "voiceSpeechRefusedHelp": "Zum Erlauben: In den Einstellungen des iPhones bei Wio die Spracherkennung einschalten.",
+  "@voiceSpeechRefusedHelp": {
+    "description": "Second line: where the iPhone's settings allow speech recognition for the app (D-340)."
+  },
   "voiceDenied": "Wio darf das Mikrofon nicht benutzen.",
   "@voiceDenied": {
     "description": "Hint when the microphone permission was refused (D-293)."
@@ -869,7 +877,7 @@
   },
   "noteCannotPlay": "Auf diesem Gerät lässt sich die Aufnahme noch nicht abspielen.",
   "@noteCannotPlay": {
-    "description": "Hint where the app has no player yet (iOS until #63)."
+    "description": "Hint where the app has no player (a build without the media store)."
   },
   "notePlayFailed": "Die Aufnahme lässt sich nicht abspielen.",
   "@notePlayFailed": {

@@ -342,10 +342,8 @@ void main() {
     expect(note.subjectId, TestIds.familieBeispiel);
   });
 
-  testWidgets('no Sprechen where the app does not record (web, iOS)', (
-    tester,
-  ) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+  testWidgets('no Sprechen where the app does not record', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
     try {
       for (final location in <String>[
         _customer,
@@ -358,5 +356,85 @@ void main() {
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }
+  });
+
+  testWidgets('iPhone: Sprechen on customer, room and picture (D-350)', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      for (final location in <String>[
+        _customer,
+        _kueche,
+        '$_kueche/pictures/${TestIds.fotoVorher}',
+      ]) {
+        await pumpVoice(tester, location: location);
+        expect(_speak(), findsOneWidget, reason: location);
+      }
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets('speech recognition refused: records only, says so (D-340)', (
+    tester,
+  ) async {
+    recorder.take = const VoiceTake(length: Duration(seconds: 4));
+    await pumpVoice(tester);
+    await openFrom(tester);
+    recorder.transcript(TranscriptStatus.speechRefused);
+    await tester.pump();
+    expect(
+      find.text(
+        'Wio darf die Spracherkennung nicht benutzen. '
+        'Die Aufnahme wird trotzdem gespeichert.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Zum Erlauben: In den Einstellungen des iPhones bei Wio die '
+        'Spracherkennung einschalten.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Auf diesem Telefon gibt es keinen Text'),
+      findsNothing,
+      reason: 'one hint, the true one',
+    );
+    expect(find.text('Deutsch laden'), findsNothing);
+    expect(recorder.recording, isTrue, reason: 'recording goes on');
+
+    await tester.tap(_stop());
+    await leave(tester);
+    expect(find.text('Sprachnotiz gespeichert (ohne Text).'), findsOne);
+    final note = (await notes(tester)).single;
+    expect(note.audioSha256, isNotNull);
+    expect(note.transcript, isNull);
+    expect(note.transcriptSource, isNull);
+  });
+
+  testWidgets('an interruption by the phone keeps the note once (D-343)', (
+    tester,
+  ) async {
+    await pumpVoice(tester);
+    await openFrom(tester);
+    recorder.transcript(TranscriptStatus.ready);
+    await tester.pump(const Duration(seconds: 2));
+    // A call, Siri, an alarm or headphones out.
+    recorder.interrupt();
+    await leave(tester);
+    expect(recorder.stopped, 1);
+    expect(find.byType(RoomScreen), findsOneWidget);
+    expect(
+      find.text('Notiz gespeichert: „Kiste mit Wintersachen im Keller“'),
+      findsOneWidget,
+    );
+    // A late second notice changes nothing.
+    recorder.interrupt();
+    await tester.pump(const Duration(seconds: 1));
+    expect(recorder.stopped, 1);
+    expect(await notes(tester), hasLength(1));
   });
 }

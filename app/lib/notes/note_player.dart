@@ -39,8 +39,8 @@ abstract class NotePlayer {
   Future<void> stop();
 }
 
-/// The app's own Android code on channel `wio/player` (D-300): MediaPlayer
-/// from a local file. Events `onPosition(millis)`, `onEnded`, `onError`.
+/// The app's own Android and iOS code on channel `wio/player` (D-300,
+/// D-349): MediaPlayer or AVAudioPlayer from a local file. Events `onPosition(millis)`, `onEnded`, `onError`.
 class ChannelNotePlayer implements NotePlayer {
   ChannelNotePlayer([MethodChannel? channel])
     : _channel = channel ?? const MethodChannel('wio/player') {
