@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Wio\Tests\Api\Sync;
 
+use Wio\Tests\Api\Operation;
+
 /**
  * pictures.after_of on push (plan 071, #71): an after picture follows a
  * picture of the same customer in the same workspace; a deleted before
  * picture is still a valid target; the link is set once at create.
  */
+#[Operation('syncPush')]
+#[Operation('syncPull')]
 final class AfterOfTest extends SyncTestCase
 {
     private const string WRONG_TARGET = 'after_of must point to a picture of the same customer.';
