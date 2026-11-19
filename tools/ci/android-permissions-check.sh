@@ -71,8 +71,11 @@ blame() {
   [[ -n "$report" && -f "$report" ]] || return 0
   awk -v key="uses-permission#$name" '
     $0 == key { on = 1; next }
-    on && /^[^ \t]/ && $0 !~ /^(ADDED|MERGED|IMPLIED|REJECTED|INJECTED)/ { exit }
-    on { sub(/^[ \t]+/, ""); printf "%s%s", (n++ ? "; " : ""), $0 }
+    on && /^(ADDED|MERGED|IMPLIED|REJECTED|INJECTED) / {
+      if (!seen[$0]++) printf "%s%s", (n++ ? "; " : ""), $0
+      next
+    }
+    on && /^[^ \t]/ { exit }
   ' "$report"
 }
 
@@ -88,18 +91,18 @@ while read -r kind name; do
 done < <(comm -13 "$tmp/actual.txt" "$tmp/allowed.txt")
 
 # Hardware: a phone without a camera or microphone may install the app
-# (D-272). aapt2 prints a required feature as "uses-feature: name='X'" and
-# one implied by a permission as "uses-implied-feature: name='X' reason=…";
-# a declared not-required feature is "uses-feature-not-required: name='X'".
+# (D-272, D-317). aapt2 prints features inside "feature-group:", indented:
+# "  uses-feature-not-required: name='X'" for a declared not-required one,
+# "  uses-feature: name='X'" for a required one, and
+# "  uses-implied-feature: name='X' reason=…" for one a permission implies.
+# Each of the four must be listed as not required, and none as required.
 echo "--- features (aapt2 dump badging)"
-grep -E "^(uses-feature|uses-feature-not-required|uses-implied-feature):" "$tmp/badging.txt" || true
-echo "--- TEMP PROOF: badging feature lines"; grep -in "feature" "$tmp/badging.txt" || true
-echo "--- TEMP PROOF: badging head"; head -40 "$tmp/badging.txt"
-echo "--- TEMP PROOF: blame"; for n in android.permission.ACCESS_NETWORK_STATE android.permission.READ_EXTERNAL_STORAGE android.permission.CAMERA; do echo "$n: $(blame "$n")"; done
-[[ -n "$report" ]] && { ls -la "$(dirname "$report")" || true; grep -n -A4 "ACCESS_NETWORK_STATE" "$report" || true; }
+grep -E "^[[:space:]]*(feature-group|uses-feature|uses-feature-not-required|uses-implied-feature):" "$tmp/badging.txt" || true
 for feature in android.hardware.camera android.hardware.camera.any android.hardware.camera.autofocus android.hardware.microphone; do
-  if grep -E "^(uses-feature|uses-implied-feature): name='${feature//./\\.}'" "$tmp/badging.txt" | grep -qv "required='false'"; then
-    echo "::error::The APK requires $feature to install. Declare <uses-feature android:name=\"$feature\" android:required=\"false\"/> in the app manifest (D-272)."
+  quoted="name='${feature//./\\.}'"
+  if grep -Eq "^[[:space:]]*(uses-feature|uses-implied-feature): $quoted" "$tmp/badging.txt" \
+    || ! grep -Eq "^[[:space:]]*uses-feature-not-required: $quoted" "$tmp/badging.txt"; then
+    echo "::error::The APK requires $feature to install, or does not declare it as not required. Declare <uses-feature android:name=\"$feature\" android:required=\"false\"/> in the app manifest (D-317)."
     failed=1
   fi
 done

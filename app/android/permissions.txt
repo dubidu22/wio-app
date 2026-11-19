@@ -9,7 +9,9 @@ uses-permission android.permission.INTERNET
 # Camera for room pictures, from the camera plugin (D-265, D-272).
 uses-permission android.permission.CAMERA
 # Voice note, declared by the app (D-294).
-# Network state, added by a library (D-314); no prompt, no user data.
+uses-permission android.permission.RECORD_AUDIO
+# Network state, added by androidx.media3:media3-common, which comes in
+# through the camera plugin's dependencies (D-314); no prompt, no user data.
 uses-permission android.permission.ACCESS_NETWORK_STATE
 # androidx.core protects the app's own non-exported broadcast receivers with
 # this signature permission (D-314); only this app holds it.

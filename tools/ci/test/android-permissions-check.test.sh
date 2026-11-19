@@ -41,19 +41,34 @@ EOF
 good_badging() {
   cat <<'EOF'
 package: name='de.wiederinordnung.app' versionCode='1' versionName='0.1.0'
-uses-feature-not-required: name='android.hardware.camera'
-uses-feature-not-required: name='android.hardware.camera.any'
-uses-feature-not-required: name='android.hardware.camera.autofocus'
-uses-feature-not-required: name='android.hardware.microphone'
-uses-implied-feature: name='android.hardware.faketouch' reason='default feature for all apps'
+feature-group: label=''
+  uses-feature-not-required: name='android.hardware.camera'
+  uses-feature-not-required: name='android.hardware.camera.any'
+  uses-feature-not-required: name='android.hardware.camera.autofocus'
+  uses-feature-not-required: name='android.hardware.microphone'
+  uses-feature: name='android.hardware.faketouch'
+  uses-implied-feature: name='android.hardware.faketouch' reason='default feature for all apps'
 EOF
 }
 cp "$here/../../../app/android/permissions.txt" "$work/allow.txt"
-cat > "$work/report.txt" <<'EOF'
+sed 's/\\t/\t/g' > "$work/report.txt" <<'EOF'
 uses-permission#android.permission.READ_EXTERNAL_STORAGE
 IMPLIED from /x/app/src/main/AndroidManifest.xml:1:1-60:12 reason: io.flutter.plugins.camerax has a targetSdkVersion < 16
+uses-permission#android.permission.RECORD_AUDIO
+ADDED from /x/app/src/main/AndroidManifest.xml:10:5-70
+MERGED from [:camera_android_camerax] /x/camera_android_camerax/AndroidManifest.xml:10:5-71
+MERGED from [:camera_android_camerax] /x/camera_android_camerax/AndroidManifest.xml:10:5-71
+	android:name
+		ADDED from /x/app/src/main/AndroidManifest.xml:10:22-68
 uses-permission#android.permission.CAMERA
 ADDED from [:camera_android_camerax] /x/camera_android_camerax/AndroidManifest.xml:4:3-62
+	android:name
+		ADDED from [:camera_android_camerax] /x/camera_android_camerax/AndroidManifest.xml:4:20-60
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from [androidx.media3:media3-common:1.9.0] /x/media3-common-1.9.0/AndroidManifest.xml:22:5-79
+	android:name
+		ADDED from [androidx.media3:media3-common:1.9.0] /x/media3-common-1.9.0/AndroidManifest.xml:22:22-76
+meta-data#androidx.profileinstaller.ProfileInstallerInitializer
 EOF
 
 # expect pass|fail "label" [text that the output must contain]
@@ -125,18 +140,32 @@ echo fail > "$work/mode"
 expect fail "an aapt2 failure fails the check"
 
 reset
+sed -i "/RECORD_AUDIO/d" "$work/allow.txt"
+expect fail "blame keeps top-level lines once each" "(from: ADDED from /x/app/src/main/AndroidManifest.xml:10:5-70; MERGED from [:camera_android_camerax] /x/camera_android_camerax/AndroidManifest.xml:10:5-71)"
+
+reset
+sed -i "/ACCESS_NETWORK_STATE/d" "$work/allow.txt"
+expect fail "a library permission names the library" "(from: ADDED from [androidx.media3:media3-common:1.9.0] /x/media3-common-1.9.0/AndroidManifest.xml:22:5-79)"
+
+reset
+sed -i "/'android.hardware.microphone'/d" "$work/badging.txt"
+expect fail "a feature not declared as not required fails" "android.hardware.microphone"
+
+reset
 sed -i "/'android.hardware.camera'/d" "$work/badging.txt"
-echo "uses-implied-feature: name='android.hardware.camera' reason='requested android.permission.CAMERA permission, and targetSdkVersion > 4'" >> "$work/badging.txt"
+echo "  uses-feature-not-required: name='android.hardware.camera'" >> "$work/badging.txt"
+echo "  uses-implied-feature: name='android.hardware.camera' reason='requested android.permission.CAMERA permission, and targetSdkVersion > 4'" >> "$work/badging.txt"
 expect fail "an implied required camera fails" "requires android.hardware.camera to install"
 
 reset
 sed -i "/microphone/d" "$work/badging.txt"
-echo "uses-feature: name='android.hardware.microphone'" >> "$work/badging.txt"
+echo "  uses-feature-not-required: name='android.hardware.microphone'" >> "$work/badging.txt"
+echo "  uses-feature: name='android.hardware.microphone'" >> "$work/badging.txt"
 expect fail "a required microphone fails" "requires android.hardware.microphone to install"
 
 reset
-echo "uses-feature: name='android.hardware.camera.any' required='false'" >> "$work/badging.txt"
-expect pass "a feature printed with required='false' passes"
+echo "  uses-feature: name='android.hardware.camera.anything'" >> "$work/badging.txt"
+expect pass "a required feature with a longer name is not mistaken for camera.any"
 
 if [[ "$failures" -gt 0 ]]; then
   echo "$failures case(s) failed"
