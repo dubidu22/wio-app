@@ -50,11 +50,7 @@ void main() {
       'android.hardware.camera.autofocus',
       'android.hardware.microphone',
     ]) {
-      expect(
-        element(name),
-        contains('android:required="false"'),
-        reason: name,
-      );
+      expect(element(name), contains('android:required="false"'), reason: name);
     }
   });
 
