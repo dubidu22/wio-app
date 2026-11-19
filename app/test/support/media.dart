@@ -18,6 +18,11 @@ abstract final class DemoFiles {
   static const String flurKartons =
       '1cb7a50aa7ce7c759fac56b83ca01b60341bc04d9cf02fe61d2a678055b6bfe7';
 
+  /// An invented voice note recording, written by [demoMediaFolder]
+  /// (plan 061); its bytes are not a real hash of anything.
+  static const String noteAudio =
+      'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1';
+
   /// A hash whose file is on no device (D-260).
   static const String missing =
       'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
@@ -35,6 +40,7 @@ String demoMediaFolder() {
       file.copySync('${target.path}/${name.replaceAll('.jpg', '')}');
     }
   }
+  File('${target.path}/${DemoFiles.noteAudio}').writeAsBytesSync(<int>[0, 1]);
   return target.path;
 }
 

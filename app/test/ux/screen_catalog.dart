@@ -19,16 +19,21 @@ const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
   'lib/jobs/job_list_screen.dart': CatalogScreen('/'),
   'lib/customers/customer_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}',
-    seed: seedWithPictures,
+    seed: seedWithNotes,
   ),
   'lib/rooms/room_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}',
-    seed: seedWithPictures,
+    seed: seedWithNotes,
   ),
   'lib/pictures/picture_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}'
     '/pictures/${TestIds.fotoVorher}',
-    seed: seedWithPictures,
+    seed: seedWithNotes,
+  ),
+  'lib/notes/note_screen.dart': CatalogScreen(
+    '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}'
+    '/notizen/${TestIds.notizSprache}',
+    seed: seedWithNotes,
   ),
   'lib/camera/camera_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}/kamera',

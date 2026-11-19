@@ -9,6 +9,7 @@ import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
 import '../media/local_picture.dart';
 import '../media/media_store.dart';
+import '../notes/notes_section.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -192,72 +193,74 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final title = _title(l10n);
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: WioBackButton(label: l10n.cameraDone, onPressed: _done),
-        leadingWidth: wioBackButtonWidth(context),
-        title: Text(title),
-      ),
-      body: switch (_state) {
-        _CameraState.ready => _Preview(
-          camera: _camera!,
-          overlay: _overlay(context),
-          flash: _flash,
-          onFlashEnd: () => setState(() => _flash = false),
+    return StopNotesOnOpen(
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          leading: WioBackButton(label: l10n.cameraDone, onPressed: _done),
+          leadingWidth: wioBackButtonWidth(context),
+          title: Text(title),
         ),
-        _CameraState.opening => const ColoredBox(color: Colors.black),
-        _CameraState.denied => _Problem(
-          lines: <String>[l10n.cameraDenied, l10n.cameraDeniedHelp],
-          button: l10n.cameraAskAgain,
-          onPressed: _open,
-        ),
-        _CameraState.unavailable => _Problem(
-          lines: <String>[l10n.cameraUnavailable],
-          button: l10n.cameraTryAgain,
-          onPressed: _open,
-        ),
-      },
-      bottomNavigationBar: SafeArea(
-        child: Align(
-          heightFactor: 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: wioMaxContentWidth),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  for (final line in _status(l10n))
-                    Text(
-                      line,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  if (_state == _CameraState.ready) ...<Widget>[
-                    const SizedBox(height: 12),
-                    Semantics(
-                      button: true,
-                      label: l10n.cameraShutterLabel,
-                      excludeSemantics: true,
-                      child: SizedBox.square(
-                        dimension: shutterSize,
-                        child: FilledButton(
-                          style: FilledButton.styleFrom(
-                            shape: const CircleBorder(),
-                            padding: EdgeInsets.zero,
-                            minimumSize: const Size.square(shutterSize),
-                          ),
-                          onPressed: _takePicture,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(l10n.cameraShutter),
+        body: switch (_state) {
+          _CameraState.ready => _Preview(
+            camera: _camera!,
+            overlay: _overlay(context),
+            flash: _flash,
+            onFlashEnd: () => setState(() => _flash = false),
+          ),
+          _CameraState.opening => const ColoredBox(color: Colors.black),
+          _CameraState.denied => _Problem(
+            lines: <String>[l10n.cameraDenied, l10n.cameraDeniedHelp],
+            button: l10n.cameraAskAgain,
+            onPressed: _open,
+          ),
+          _CameraState.unavailable => _Problem(
+            lines: <String>[l10n.cameraUnavailable],
+            button: l10n.cameraTryAgain,
+            onPressed: _open,
+          ),
+        },
+        bottomNavigationBar: SafeArea(
+          child: Align(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: wioMaxContentWidth),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    for (final line in _status(l10n))
+                      Text(
+                        line,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    if (_state == _CameraState.ready) ...<Widget>[
+                      const SizedBox(height: 12),
+                      Semantics(
+                        button: true,
+                        label: l10n.cameraShutterLabel,
+                        excludeSemantics: true,
+                        child: SizedBox.square(
+                          dimension: shutterSize,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              shape: const CircleBorder(),
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size.square(shutterSize),
+                            ),
+                            onPressed: _takePicture,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(l10n.cameraShutter),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

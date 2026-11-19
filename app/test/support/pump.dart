@@ -14,6 +14,8 @@ import 'package:wio_app/data/local_writer.dart';
 import 'package:wio_app/data/media_writer.dart';
 import 'package:wio_app/l10n/app_localizations.dart';
 import 'package:wio_app/media/media_store.dart';
+import 'package:wio_app/notes/note_player.dart';
+import 'package:wio_app/notes/notes_providers.dart';
 import 'package:wio_app/shell/providers.dart';
 import 'package:wio_app/sync/sync_runner.dart';
 import 'package:wio_app/sync/upload_queue.dart';
@@ -24,6 +26,7 @@ import 'package:wio_app/voice/voice_recorder.dart';
 
 import 'fake_api.dart';
 import 'fake_camera.dart';
+import 'fake_player.dart';
 import 'fake_voice.dart';
 import 'media.dart';
 import 'test_data.dart';
@@ -86,6 +89,7 @@ Future<void> pumpWioApp(
   CaptureFiles? captureFiles,
   PictureProcessor? preparePicture,
   VoiceRecorder? voiceRecorder,
+  NotePlayer? notePlayer,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -132,6 +136,8 @@ Future<void> pumpWioApp(
           voiceNotesProvider.overrideWith(
             (ref) => _NoFilesVoiceNotes(ref.watch(databaseProvider)),
           ),
+        // A player that plays nothing unless a test brings one (plan 061).
+        notePlayerProvider.overrideWithValue(notePlayer ?? FakeNotePlayer()),
         if (preparePicture != null)
           preparePictureProvider.overrideWithValue(preparePicture),
         mediaStoreProvider.overrideWithValue(

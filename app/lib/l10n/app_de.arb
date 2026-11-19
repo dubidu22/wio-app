@@ -777,5 +777,144 @@
   "voicePictureTitle": "Notiz zum Foto",
   "@voicePictureTitle": {
     "description": "Title of the voice note opened from a picture."
+  },
+  "notesHeading": "Notizen",
+  "@notesHeading": {
+    "description": "Section heading on the room, customer and picture screens (D-298)."
+  },
+  "notesEmpty": "Noch keine Notizen.",
+  "@notesEmpty": {
+    "description": "Hint in an empty Notizen section."
+  },
+  "notesWrite": "Notiz schreiben",
+  "@notesWrite": {
+    "description": "Button at the end of the Notizen section: opens a new text note (D-304)."
+  },
+  "noteTime": "{time}",
+  "@noteTime": {
+    "description": "When a note was saved, server time, e.g. 'Do. 19.11., 09:05' (D-306).",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "E d.M., HH:mm",
+        "isCustomDateFormat": "true"
+      }
+    }
+  },
+  "noteNotSent": "Noch nicht gesendet",
+  "@noteNotSent": {
+    "description": "In place of the time while the server has not confirmed the note yet (D-306)."
+  },
+  "noteLength": "{length}",
+  "@noteLength": {
+    "description": "Length of a voice note, e.g. '0:45' (D-307).",
+    "placeholders": {
+      "length": {
+        "type": "String"
+      }
+    }
+  },
+  "notePlayingLine": "Läuft · {position} / {length}",
+  "@notePlayingLine": {
+    "description": "First line of a note while it plays, e.g. 'Läuft · 0:12 / 0:45'.",
+    "placeholders": {
+      "position": {
+        "type": "String"
+      },
+      "length": {
+        "type": "String"
+      }
+    }
+  },
+  "noteNoText": "Ohne Text",
+  "@noteNoText": {
+    "description": "Card text of a voice note without text or transcript (D-308)."
+  },
+  "notePlay": "Abspielen",
+  "@notePlay": {
+    "description": "Button on a voice note: plays its recording (D-300)."
+  },
+  "noteStop": "Stopp",
+  "@noteStop": {
+    "description": "Button while a note plays: stops it (D-301)."
+  },
+  "noteOpen": "Öffnen",
+  "@noteOpen": {
+    "description": "Button on a note: opens the note screen to correct or delete it (D-299)."
+  },
+  "noteNotOnDevice": "Aufnahme ist noch nicht auf diesem Gerät.",
+  "@noteNotOnDevice": {
+    "description": "Hint on a voice note whose recording is not on this device (D-305)."
+  },
+  "noteCannotPlay": "Auf diesem Gerät lässt sich die Aufnahme noch nicht abspielen.",
+  "@noteCannotPlay": {
+    "description": "Hint where the app has no player yet (iOS until #63)."
+  },
+  "notePlayFailed": "Die Aufnahme lässt sich nicht abspielen.",
+  "@notePlayFailed": {
+    "description": "Hint when playback failed."
+  },
+  "noteTitle": "Notiz",
+  "@noteTitle": {
+    "description": "Title of the note screen."
+  },
+  "noteDone": "Fertig",
+  "@noteDone": {
+    "description": "Top-left button of the note screen, in the place of Zurück: saves and goes back (D-302)."
+  },
+  "noteTranscriptField": "Text zur Aufnahme",
+  "@noteTranscriptField": {
+    "description": "Label of the optional field holding a voice note's transcript (D-302)."
+  },
+  "noteTextField": "Notiz",
+  "@noteTextField": {
+    "description": "Label of the optional field of a text note (D-302)."
+  },
+  "noteEmptyKept": "Leere Notiz wird nicht gespeichert. Zum Entfernen: Löschen.",
+  "@noteEmptyKept": {
+    "description": "Hint under an emptied text note: the old text stays (D-303)."
+  },
+  "noteDelete": "Löschen",
+  "@noteDelete": {
+    "description": "Button on the note screen: deletes the note at once, with Rückgängig (D-309)."
+  },
+  "noteDeleted": "Notiz gelöscht.",
+  "@noteDeleted": {
+    "description": "Note after Löschen on the note screen, with Rückgängig for 8 seconds."
+  },
+  "noteMissing": "Diese Notiz gibt es nicht mehr.",
+  "@noteMissing": {
+    "description": "Shown when a note was deleted or a link points to an unknown note."
+  },
+  "noteNotSaved": "Die Notiz konnte nicht gespeichert werden.",
+  "@noteNotSaved": {
+    "description": "Note when saving a note failed."
+  },
+  "notePlayLabel": "Notiz von {time} abspielen",
+  "@notePlayLabel": {
+    "description": "Semantic label of Abspielen, naming the note by its time line (UX rule 1).",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "noteStopLabel": "Notiz von {time} anhalten",
+  "@noteStopLabel": {
+    "description": "Semantic label of Stopp while a note plays.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "noteOpenLabel": "Notiz von {time} öffnen",
+  "@noteOpenLabel": {
+    "description": "Semantic label of Öffnen on a card.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   }
 }

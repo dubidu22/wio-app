@@ -6,6 +6,7 @@ import '../camera/take_pictures_button.dart';
 import '../data/database.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
+import '../notes/notes_section.dart';
 import '../pictures/picture_tile.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
@@ -15,7 +16,7 @@ import '../shell/providers.dart';
 /// database; each room is a button to its room screen (D-259). "Fotos" lists
 /// the customer's pictures without a room; the main button "Fotos" takes
 /// such pictures (Q3, D-258, D-271), "Sprechen" a voice note about the
-/// customer (D-295). Entries are a plain hint until they
+/// customer (D-295), listed under "Notizen" (D-298). Entries are a plain hint until they
 /// exist (D-75). "Tag abschließen" comes in M5 and then takes the main
 /// place.
 class CustomerScreen extends ConsumerWidget {
@@ -115,6 +116,10 @@ class _CustomerBody extends ConsumerWidget {
             ),
             _ => const SizedBox.shrink(),
           },
+          NotesSection(
+            subject: (type: 'customer', id: view.id),
+            base: '/customers/${view.id}',
+          ),
         ],
       ),
     );

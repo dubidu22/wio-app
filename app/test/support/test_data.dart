@@ -29,6 +29,12 @@ abstract final class TestIds {
   static const String fotoFehlt = '01970000-0000-7000-8000-0000000000f4';
   static const String fotoFlur = '01970000-0000-7000-8000-0000000000f5';
   static const String fotoGeloescht = '01970000-0000-7000-8000-0000000000f6';
+  static const String notizSprache = '01970000-0000-7000-8000-0000000000d1';
+  static const String notizText = '01970000-0000-7000-8000-0000000000d2';
+  static const String notizFehlt = '01970000-0000-7000-8000-0000000000d3';
+  static const String notizGeloescht = '01970000-0000-7000-8000-0000000000d4';
+  static const String notizKunde = '01970000-0000-7000-8000-0000000000d5';
+  static const String notizFoto = '01970000-0000-7000-8000-0000000000d6';
 }
 
 PicturesCompanion _picture(
@@ -222,6 +228,96 @@ Future<void> seedWithPictures(WioDatabase db) async {
         TestIds.fotoFlur,
         DemoFiles.flurKartons,
         '2026-11-19T08:20:00.000Z',
+      ),
+    ]);
+  });
+}
+
+NotesCompanion _note(
+  String id,
+  String subjectType,
+  String subjectId, {
+  String? text,
+  String? audioSha256,
+  int? audioSeconds,
+  String? transcript,
+  String? createdAt,
+  String? deletedAt,
+}) => NotesCompanion.insert(
+  id: id,
+  workspaceId: TestIds.workspace,
+  customerId: const Value<String?>(TestIds.familieBeispiel),
+  subjectType: subjectType,
+  subjectId: subjectId,
+  noteText: Value<String?>(text),
+  audioSha256: Value<String?>(audioSha256),
+  audioBytes: Value<int?>(audioSha256 == null ? null : 24000),
+  audioSeconds: Value<int?>(audioSeconds),
+  transcript: Value<String?>(transcript),
+  transcriptSource: Value<String?>(transcript == null ? null : 'device'),
+  createdAt: Value<String?>(createdAt),
+  revision: Value<int?>(createdAt == null ? null : 1),
+  deletedAt: Value<String?>(deletedAt),
+);
+
+/// [seedWithPictures] plus notes (plan 061): the Küche has a voice note
+/// whose recording is in the demo media folder, a text note not yet sent,
+/// a voice note whose recording is on no device and a tombstoned note;
+/// Familie Beispiel has a text note, the shelf picture a voice note.
+Future<void> seedWithNotes(WioDatabase db) async {
+  await seedWithPictures(db);
+  await db.batch((b) {
+    b.insertAll(db.notes, <NotesCompanion>[
+      _note(
+        TestIds.notizSprache,
+        'room',
+        TestIds.kueche,
+        audioSha256: DemoFiles.noteAudio,
+        audioSeconds: 45,
+        transcript:
+            'Kiste mit Wintersachen im Keller, oberstes Regal links. '
+            'Die Gläser im Hängeschrank bleiben, der Rest kommt in den '
+            'Umzugskarton mit der Aufschrift Küche zwei.',
+        createdAt: '2026-11-19T08:41:00.000Z',
+      ),
+      _note(
+        TestIds.notizFehlt,
+        'room',
+        TestIds.kueche,
+        audioSha256: DemoFiles.missing,
+        audioSeconds: 12,
+        transcript: 'Herd bleibt in der Wohnung.',
+        createdAt: '2026-11-19T08:50:00.000Z',
+      ),
+      _note(
+        TestIds.notizGeloescht,
+        'room',
+        TestIds.kueche,
+        text: 'Gelöschte Notiz',
+        createdAt: '2026-11-19T08:45:00.000Z',
+        deletedAt: '2026-11-19T08:46:00.000Z',
+      ),
+      _note(
+        TestIds.notizText,
+        'room',
+        TestIds.kueche,
+        text: 'Schlüssel liegt beim Nachbarn im Erdgeschoss.',
+      ),
+      _note(
+        TestIds.notizKunde,
+        'customer',
+        TestIds.familieBeispiel,
+        text: 'Bitte vorher anrufen, Klingel geht nicht.',
+        createdAt: '2026-11-19T07:30:00.000Z',
+      ),
+      _note(
+        TestIds.notizFoto,
+        'picture',
+        TestIds.fotoRegal,
+        audioSha256: DemoFiles.noteAudio,
+        audioSeconds: 8,
+        transcript: 'Regal wird abgebaut.',
+        createdAt: '2026-11-19T08:08:00.000Z',
       ),
     ]);
   });

@@ -4,6 +4,7 @@ import '../auth/sign_in_screen.dart';
 import '../camera/camera_screen.dart';
 import '../customers/customer_screen.dart';
 import '../jobs/job_list_screen.dart';
+import '../notes/note_screen.dart';
 import '../pictures/picture_screen.dart';
 import '../rooms/room_screen.dart';
 import '../sync/rejected_screen.dart';
@@ -59,6 +60,7 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                     ),
                   ),
                   _voiceRoute(),
+                  ..._notesRoutes(),
                   // Part of the room task, not a fourth level (D-261).
                   GoRoute(
                     path: 'pictures/:pictureId',
@@ -78,6 +80,7 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                         ),
                       ),
                       _voiceRoute(),
+                      ..._notesRoutes(),
                     ],
                   ),
                 ],
@@ -97,6 +100,7 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                     ),
                   ),
                   _voiceRoute(),
+                  ..._notesRoutes(),
                 ],
               ),
               // Pictures without a room (Q3, D-271).
@@ -107,6 +111,7 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                 ),
               ),
               _voiceRoute(),
+              ..._notesRoutes(),
             ],
           ),
         ],
@@ -126,3 +131,25 @@ GoRoute _voiceRoute() => GoRoute(
     pictureId: state.pathParameters['pictureId'],
   ),
 );
+
+/// The note screens under a customer, room or picture: a new text note and
+/// one note, part of that task (D-299, as D-271).
+List<GoRoute> _notesRoutes() => <GoRoute>[
+  GoRoute(
+    path: 'notizen/neu',
+    builder: (context, state) => NoteScreen(
+      customerId: state.pathParameters['customerId']!,
+      roomId: state.pathParameters['roomId'],
+      pictureId: state.pathParameters['pictureId'],
+    ),
+  ),
+  GoRoute(
+    path: 'notizen/:noteId',
+    builder: (context, state) => NoteScreen(
+      customerId: state.pathParameters['customerId']!,
+      roomId: state.pathParameters['roomId'],
+      pictureId: state.pathParameters['pictureId'],
+      noteId: state.pathParameters['noteId'],
+    ),
+  ),
+];

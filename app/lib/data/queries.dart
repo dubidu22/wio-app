@@ -365,3 +365,8 @@ final List<OrderClauseGenerator<$PicturesTable>> _pictureOrder =
       (p) => OrderingTerm.asc(p.createdAt, nulls: NullsOrder.last),
       (p) => OrderingTerm.asc(p.id),
     ];
+
+/// Live note [id], or null once it is deleted or unknown.
+Stream<Note?> watchNote(WioDatabase db, String id) => (db.select(
+  db.notes,
+)..where((n) => n.id.equals(id) & n.deletedAt.isNull())).watchSingleOrNull();
