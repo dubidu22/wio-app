@@ -41,8 +41,12 @@ class MediaStore {
     final stamp = DateTime.now().microsecondsSinceEpoch;
     final temporary = await File(source)
         .copy('$folder/$stamp-${_random.nextInt(1 << 32)}.tmp');
-    // The sweep spares recent files; a copy may keep the source's time.
-    await temporary.setLastModified(DateTime.now());
+    try {
+      // The sweep spares recent files; a copy may keep the source's time.
+      await temporary.setLastModified(DateTime.now());
+    } on FileSystemException {
+      // The copy keeps its own time; the row follows within seconds.
+    }
     final size = await temporary.length();
     final digest = (await crypto.sha256.bind(temporary.openRead()).first)
         .toString();
@@ -75,6 +79,9 @@ class MediaStore {
       final hash = match.group(1);
       if (hash != null && keep.contains(hash)) continue;
       try {
+        // A keep of the same bytes between this check and the delete would
+        // lose its file; camera and voice never make identical bytes, and
+        // the hour margin makes it unreachable in practice (PR 98 N1).
         if (entry.lastModifiedSync().isBefore(before)) {
           await entry.delete();
         }
