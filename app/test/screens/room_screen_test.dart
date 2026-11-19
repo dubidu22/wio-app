@@ -135,9 +135,8 @@ void main() {
     expect(find.byType(Image), findsNothing);
   });
 
-  testWidgets('buttons: Zurück, Öffnen and the main button Fotos (D-258)', (
-    tester,
-  ) async {
+  testWidgets('buttons: Zurück, Öffnen, Sprechen and the main button Fotos '
+      '(D-258, D-295)', (tester) async {
     await pumpWioApp(
       tester,
       db: db,
@@ -147,9 +146,10 @@ void main() {
 
     expect(
       find.byWidgetPredicate((w) => w is ButtonStyleButton),
-      findsNWidgets(5),
-      reason: 'Zurück, three Öffnen, Fotos',
+      findsNWidgets(6),
+      reason: 'Zurück, three Öffnen, Sprechen, Fotos',
     );
+    expect(find.widgetWithText(OutlinedButton, 'Sprechen'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Zurück'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Fotos'), findsOneWidget);
   });

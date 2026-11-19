@@ -11,8 +11,9 @@ import '../shell/layout.dart';
 import '../shell/providers.dart';
 
 /// Level 3: one room with its pictures (KB workflows.md "Take pictures of a
-/// room", D-259). The main button "Fotos" opens the camera (D-258, D-271);
-/// notes of the room come with #61.
+/// room", D-259). The main button "Fotos" opens the camera (D-258, D-271),
+/// "Sprechen" a voice note about the room (D-295); the list of notes comes
+/// with #61.
 class RoomScreen extends ConsumerWidget {
   const RoomScreen({required this.customerId, required this.roomId, super.key});
 
@@ -55,6 +56,7 @@ class RoomScreen extends ConsumerWidget {
       bottomNavigationBar: switch (room) {
         AsyncData(value: RoomScreenView()) => TakePicturesBar(
           cameraLocation: '/customers/$customerId/rooms/$roomId/kamera',
+          speakLocation: '/customers/$customerId/rooms/$roomId/sprechen',
         ),
         _ => null,
       },

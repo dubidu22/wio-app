@@ -677,5 +677,105 @@
   "pictureAfterPictures": "Nachher",
   "@pictureAfterPictures": {
     "description": "Heading above a picture's after pictures on its screen (D-280)."
+  },
+  "voiceSpeak": "Sprechen",
+  "@voiceSpeak": {
+    "description": "Button on the room, picture and customer screens: opens the voice note, which records at once (D-288, D-295)."
+  },
+  "voiceDone": "Fertig",
+  "@voiceDone": {
+    "description": "Top-left button of the voice note, in the place of Zurück: ends the recording and keeps it (D-291)."
+  },
+  "voiceStop": "Stopp",
+  "@voiceStop": {
+    "description": "Word on the voice note's big round main button: ends the recording and keeps the note (D-290)."
+  },
+  "voiceStopLabel": "Aufnahme beenden und speichern",
+  "@voiceStopLabel": {
+    "description": "Semantic label of the Stopp button."
+  },
+  "voiceOpening": "Mikrofon wird geöffnet …",
+  "@voiceOpening": {
+    "description": "Line while the microphone opens or the permission prompt shows."
+  },
+  "voiceRecording": "Aufnahme läuft · {time}",
+  "@voiceRecording": {
+    "description": "Status line while recording; time counts up as m:ss.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "0:12"
+      }
+    }
+  },
+  "voiceListening": "Bitte sprechen. Der Text erscheint hier.",
+  "@voiceListening": {
+    "description": "Hint while recording with an on-device transcript, before the first words (D-62)."
+  },
+  "voiceNoTranscript": "Auf diesem Telefon gibt es keinen Text zur Aufnahme. Die Aufnahme wird trotzdem gespeichert.",
+  "@voiceNoTranscript": {
+    "description": "Hint when the phone cannot make a transcript on the device; it records anyway (D-61, D-287)."
+  },
+  "voiceGermanMissing": "Deutsch für die Spracherkennung ist auf diesem Telefon nicht geladen.",
+  "@voiceGermanMissing": {
+    "description": "Hint when German can be downloaded for the phone's own recognizer (D-287)."
+  },
+  "voiceLoadGerman": "Deutsch laden",
+  "@voiceLoadGerman": {
+    "description": "Button: starts the phone's own download of German for speech recognition (D-287)."
+  },
+  "voiceGermanLoading": "Deutsch wird geladen. Bei einer der nächsten Notizen gibt es dann Text.",
+  "@voiceGermanLoading": {
+    "description": "Line after Deutsch laden was tapped."
+  },
+  "voiceDenied": "Wio darf das Mikrofon nicht benutzen.",
+  "@voiceDenied": {
+    "description": "Hint when the microphone permission was refused (D-293)."
+  },
+  "voiceDeniedHelp": "Wenn nichts passiert: In den Einstellungen des Telefons bei Wio das Mikrofon erlauben.",
+  "@voiceDeniedHelp": {
+    "description": "Second line of the refused hint: after two refusals Android asks no more (D-293)."
+  },
+  "voiceAskAgain": "Noch einmal fragen",
+  "@voiceAskAgain": {
+    "description": "Button that asks for the microphone permission again (D-293)."
+  },
+  "voiceUnavailable": "Das Mikrofon lässt sich gerade nicht benutzen.",
+  "@voiceUnavailable": {
+    "description": "Hint when the microphone is busy or recording failed to start."
+  },
+  "voiceTryAgain": "Noch einmal versuchen",
+  "@voiceTryAgain": {
+    "description": "Button that tries to start recording again."
+  },
+  "voiceSaving": "Wird gespeichert …",
+  "@voiceSaving": {
+    "description": "Line after Stopp while the note is kept (usually under a second)."
+  },
+  "voiceSaved": "Notiz gespeichert: „{start}“",
+  "@voiceSaved": {
+    "description": "Note after a voice note was kept, with the start of its text.",
+    "placeholders": {
+      "start": {
+        "type": "String",
+        "example": "Kiste mit Wintersachen"
+      }
+    }
+  },
+  "voiceSavedNoText": "Sprachnotiz gespeichert (ohne Text).",
+  "@voiceSavedNoText": {
+    "description": "Note after a voice note without transcript was kept."
+  },
+  "voiceTooShort": "Die Aufnahme war zu kurz.",
+  "@voiceTooShort": {
+    "description": "Note when a recording under half a second was not kept (D-292)."
+  },
+  "voiceNotSaved": "Die Notiz konnte nicht gespeichert werden.",
+  "@voiceNotSaved": {
+    "description": "Note when keeping the voice note failed."
+  },
+  "voicePictureTitle": "Notiz zum Foto",
+  "@voicePictureTitle": {
+    "description": "Title of the voice note opened from a picture."
   }
 }

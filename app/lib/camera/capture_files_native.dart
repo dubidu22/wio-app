@@ -4,8 +4,8 @@ import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
 
-/// The camera's working folder `<temporary>/wio-capture` (D-268). Shots
-/// and prepared pictures live here only until they are stored; nothing in
+/// The camera's working folder `<temporary>/wio-capture` (D-268). Shots,
+/// prepared pictures and voice recordings (D-290) live here only until they are stored; nothing in
 /// it is ever uploaded, and whatever is left after a crash goes at the next
 /// start.
 class CaptureFiles {
@@ -44,7 +44,15 @@ class CaptureFiles {
     return target;
   }
 
+  /// A new path in the working folder for a voice note's recording
+  /// (D-290): the recorder writes there; the sweep takes what a crash left.
+  Future<String> newRecordingPath() => _newPath('.m4a');
+
   Future<Uint8List> read(String path) => File(path).readAsBytes();
+
+  /// Writes [bytes] over the file at [path].
+  Future<void> overwrite(String path, Uint8List bytes) =>
+      File(path).writeAsBytes(bytes, flush: true);
 
   /// Writes [bytes] to a new file in the working folder.
   Future<String> write(Uint8List bytes) async {

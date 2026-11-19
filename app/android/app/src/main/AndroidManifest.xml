@@ -3,15 +3,16 @@
     <!-- The app syncs with the server, so every build needs the network
          (D-247); until plan 056 only debug and profile builds had it. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- The voice note (D-294): the app's own microphone code records
+         and feeds the on-device recognizer; asked on the first Sprechen
+         (D-293). No foreground service: leaving the app saves the note
+         (D-291). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <!-- The camera (D-265, D-272): CAMERA comes from the camera plugin.
-         The plugin also asks for the microphone and, up to Android 9, for
-         shared storage; the app takes pictures without sound and keeps
-         them in its own folder, so both are removed here. RECORD_AUDIO
-         comes back with the voice note (#60). A phone without a camera may
+         The plugin also asks, up to Android 9, for shared storage; the app
+         keeps pictures in its own folder, so that is removed here. Pictures
+         are taken without sound (D-266). A phone without a camera may
          still install the app and sees a plain hint. -->
-    <uses-permission
-        android:name="android.permission.RECORD_AUDIO"
-        tools:node="remove"/>
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         tools:node="remove"/>

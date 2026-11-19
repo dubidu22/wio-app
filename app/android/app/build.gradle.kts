@@ -75,3 +75,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+// Unit tests of the voice guard's rules (D-287), run by CI's app-android job.
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+}

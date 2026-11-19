@@ -7,8 +7,10 @@ import 'package:flutter/widgets.dart' show Size, WidgetsApp;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:wio_app/camera/capture_camera.dart';
+import 'package:wio_app/voice/voice_recorder.dart';
 
 import '../support/fake_camera.dart';
+import '../support/fake_voice.dart';
 import '../support/media.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
@@ -125,6 +127,49 @@ void main() {
           size: size,
           mediaFolder: demoMediaFolder(),
         );
+        await expectLater(
+          find.byType(WidgetsApp),
+          matchesGoldenFile('goldens/${name}_$sizeName.png'),
+        );
+      });
+    }
+  }
+
+  // The voice note while speaking (D-62), without a transcript on this
+  // phone (D-61), with German to load (D-287), with the microphone refused
+  // (D-293); Sprechen on the room, customer and picture screens is in the
+  // catalogue goldens above (D-295).
+  final voice = <String, void Function(FakeVoiceRecorder recorder)>{
+    'voice_screen_text': (r) => r
+      ..transcript(TranscriptStatus.ready)
+      ..partial('Kiste mit Wintersachen im Keller, 180 cm hoch'),
+    'voice_screen_no_text': (r) => r.transcript(TranscriptStatus.noOnDevice),
+    'voice_screen_german': (r) => r.transcript(TranscriptStatus.germanMissing),
+    'voice_screen_denied': (r) {},
+  };
+  for (final MapEntry(key: name, value: drive) in voice.entries) {
+    for (final MapEntry(key: sizeName, value: size) in sizes.entries) {
+      testWidgets('$name at $sizeName size', skip: _notLinux, (tester) async {
+        final db = memoryDatabase();
+        addTearDown(db.close);
+        await seedWithPictures(db);
+        final recorder = name == 'voice_screen_denied'
+            ? FakeVoiceRecorder(
+                permissionNow: VoicePermission.refused,
+                permissionAfterAsking: VoicePermission.refused,
+              )
+            : FakeVoiceRecorder();
+        await pumpWioApp(
+          tester,
+          db: db,
+          location:
+              '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}'
+              '/sprechen',
+          size: size,
+          voiceRecorder: recorder,
+        );
+        drive(recorder);
+        await tester.pump();
         await expectLater(
           find.byType(WidgetsApp),
           matchesGoldenFile('goldens/${name}_$sizeName.png'),

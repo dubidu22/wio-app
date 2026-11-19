@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../camera/camera_providers.dart';
+import '../camera/take_pictures_button.dart';
 import '../data/database.dart';
 import '../l10n/app_localizations.dart';
 import '../media/local_picture.dart';
@@ -10,6 +11,7 @@ import '../media/media_store.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
+import '../voice/voice_providers.dart';
 import 'picture_tile.dart';
 
 /// How long "Rückgängig" stays after "Löschen" (UX rule 9).
@@ -24,8 +26,8 @@ const double _relatedTileWidth = 140;
 /// Main button "Nachher aufnehmen" opens the after camera (D-276, not on
 /// the web, D-283); "Löschen" deletes at once with "Rückgängig" (D-278).
 /// Its after pictures, or its before picture, are tiles under it with a
-/// word (D-280). Pinch zoom is a view aid only (D-279). "Sprechen" comes
-/// with the voice note (#60, D-75).
+/// word (D-280). Pinch zoom is a view aid only (D-279). "Sprechen" opens a
+/// voice note about the picture (D-295, Android only).
 class PictureScreen extends ConsumerWidget {
   const PictureScreen({
     required this.customerId,
@@ -147,6 +149,45 @@ class _PictureButtonsState extends ConsumerState<_PictureButtons> {
       onPressed: _delete,
       child: FittedBox(fit: BoxFit.scaleDown, child: Text(l10n.pictureDelete)),
     );
+    final takeAfter = FilledButton(
+      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(64)),
+      onPressed: () => context.go('$base/pictures/${picture.id}/nachher'),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(l10n.pictureTakeAfter),
+      ),
+    );
+    // With "Sprechen" (D-295): Löschen and Sprechen above, the main button
+    // below at full width; otherwise Löschen next to it, as before.
+    final Widget buttons = canTake && ref.watch(canRecordVoiceProvider)
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Expanded(child: delete),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SpeakButton(
+                      location: '$base/pictures/${picture.id}/sprechen',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              takeAfter,
+            ],
+          )
+        : Row(
+            children: <Widget>[
+              Expanded(child: delete),
+              if (canTake) ...<Widget>[
+                const SizedBox(width: 12),
+                Expanded(flex: 2, child: takeAfter),
+              ],
+            ],
+          );
     return SafeArea(
       child: Align(
         heightFactor: 1,
@@ -154,28 +195,7 @@ class _PictureButtonsState extends ConsumerState<_PictureButtons> {
           constraints: const BoxConstraints(maxWidth: wioMaxContentWidth),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Row(
-              children: <Widget>[
-                Expanded(child: delete),
-                if (canTake) ...<Widget>[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(64),
-                      ),
-                      onPressed: () =>
-                          context.go('$base/pictures/${picture.id}/nachher'),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(l10n.pictureTakeAfter),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+            child: buttons,
           ),
         ),
       ),
