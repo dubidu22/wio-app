@@ -1,6 +1,7 @@
 // Entries, places, labels and properties through the sync loop against the
 // fake sync server (plan 101 tests T11 to T15 and T18; D-434 to D-447).
 // No real network.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -335,5 +336,44 @@ void main() {
     final rejected = await b.db.select(b.db.rejectedChanges).getSingle();
     expect(rejected.entity, 'labels');
     expect(rejected.reason, 'duplicate');
+  });
+
+  test('a target from two phones: all seven fields, the later pair wins; '
+      'Kein Ziel reaches the other phone (plan 107)', () async {
+    final a = Phone(server, 'a', folder);
+    final b = Phone(server, 'b', folder);
+    await a.engine.pull();
+    final id = await a.entries.createEntry(
+      workspaceId: ws,
+      customerId: customer,
+    );
+    expect((await a.engine.run()).stop, SyncStop.done);
+    await b.engine.pull();
+
+    await a.entries.setTarget(id, inKueche);
+    await b.entries.setTarget(id, inKeller);
+    final change = (await b.outbox()).single;
+    expect(change.op, 'upsert');
+    expect((jsonDecode(change.fields) as Map<String, Object?>).keys.toSet(), {
+      'target_site_id',
+      'target_room_id',
+      'target_fixture_id',
+      'target_level',
+      'target_compartment',
+      'target_floor_x_cm',
+      'target_floor_y_cm',
+    });
+
+    expect((await a.engine.run()).stop, SyncStop.done);
+    expect((await b.engine.run()).stop, SyncStop.done);
+    await a.engine.pull();
+    expect(server.live('entries')[id]!['target_room_id'], keller);
+    expect(Place.targetOf(await a.entry(id)), inKeller);
+    expect(Place.targetOf(await b.entry(id)), inKeller);
+
+    await a.entries.setTarget(id, Place.none);
+    expect((await a.engine.run()).stop, SyncStop.done);
+    await b.engine.pull();
+    expect(Place.targetOf(await b.entry(id)), Place.none);
   });
 }
