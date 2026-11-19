@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../camera/take_pictures_button.dart';
 import '../data/database.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
@@ -10,9 +11,8 @@ import '../shell/layout.dart';
 import '../shell/providers.dart';
 
 /// Level 3: one room with its pictures (KB workflows.md "Take pictures of a
-/// room", D-259). The main button "Fotos" comes with the camera (#58,
-/// D-258): it goes into the Scaffold's bottomNavigationBar here; notes of
-/// the room come with #61.
+/// room", D-259). The main button "Fotos" opens the camera (D-258, D-271);
+/// notes of the room come with #61.
 class RoomScreen extends ConsumerWidget {
   const RoomScreen({required this.customerId, required this.roomId, super.key});
 
@@ -51,6 +51,12 @@ class RoomScreen extends ConsumerWidget {
           error: error,
         ),
         _ => const SizedBox.shrink(),
+      },
+      bottomNavigationBar: switch (room) {
+        AsyncData(value: RoomScreenView()) => TakePicturesBar(
+          cameraLocation: '/customers/$customerId/rooms/$roomId/kamera',
+        ),
+        _ => null,
       },
     );
   }

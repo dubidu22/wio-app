@@ -18,11 +18,14 @@ const double wioBackIconSize = 24;
 /// 1 and 2). Goes to the job list when there is nothing to go back to, for
 /// example after opening a link on the web.
 class WioBackButton extends StatelessWidget {
-  const WioBackButton({super.key, this.onPressed});
+  const WioBackButton({super.key, this.onPressed, this.label});
 
   /// A step back inside the screen instead of the route, for example from
   /// the workspace choice to the sign-in fields (D-127).
   final VoidCallback? onPressed;
+
+  /// Another word than "Zurück"; only the camera uses it ("Fertig", D-270).
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +47,7 @@ class WioBackButton extends StatelessWidget {
           // Only beyond twice the text size does the word shrink to fit.
           label: FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(AppLocalizations.of(context).back),
+            child: Text(label ?? AppLocalizations.of(context).back),
           ),
         ),
       ),

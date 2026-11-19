@@ -5,6 +5,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/app.dart';
 import 'package:wio_app/auth/session_provider.dart';
 import 'package:wio_app/auth/token_store.dart';
+import 'package:wio_app/camera/camera_providers.dart';
+import 'package:wio_app/camera/capture_camera.dart';
+import 'package:wio_app/camera/capture_files.dart';
+import 'package:wio_app/camera/picture_processor.dart';
 import 'package:wio_app/data/database.dart';
 import 'package:wio_app/l10n/app_localizations.dart';
 import 'package:wio_app/media/media_store.dart';
@@ -14,6 +18,7 @@ import 'package:wio_app/sync/upload_queue.dart';
 import 'package:wio_app/update/app_version.dart';
 
 import 'fake_api.dart';
+import 'fake_camera.dart';
 import 'media.dart';
 import 'test_data.dart';
 
@@ -70,6 +75,10 @@ Future<void> pumpWioApp(
   UploadStore? uploadStore,
   String? mediaFolder,
   Future<String?>? mediaFolderFuture,
+  CaptureCameraFactory? camera,
+  MediaStore? mediaStore,
+  CaptureFiles? captureFiles,
+  PictureProcessor? preparePicture,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -99,6 +108,17 @@ Future<void> pumpWioApp(
         // No file system in widget tests unless a test brings one.
         uploadStoreProvider.overrideWithValue(
           uploadStore ?? UploadStore(() => Future<String>.error('no files')),
+        ),
+        // A fake camera with a grey preview unless a test brings one; shots
+        // and kept files only where a test brings folders (plan 058).
+        captureCameraProvider.overrideWithValue(camera ?? FakeCamera.new),
+        captureFilesProvider.overrideWithValue(
+          captureFiles ?? CaptureFiles(() => Future<String>.error('no files')),
+        ),
+        if (preparePicture != null)
+          preparePictureProvider.overrideWithValue(preparePicture),
+        mediaStoreProvider.overrideWithValue(
+          mediaStore ?? MediaStore(() => Future<String>.error('no files')),
         ),
         // Picture files only where a test brings a media folder (D-260).
         mediaFolderProvider.overrideWith(

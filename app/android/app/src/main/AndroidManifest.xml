@@ -1,7 +1,24 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- The app syncs with the server, so every build needs the network
          (D-247); until plan 056 only debug and profile builds had it. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- The camera (D-265, D-272): CAMERA comes from the camera plugin.
+         The plugin also asks for the microphone and, up to Android 9, for
+         shared storage; the app takes pictures without sound and keeps
+         them in its own folder, so both are removed here. RECORD_AUDIO
+         comes back with the voice note (#60). A phone without a camera may
+         still install the app and sees a plain hint. -->
+    <uses-permission
+        android:name="android.permission.RECORD_AUDIO"
+        tools:node="remove"/>
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        tools:node="remove"/>
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false"
+        tools:node="replace"/>
     <application
         android:label="${appLabel}"
         android:name="${applicationName}"

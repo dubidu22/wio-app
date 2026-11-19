@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../camera/take_pictures_button.dart';
 import '../data/database.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
@@ -12,9 +13,9 @@ import '../shell/providers.dart';
 
 /// Level 2: one customer (KB workflows.md). Sites come from the local
 /// database; each room is a button to its room screen (D-259). "Fotos" lists
-/// the customer's pictures without a room; its button comes with the camera
-/// (#58, D-258). Entries are a plain hint until they exist (D-75). The main
-/// button "Tag abschließen" comes in M5.
+/// the customer's pictures without a room; the main button "Fotos" takes
+/// such pictures (Q3, D-258, D-271). Entries are a plain hint until they exist (D-75). The main
+/// "Tag abschließen" comes in M5 and then takes the main place.
 class CustomerScreen extends ConsumerWidget {
   const CustomerScreen({required this.customerId, super.key});
 
@@ -49,6 +50,12 @@ class CustomerScreen extends ConsumerWidget {
           error: error,
         ),
         _ => const SizedBox.shrink(),
+      },
+      bottomNavigationBar: switch (customer) {
+        AsyncData(value: CustomerView()) => TakePicturesBar(
+          cameraLocation: '/customers/$customerId/kamera',
+        ),
+        _ => null,
       },
     );
   }

@@ -93,7 +93,7 @@ void main() {
     expect(find.text('Noch keine Fotos.'), findsOneWidget);
   });
 
-  testWidgets('no dead buttons: Zurück, rooms and pictures only (D-75)', (
+  testWidgets('buttons: Zurück, rooms, pictures and Fotos (D-75, D-258)', (
     tester,
   ) async {
     await pumpWioApp(
@@ -105,9 +105,10 @@ void main() {
 
     expect(
       find.byWidgetPredicate((w) => w is ButtonStyleButton),
-      findsNWidgets(4),
-      reason: 'Zurück, Keller, Küche, one picture; no Fotos button (D-258)',
+      findsNWidgets(5),
+      reason: 'Zurück, Keller, Küche, one picture, Fotos',
     );
+    expect(find.widgetWithText(FilledButton, 'Fotos'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Zurück'), findsOneWidget);
     expect(find.byType(BackButton), findsNothing, reason: 'icon only (D-74)');
   });
