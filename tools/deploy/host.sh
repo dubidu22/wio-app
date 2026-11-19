@@ -74,6 +74,8 @@ case "$command" in
     # Creates the layout. Prints the PHP version, so a wrong CLI shows early.
     mkdir -p "$root/releases" "$root/shared/files" "$root/incoming" "$root/web"
     chmod 700 "$root/shared" "$root/shared/files" "$root/incoming"
+    # Leftovers of a failed run (tarball, config, smoke password) go first.
+    rm -f -- "$root"/incoming/*
     "$php" -r 'echo "php ", PHP_VERSION, PHP_EOL;'
     ;;
 
@@ -217,6 +219,8 @@ case "$command" in
     email="${1:?email}"
     secret="$root/incoming/smoke-password"
     [[ -f "$secret" ]] || fail "no smoke password upload"
+    # The password file goes whatever happens below (failed cd, failed count).
+    trap 'rm -f -- "$secret"' EXIT
     cd "$root/current"
     # shellcheck disable=SC2016 # PHP code, expanded by PHP
     owners="$(WIO_SMOKE_EMAIL="$email" "$php" -r '

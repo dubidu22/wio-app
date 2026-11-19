@@ -272,6 +272,7 @@ jobs:
           tools/ci/test/check-needs.test.sh
           tools/ci/test/flutter-test.test.sh
           tools/ci/test/generated-code-fresh.test.sh
+          tools/deploy/test/resolve.test.sh
 
   ci-passed:
     name: ci-passed

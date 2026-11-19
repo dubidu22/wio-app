@@ -64,6 +64,11 @@ jobs:
       sha: ${{ steps.resolve.outputs.sha }}
       mode: ${{ steps.resolve.outputs.mode }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Production only from a tag api-v*; every deploy outside a ci run
+      # on main needs ci-passed and the commit on main (MRG-01).
       - name: Environment, commit and mode
         id: resolve
         env:
@@ -74,30 +79,7 @@ jobs:
           INPUT_MODE: ${{ inputs.mode }}
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          case "$EVENT" in
-            workflow_run) environment=staging; sha="$RUN_SHA"; mode=deploy ;;
-            push) environment=production; sha="$REF_SHA"; mode=deploy ;;
-            workflow_dispatch) environment="$INPUT_ENVIRONMENT"; sha="$REF_SHA"; mode="$INPUT_MODE" ;;
-            *) echo "::error::unexpected event $EVENT"; exit 1 ;;
-          esac
-          # Every deploy that does not come from a successful ci run checks
-          # that ci-passed succeeded on the commit (MRG-01).
-          if [[ "$EVENT" != workflow_run && "$mode" == deploy ]]; then
-            conclusions="$(gh api "repos/$REPO/commits/$sha/check-runs?check_name=ci-passed" \
-              --jq '[.check_runs[].conclusion] | join(" ")')"
-            if [[ " $conclusions " != *" success "* ]]; then
-              echo "::error::ci-passed has not succeeded on $sha (found: '${conclusions}')"
-              exit 1
-            fi
-          fi
-          {
-            echo "environment=$environment"
-            echo "sha=$sha"
-            echo "mode=$mode"
-          } >> "$GITHUB_OUTPUT"
-          echo "$mode $sha to $environment"
+        run: tools/deploy/resolve.sh
 
   deploy:
     name: deploy (${{ needs.resolve.outputs.environment }})
