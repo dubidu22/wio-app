@@ -1,0 +1,60 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Loads the invented demo data (tools/demo/demo-workspace.json) into an
+// existing, empty workspace, on staging only (plan 094, D-399..D-408):
+//
+//   php bin/seed-demo --email=owner@example.org
+//   php bin/seed-demo --workspace-id=… [--email=…]
+//
+// Prints the new rows per table and the job dates. Refuses a second run.
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Wio\Config\HostConfig;
+use Wio\Ops\OpsException;
+use Wio\Ops\SeedDemo;
+use Wio\Services;
+
+// On the hosting: config.php outside the web root, written by the deploy (D-161).
+HostConfig::load(__DIR__ . '/../config.php');
+
+$options = getopt('', ['workspace-id:', 'email:']);
+$text = static fn(string $name): ?string => is_string($options[$name] ?? null) ? $options[$name] : null;
+$workspaceId = $text('workspace-id');
+$email = $text('email');
+if ($workspaceId === null && $email === null) {
+    fwrite(STDERR, 'Usage: php bin/seed-demo --email=OWNER_EMAIL | --workspace-id=ID [--email=OWNER_EMAIL]' . PHP_EOL);
+    exit(2);
+}
+
+// In a release the deploy ships the demo data as demo/ (D-407); in a checkout it is tools/demo/.
+$demoFile = is_file(__DIR__ . '/../demo/demo-workspace.json')
+    ? __DIR__ . '/../demo/demo-workspace.json'
+    : __DIR__ . '/../../tools/demo/demo-workspace.json';
+
+try {
+    $environment = (string) getenv('WIO_ENVIRONMENT');
+    if ($environment !== SeedDemo::ENVIRONMENT) {
+        throw new OpsException(SeedDemo::REFUSED_ENVIRONMENT);
+    }
+    $services = Services::fromEnvironment();
+    $seeded = (new SeedDemo($environment, $services->sql(), $services->clock, $services->files(), $demoFile))
+        ->run($workspaceId, $email);
+} catch (OpsException $e) {
+    fwrite(STDERR, $e->getMessage() . PHP_EOL);
+    exit(1);
+} catch (Throwable $e) {
+    fwrite(STDERR, 'Failed: ' . $e::class . PHP_EOL);
+    exit(1);
+}
+
+fwrite(STDOUT, 'workspace_id ' . $seeded['workspace_id'] . PHP_EOL);
+fwrite(STDOUT, 'loaded ' . $seeded['demo_workspace'] . PHP_EOL);
+foreach ($seeded['counts'] as $table => $count) {
+    fwrite(STDOUT, $table . ' ' . $count . PHP_EOL);
+}
+fwrite(STDOUT, 'jobs on ' . implode(', ', $seeded['job_dates']) . PHP_EOL);
+fwrite(STDOUT, 'last_revision ' . $seeded['last_revision'] . PHP_EOL);

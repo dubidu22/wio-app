@@ -18,6 +18,10 @@ trap 'rm -rf -- "${work:?}"' EXIT
 for item in bin migrations public src composer.json composer.lock; do
   cp -R "$repo/server/$item" "$work/"
 done
+# The invented demo data for bin/seed-demo, which runs on staging only (D-407).
+mkdir "$work/demo"
+cp "$repo/tools/demo/demo-workspace.json" "$work/demo/"
+cp -R "$repo/tools/demo/media" "$work/demo/"
 # Never ship a host config from a working copy.
 rm -f -- "$work/config.php"
 
