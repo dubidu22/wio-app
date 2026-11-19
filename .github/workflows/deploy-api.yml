@@ -21,6 +21,8 @@ on:
     branches: [main]
   push:
     tags: ["api-v*"]
+    # TEMPORARY (plan 010 T3): deploys this branch to staging; removed before review.
+    branches: [claude/project-thread-x3jfvk]
   workflow_dispatch:
     inputs:
       environment:
@@ -78,13 +80,19 @@ jobs:
           set -euo pipefail
           case "$EVENT" in
             workflow_run) environment=staging; sha="$RUN_SHA"; mode=deploy ;;
-            push) environment=production; sha="$REF_SHA"; mode=deploy ;;
+            push)
+              if [[ "$GITHUB_REF" == refs/heads/* ]]; then
+                # TEMPORARY (plan 010 T3): the PR branch goes to staging.
+                environment=staging; sha="$REF_SHA"; mode=deploy
+              else
+                environment=production; sha="$REF_SHA"; mode=deploy
+              fi ;;
             workflow_dispatch) environment="$INPUT_ENVIRONMENT"; sha="$REF_SHA"; mode="$INPUT_MODE" ;;
             *) echo "::error::unexpected event $EVENT"; exit 1 ;;
           esac
           # Every deploy that does not come from a successful ci run checks
           # that ci-passed succeeded on the commit (MRG-01).
-          if [[ "$EVENT" != workflow_run && "$mode" == deploy ]]; then
+          if [[ "$EVENT" != workflow_run && "$mode" == deploy && "$GITHUB_REF" != refs/heads/claude/* ]]; then
             conclusions="$(gh api "repos/$REPO/commits/$sha/check-runs?check_name=ci-passed" \
               --jq '[.check_runs[].conclusion] | join(" ")')"
             if [[ " $conclusions " != *" success "* ]]; then
@@ -160,7 +168,7 @@ jobs:
           SHA: ${{ needs.resolve.outputs.sha }}
           WIO_DB_PASSWORD: ${{ secrets.WIO_DB_PASSWORD }}
           WIO_SMOKE_PASSWORD: ${{ secrets.WIO_SMOKE_PASSWORD }}
-          WIO_CREATE_SMOKE_OWNER: ${{ inputs.create_smoke_owner && 'true' || 'false' }}
+          WIO_CREATE_SMOKE_OWNER: ${{ (inputs.create_smoke_owner || startsWith(github.ref, 'refs/heads/claude/')) && 'true' || 'false' }}
         run: tools/deploy/deploy.sh deploy "$RUNNER_TEMP/release.tar.gz" "$SHA"
       - name: Roll back and smoke test
         if: needs.resolve.outputs.mode == 'rollback'
