@@ -46,6 +46,10 @@ guard() {
   local name="${root%/}"
   name="${name##*/}"
   [[ "$name" == wio-web-* ]] || fail "deploy path must end in a folder named wio-web-*: $root"
+  # The parent must already exist (no folders are made inside someone
+  # else's tree by a typo) and be a real folder (plan 080 F3).
+  local parent="${root%/*}"
+  [[ -n "$parent" && -d "$parent" && ! -L "$parent" ]] || fail "the parent of the deploy path must be an existing folder, not a symlink: ${parent:-/}"
   [[ -L "$root" ]] && fail "deploy path must not be a symlink: $root"
   if [[ -e "$root" && ! -f "$marker" ]]; then
     [[ -d "$root" ]] || fail "deploy path is not a folder: $root"
@@ -92,7 +96,8 @@ switch_to() {
 case "$command" in
   prepare)
     guard
-    mkdir -p -- "$root"
+    # Only the root itself is created, never a missing parent (F3).
+    [[ -d "$root" ]] || mkdir -- "$root"
     [[ -f "$marker" ]] || printf 'This folder is written by the wio web deploy (plan 080). Do not put other files here.\n' > "$marker"
     mkdir -p -- "$root/web/r" "$root/htaccess" "$root/incoming"
     chmod 700 "$root/incoming"

@@ -9,7 +9,7 @@
 #   PUBSPEC   app/pubspec.yaml of that release (the version.json check), or
 #             - when it is not at hand (rollback): any well-formed version
 #
-#   W1 /release.txt is SHA (the switch took effect)
+#   W1 /release.txt is SHA (the switch took effect) and never cached
 #   W2 / is the app's HTML with every header exactly once and as written
 #   W3 /version.json has the pubspec version and is never cached
 #   W4 wasm files are application/wasm, main.dart.js is JavaScript
@@ -72,7 +72,9 @@ sed -n 's/^Header always set \([A-Za-z-]*\) "\(.*\)"$/\1\t\2/p' "$htaccess" > "$
 # W1
 get /release.txt
 if [[ "$status" == 200 && "$(tr -d '\r\n' < "$work/body")" == "$sha" ]]; then
-  pass "W1 release.txt is $sha"
+  if expect_header "W1 release.txt" Cache-Control no-store; then
+    pass "W1 release.txt is $sha, never cached"
+  fi
 else
   fail "W1 release.txt: status $status, body '$(head -c 80 "$work/body")', expected $sha"
 fi

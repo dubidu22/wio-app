@@ -13,12 +13,17 @@
 #     green ci-passed too); with WIO_ALWAYS_CHECK_CI=true also the chained
 #     staging deploy (deploy-web after deploy-api: a deploy-api run whose
 #     jobs were skipped still completes as success);
+#   - with WIO_CHAINED_RUN_ID (deploy-web after deploy-api), the staging
+#     commit is the one that run's successful job "deploy (staging, <sha>)"
+#     deployed, not the run's head_sha (which is the newest commit on main
+#     when the run was created); no such job means mode=skip (plan 080 F1);
 #   - with WIO_PUBSPEC, a production deploy's tag <prefix>X.Y.Z must equal the
 #     version in that pubspec.yaml without its +build (D-360).
 #
 # Environment: EVENT, RUN_SHA, REF_SHA, GITHUB_REF, INPUT_ENVIRONMENT,
 # INPUT_MODE, REPO, GITHUB_OUTPUT; optional WIO_TAG_PREFIX (default api-v),
-# WIO_ALWAYS_CHECK_CI (default false), WIO_PUBSPEC; gh needs GH_TOKEN.
+# WIO_ALWAYS_CHECK_CI (default false), WIO_PUBSPEC, WIO_CHAINED_RUN_ID;
+# gh needs GH_TOKEN (and actions: read for WIO_CHAINED_RUN_ID).
 set -euo pipefail
 
 fail() {
@@ -33,6 +38,24 @@ case "${EVENT:?}" in
   *) fail "unexpected event $EVENT" ;;
 esac
 [[ "$environment" == staging || "$environment" == production ]] || fail "unknown environment $environment"
+
+if [[ "$EVENT" == workflow_run && -n "${WIO_CHAINED_RUN_ID:-}" ]]; then
+  [[ "$WIO_CHAINED_RUN_ID" =~ ^[0-9]+$ ]] || fail "unexpected run id $WIO_CHAINED_RUN_ID"
+  names="$(gh api "repos/${REPO:?}/actions/runs/$WIO_CHAINED_RUN_ID/jobs" \
+    --jq '.jobs[] | select(.conclusion == "success") | .name')"
+  deployed="$(sed -n 's/^deploy (staging, \([0-9a-f]\{40\}\))$/\1/p' <<< "$names" | sort -u)"
+  if [[ -z "$deployed" ]]; then
+    echo "::notice::run $WIO_CHAINED_RUN_ID deployed nothing to staging: nothing to follow"
+    {
+      echo "environment=staging"
+      echo "sha="
+      echo "mode=skip"
+    } >> "${GITHUB_OUTPUT:?}"
+    exit 0
+  fi
+  [[ "$(wc -l <<< "$deployed")" == 1 ]] || fail "run $WIO_CHAINED_RUN_ID deployed more than one commit: $deployed"
+  sha="$deployed"
+fi
 [[ "$mode" == deploy || "$mode" == rollback ]] || fail "unknown mode $mode"
 
 prefix="${WIO_TAG_PREFIX:-api-v}"

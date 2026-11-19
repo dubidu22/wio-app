@@ -156,9 +156,14 @@ mkdir -p "$htdocs/wio-web-foreign"
 printf 'someone else\n' > "$htdocs/wio-web-foreign/index.html"
 mkdir -p "$htdocs/wio-web-target"
 ln -s "$htdocs/wio-web-target" "$htdocs/wio-web-link"
+# F3: a missing parent is never created, and a symlinked parent is refused.
+mkdir -p "$htdocs/shop"
+ln -s "$htdocs/shop" "$htdocs/shop-link"
 
 for path in "$htdocs" "$htdocs/" "$htdocs/wio-staging" "$htdocs/wio-web-foreign" \
-  "$htdocs/wio-web-link" "$htdocs/wio-web-staging/../wio-staging" "wio-web-relative"; do
+  "$htdocs/wio-web-link" "$htdocs/wio-web-staging/../wio-staging" "wio-web-relative" \
+  "$htdocs/no-such-folder/wio-web-staging" "$htdocs/shop/missing/wio-web-staging" \
+  "$htdocs/shop-link/wio-web-staging"; do
   before="$(find "$htdocs" | sort | md5sum)"
   if host prepare "$path"; then
     bad "guard: prepare accepted $path"
@@ -229,6 +234,13 @@ cp "$work/good.htaccess" "$htaccess"
   { grep -q 'W1 release.txt' "$work/smoke.log" && ok "smoke W1 fails when the expected release is not live" || bad "W1: $(grep error "$work/smoke.log" | head -n 2)"; }
 grep -q '^ok    W5' <("$deploy/web-smoke.sh" "$WIO_WEB_ORIGIN" 2222222 "$work/good.htaccess" "$repo/app/pubspec.yaml" 2>&1) &&
   ok "smoke W5: release folders are not reachable directly" || bad "W5 did not pass"
+# F2: release.txt must be no-store too.
+sed 's/version\\.json|release\\.txt/version\\.json/' "$work/good.htaccess" > "$htaccess"
+grep -q 'FilesMatch "^(version\\.json)\$"' "$htaccess" || bad "F2 fixture: FilesMatch not narrowed"
+"$deploy/web-smoke.sh" "$WIO_WEB_ORIGIN" 2222222 "$work/good.htaccess" "$repo/app/pubspec.yaml" > "$work/smoke.log" 2>&1 &&
+  bad "smoke passed with a cacheable release.txt" ||
+  { grep -q "W1 release.txt: header Cache-Control is 'no-cache'" "$work/smoke.log" && ok "smoke W1 fails when release.txt may be cached" || bad "W1 no-store: $(grep error "$work/smoke.log" | head -n 2)"; }
+cp "$work/good.htaccess" "$htaccess"
 
 # First deploy with a failing smoke: nothing to switch back to, run fails.
 first="$htdocs/wio-web-first"

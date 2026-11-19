@@ -15,6 +15,7 @@ cat > "$work/bin/gh" << 'EOF'
 case "$2" in
   */check-runs*) echo "$FAKE_CI" ;;
   */compare/*) echo "$FAKE_COMPARE" ;;
+  */actions/runs/77/jobs) printf '%b' "$FAKE_JOBS" ;;
   *) echo "unexpected gh call: $*" >&2; exit 2 ;;
 esac
 EOF
@@ -28,7 +29,7 @@ expect() {
   local out="$work/output" got
   : > "$out"
   if PATH="$work/bin:$PATH" WIO_TAG_PREFIX="${PREFIX:-}" WIO_ALWAYS_CHECK_CI="${ALWAYS:-}" \
-    WIO_PUBSPEC="${PUBSPEC:-}" EVENT="$event" RUN_SHA=run1 REF_SHA=ref1 GITHUB_REF="$ref" \
+    WIO_PUBSPEC="${PUBSPEC:-}" WIO_CHAINED_RUN_ID="${RUN_ID:-}" FAKE_JOBS="${JOBS:-}" EVENT="$event" RUN_SHA=run1 REF_SHA=ref1 GITHUB_REF="$ref" \
     INPUT_ENVIRONMENT="$env" INPUT_MODE="$mode" REPO=o/r GITHUB_OUTPUT="$out" \
     FAKE_CI="$ci" FAKE_COMPARE="$compare" "$script" > /dev/null 2>&1; then
     got="$(sed 's/^[a-z]*=//' "$out" | paste -sd ' ')"
@@ -86,6 +87,27 @@ expect fail "api: tag app-v1.2.3 cannot deploy the API to production" \
   push refs/tags/app-v1.2.3 "" "" "success" ahead
 web "production ref1 rollback" "web: production rollback from an app-v tag skips the version check" \
   workflow_dispatch refs/tags/app-v1.0.0 production rollback "" ""
+# Plan 080 F1: the chained run deploys the commit deploy-api deployed, not
+# the run's head_sha (run1 here).
+x=1111111111111111111111111111111111111111
+y=2222222222222222222222222222222222222222
+RUN_ID=77 JOBS="resolve\ndeploy (staging, $x)\n" web "staging $x deploy" \
+  "web: chained run deploys the commit deploy-api deployed, not the run's head_sha" \
+  workflow_run refs/heads/main "" "" "success" ahead
+RUN_ID=77 JOBS="resolve\n" web "staging  skip" \
+  "web: chained run whose deploy-api deployed nothing (skipped or failed job) skips" \
+  workflow_run refs/heads/main "" "" "" ""
+RUN_ID=77 JOBS="resolve\ndeploy (production, $x)\n" web "staging  skip" \
+  "web: a production deploy job is never followed into staging" \
+  workflow_run refs/heads/main "" "" "" ""
+RUN_ID=77 JOBS="deploy (staging, $x)\ndeploy (staging, $y)\n" web fail \
+  "web: two deployed commits in one run are refused" \
+  workflow_run refs/heads/main "" "" "success" ahead
+RUN_ID=77 JOBS="deploy (staging, $x)\n" web fail \
+  "web: the followed commit still needs green ci-passed" \
+  workflow_run refs/heads/main "" "" "failure" ahead
+RUN_ID='77;x' JOBS="" web fail "web: a malformed run id is refused" \
+  workflow_run refs/heads/main "" "" "success" ahead
 PREFIX='x/../' expect fail "a malformed tag prefix is refused" \
   push refs/tags/api-v0.1.0 "" "" "success" ahead
 

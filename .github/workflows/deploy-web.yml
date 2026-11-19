@@ -59,6 +59,8 @@ jobs:
     permissions:
       contents: read
       checks: read
+      # Reads the deploy-api run's jobs to find the commit it deployed.
+      actions: read
     outputs:
       environment: ${{ steps.resolve.outputs.environment }}
       sha: ${{ steps.resolve.outputs.sha }}
@@ -67,8 +69,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Production only from a tag app-v* that equals the pubspec version;
-      # every web deploy needs ci-passed and the commit on main (MRG-01).
+      # Staging follows exactly the commit deploy-api deployed (its job name
+      # "deploy (staging, <sha>)"), not that run's head_sha, which is the
+      # newest commit on main when the run was created; nothing deployed
+      # means mode skip. Production only from a tag app-v* that equals the
+      # pubspec version; every web deploy needs ci-passed and the commit on
+      # main (MRG-01).
       - name: Environment, commit and mode
         id: resolve
         env:
@@ -82,11 +88,13 @@ jobs:
           WIO_TAG_PREFIX: app-v
           WIO_ALWAYS_CHECK_CI: "true"
           WIO_PUBSPEC: app/pubspec.yaml
+          WIO_CHAINED_RUN_ID: ${{ github.event.workflow_run.id }}
         run: tools/deploy/resolve.sh
 
   deploy:
     name: deploy web (${{ needs.resolve.outputs.environment }})
     needs: resolve
+    if: needs.resolve.outputs.mode != 'skip'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
