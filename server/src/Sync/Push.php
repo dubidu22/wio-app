@@ -257,6 +257,10 @@ final class Push
             }
         }
 
+        if ($table === 'pictures') {
+            $this->afterOf($caller, $stored, $write, $customerId);
+        }
+
         $now = $this->now();
         $revision = $this->revisions->next($caller->workspaceId);
         $common = ['updated_at' => $now, 'updated_by' => $caller->userId, 'revision' => $revision];
@@ -458,6 +462,41 @@ final class Push
         }
 
         return Sql::textOrNull($row['customer_id']);
+    }
+
+    /**
+     * pictures.after_of (plan 071, D-320 to D-325): set once at create
+     * (D-322); the target must be a picture of this workspace with the same
+     * customer (D-320), deleted or not (D-321). Unknown ids, pictures of
+     * other workspaces and pictures of other customers get the same answer
+     * from the same single lookup, so nothing can be probed. The composite
+     * foreign keys of migration 0005 stay as the backstop.
+     *
+     * @param array<string, mixed>|null $stored
+     * @param array<string, string|int|null> $write
+     *
+     * @throws Rejected
+     */
+    private function afterOf(AuthContext $caller, ?array $stored, array $write, ?string $customerId): void
+    {
+        if (!\array_key_exists('after_of', $write)) {
+            return;
+        }
+        $target = self::scalar($write['after_of']);
+        if ($stored !== null) {
+            if ($target !== Sql::textOrNull($stored['after_of'] ?? null)) {
+                throw Rejected::invalid('after_of cannot be changed.');
+            }
+
+            return;
+        }
+        if ($target === null) {
+            return;
+        }
+        $row = $this->sql->row('SELECT customer_id FROM pictures WHERE workspace_id = ? AND id = ?', [$caller->workspaceId, $target]);
+        if ($row === null || Sql::textOrNull($row['customer_id']) !== $customerId) {
+            throw Rejected::invalid('after_of must point to a picture of the same customer.');
+        }
     }
 
     /**
