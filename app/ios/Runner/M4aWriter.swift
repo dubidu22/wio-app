@@ -1,11 +1,14 @@
 import AVFoundation
 
-/// Writes microphone buffers as AAC-LC in M4A, 16 kHz mono, 64 kbit/s
-/// (D-285, D-338). Input buffers come in the microphone's own format and
-/// are converted here. Not thread-safe: the caller serialises writes.
+/// Writes microphone buffers as AAC-LC in M4A, 16 kHz mono, 48 kbit/s
+/// (D-285, D-338; iOS deviation D-351). Input buffers come in the
+/// microphone's own format and are converted here. Not thread-safe: the caller serialises writes.
 final class M4aWriter {
   static let sampleRate: Double = 16_000
-  static let bitRate = 64_000
+  /// Apple's AAC-LC encoder offers 12 to 48 kbit/s at 16 kHz mono and
+  /// refuses 64 kbit/s (D-285's Android rate), so iOS uses the highest rate
+  /// it offers (D-351, PR 78 review round 1).
+  static let bitRate = 48_000
 
   /// Settings of the file on disk.
   static var fileSettings: [String: Any] {

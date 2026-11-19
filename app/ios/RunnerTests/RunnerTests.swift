@@ -75,7 +75,7 @@ struct BackupExclusionTests {
   }
 }
 
-/// The M4A file format (D-285, D-338).
+/// The M4A file format (D-285, D-338, iOS rate D-351).
 struct M4aWriterTests {
   @Test func writesAacLcMono16kHzFromAMicrophoneFormat() throws {
     let url = FileManager.default.temporaryDirectory
@@ -115,12 +115,12 @@ struct M4aWriterTests {
     // AAC works in 1024-frame packets with encoder priming: allow two
     // packets either way around one second.
     #expect((14_000...18_100).contains(file.length), "frames on disk: \(file.length)")
-    #expect(M4aWriter.fileSettings[AVEncoderBitRateKey] as? Int == 64_000)
+    #expect(M4aWriter.fileSettings[AVEncoderBitRateKey] as? Int == 48_000)
   }
 
-  /// Whether Apple's AAC-LC encoder offers 64 kbit/s at 16 kHz mono
-  /// (D-285); the message lists what it offers.
-  @Test func encoderOffers64kbitAt16kHzMono() throws {
+  /// Apple's AAC-LC encoder offers the writer's rate at 16 kHz mono
+  /// (D-351); the message lists what it offers.
+  @Test func encoderOffersTheWriterBitRateAt16kHzMono() throws {
     let pcm = try #require(AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1))
     var aac = AudioStreamBasicDescription(
       mSampleRate: 16_000, mFormatID: kAudioFormatMPEG4AAC, mFormatFlags: 0,
@@ -129,6 +129,6 @@ struct M4aWriterTests {
     let out = try #require(AVAudioFormat(streamDescription: &aac))
     let converter = try #require(AVAudioConverter(from: pcm, to: out))
     let offered = (converter.applicableEncodeBitRates ?? []).map(\.intValue)
-    #expect(offered.contains(64_000), "AAC-LC 16 kHz mono offers: \(offered)")
+    #expect(offered.contains(M4aWriter.bitRate), "AAC-LC 16 kHz mono offers: \(offered)")
   }
 }
