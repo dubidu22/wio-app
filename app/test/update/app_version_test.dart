@@ -93,7 +93,7 @@ void readInstalledAppTests() {
   group('readInstalledApp', () {
     const short = Duration(milliseconds: 20);
 
-    test('a read that never completes gives unknown after the timeout', () async {
+    test('a read that hangs gives unknown', () async {
       final app = await readInstalledApp(
         () => Completer<PackageInfo>().future,
         timeout: short,
