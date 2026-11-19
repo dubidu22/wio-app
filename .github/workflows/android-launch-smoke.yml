@@ -6,8 +6,6 @@ name: android-launch-smoke
 
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/project-thread-nnmhhh] # TEMPORARY (plan 091 P5), removed before review
 
 permissions:
   contents: read
