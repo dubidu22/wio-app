@@ -64,7 +64,8 @@ class PictureGrid extends StatelessWidget {
 
 /// One picture: a button with its thumbnail, time and the word "Öffnen"
 /// (UX rule 1, D-259). A picture whose file is not on this device is a
-/// plain text tile without "Öffnen" (D-260).
+/// plain text tile without "Öffnen" (D-260). While the media folder is not
+/// known yet, the tile shows an empty frame and the time only.
 class PictureTile extends ConsumerWidget {
   const PictureTile({
     required this.picture,
@@ -81,15 +82,44 @@ class PictureTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final folder = ref.watch(mediaFolderProvider).value;
+    final folder = ref.watch(mediaFolderProvider);
     final pixels = (width * MediaQuery.devicePixelRatioOf(context)).round();
-    final image = localPicture(folder, picture.fileSha256, cacheWidth: pixels);
+    final image = localPicture(
+      folder.value,
+      picture.fileSha256,
+      cacheWidth: pixels,
+    );
     final time = pictureTime(l10n, picture);
     final words = <Widget>[
       Text(time, style: theme.textTheme.bodyMedium),
       if (picture.afterOf != null)
         Text(l10n.pictureAfter, style: theme.textTheme.bodyMedium),
     ];
+    if (folder.isLoading && !folder.hasValue) {
+      // The folder is not known yet: no hint that may be wrong (rule 7).
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              AspectRatio(
+                aspectRatio: 4 / 3,
+                child: ColoredBox(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                ),
+              ),
+              const SizedBox(height: 6),
+              ...words,
+            ],
+          ),
+        ),
+      );
+    }
     if (image == null) {
       return DecoratedBox(
         decoration: BoxDecoration(

@@ -72,10 +72,14 @@ class _PictureBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final textTheme = Theme.of(context).textTheme;
-    final folder = ref.watch(mediaFolderProvider).value;
+    final folder = ref.watch(mediaFolderProvider);
+    if (folder.isLoading && !folder.hasValue) {
+      // No hint until the folder is known (rule 7).
+      return const SizedBox.shrink();
+    }
     final size = MediaQuery.sizeOf(context);
     final image = localPicture(
-      folder,
+      folder.value,
       picture.fileSha256,
       cacheWidth: (size.width * MediaQuery.devicePixelRatioOf(context)).round(),
     );

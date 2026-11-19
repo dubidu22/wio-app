@@ -69,6 +69,7 @@ Future<void> pumpWioApp(
   SyncTiming syncTiming = const SyncTiming(),
   UploadStore? uploadStore,
   String? mediaFolder,
+  Future<String?>? mediaFolderFuture,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -100,7 +101,9 @@ Future<void> pumpWioApp(
           uploadStore ?? UploadStore(() => Future<String>.error('no files')),
         ),
         // Picture files only where a test brings a media folder (D-260).
-        mediaFolderProvider.overrideWith((ref) async => mediaFolder),
+        mediaFolderProvider.overrideWith(
+          (ref) => mediaFolderFuture ?? Future<String?>.value(mediaFolder),
+        ),
       ],
       child: WioApp(initialLocation: location),
     ),

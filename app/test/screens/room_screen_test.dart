@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/data/database.dart';
@@ -87,6 +89,30 @@ void main() {
       ),
       findsNothing,
     );
+  });
+
+  testWidgets('no hint while the media folder is not known yet (S1)', (
+    tester,
+  ) async {
+    final folder = Completer<String?>();
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: _kueche,
+      mediaFolderFuture: folder.future,
+    );
+
+    expect(find.text('Foto ist noch nicht auf diesem Gerät.'), findsNothing);
+    expect(_openButtons(), findsNothing);
+    expect(find.byType(Image), findsNothing);
+    expect(find.text(_time(8, 5)), findsOneWidget, reason: 'time is shown');
+
+    folder.complete(demoMediaFolder());
+    await tester.pumpAndSettle();
+    await loadPictures(tester);
+    expect(find.byType(Image), findsNWidgets(3));
+    expect(_openButtons(), findsNWidgets(3));
+    expect(find.text('Foto ist noch nicht auf diesem Gerät.'), findsOneWidget);
   });
 
   testWidgets('without a media folder (web) every picture is a hint', (

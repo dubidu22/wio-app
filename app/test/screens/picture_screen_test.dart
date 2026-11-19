@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/customers/customer_screen.dart';
@@ -60,6 +62,28 @@ void main() {
     await tester.tap(find.text('Zurück'));
     await tester.pumpAndSettle();
     expect(find.byType(CustomerScreen), findsOneWidget);
+  });
+
+  testWidgets('empty until the media folder is known, then the picture', (
+    tester,
+  ) async {
+    final folder = Completer<String?>();
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: '$_customer/pictures/${TestIds.fotoFlur}',
+      mediaFolderFuture: folder.future,
+    );
+
+    expect(find.text('Foto ist noch nicht auf diesem Gerät.'), findsNothing);
+    expect(find.byType(Image), findsNothing);
+    expect(find.text('Zurück'), findsOneWidget);
+
+    folder.complete(demoMediaFolder());
+    await tester.pumpAndSettle();
+    await loadPictures(tester);
+    expect(find.byType(Image), findsOneWidget);
+    expect(find.text('Foto ist noch nicht auf diesem Gerät.'), findsNothing);
   });
 
   testWidgets('a file not on this device is a plain hint (D-260)', (

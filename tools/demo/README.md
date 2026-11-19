@@ -45,7 +45,7 @@ The next table takes 17, code `0011`.
 
 ## Picture files
 
-Every `pictures` row has its file in `media/<file_sha256>.jpg` (D-262): drawn scenes, 640 × 480 JPEG, quality 85, no EXIF, no camera photos. `file_bytes`, `width_px`, `height_px` and `file_mime` match the file; the app test `test/data/demo_workspace_test.dart` checks that. A new picture needs a new file named by its hash; never change the bytes of an existing file, the hash in the rows would no longer match. A hash with 7 digits in a row fails the phone-number check (D-81); draw the picture slightly differently until its hash has none.
+Every `pictures` row has its file in `media/<file_sha256>.jpg` (D-262): drawn scenes, 640 × 480 JPEG, quality 85, no EXIF, no camera photos. `file_bytes`, `width_px`, `height_px` and `file_mime` match the file; the app test `test/data/demo_workspace_test.dart` checks that. A new picture needs a new file named by its hash; never change the bytes of an existing file, the hash in the rows would no longer match.
 
 ## Users
 

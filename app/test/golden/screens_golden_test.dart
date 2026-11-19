@@ -16,7 +16,19 @@ final bool _notLinux = !Platform.isLinux;
 
 /// Every screen of the catalogue at phone and tablet size (D-76), with the
 /// invented test data and the fixed clock of pumpWioApp.
+///
+/// Picture times are shown in the device's time zone and the goldens were
+/// rendered in UTC, as CI runs: run goldens with `TZ=UTC`.
 void main() {
+  setUpAll(() {
+    if (!_notLinux && DateTime.now().timeZoneOffset != Duration.zero) {
+      fail(
+        'Run goldens with TZ=UTC (for example TZ=UTC flutter test --tags '
+        'golden): picture times are local and the goldens show UTC.',
+      );
+    }
+  });
+
   const sizes = <String, Size>{'phone': phoneSize, 'tablet': tabletSize};
   for (final MapEntry(key: file, value: screen) in screenCatalog.entries) {
     final name = file.split('/').last.replaceAll('.dart', '');

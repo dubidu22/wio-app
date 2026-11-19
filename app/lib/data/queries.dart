@@ -237,21 +237,32 @@ Stream<RoomScreenView?> watchRoom(
 
 /// Live picture [pictureId] of customer [customerId], or null when it is
 /// unknown, tombstoned or another customer's. With [roomId], also null when
-/// the picture is not in that room (D-259).
+/// the picture is not in that room or the room or its site is tombstoned
+/// (D-259).
 Stream<Picture?> watchPicture(
   WioDatabase db,
   String customerId,
   String pictureId, {
   String? roomId,
-}) =>
-    (db.select(db.pictures)..where(
-          (p) =>
-              p.id.equals(pictureId) &
-              p.customerId.equals(customerId) &
-              p.deletedAt.isNull() &
-              (roomId == null ? const Constant(true) : p.roomId.equals(roomId)),
-        ))
-        .watchSingleOrNull();
+}) {
+  final query =
+      db.select(db.pictures).join(<Join<HasResultSet, Object?>>[
+        if (roomId != null) ...<Join<HasResultSet, Object?>>[
+          innerJoin(db.rooms, db.rooms.id.equalsExp(db.pictures.roomId)),
+          innerJoin(db.sites, db.sites.id.equalsExp(db.rooms.siteId)),
+        ],
+      ])..where(
+        db.pictures.id.equals(pictureId) &
+            db.pictures.customerId.equals(customerId) &
+            db.pictures.deletedAt.isNull() &
+            (roomId == null
+                ? const Constant(true)
+                : db.pictures.roomId.equals(roomId) &
+                      db.rooms.deletedAt.isNull() &
+                      db.sites.deletedAt.isNull()),
+      );
+  return query.watchSingleOrNull().map((row) => row?.readTable(db.pictures));
+}
 
 /// Live pictures of room [roomId], oldest first (D-245).
 Stream<List<Picture>> watchPicturesOfRoom(WioDatabase db, String roomId) =>

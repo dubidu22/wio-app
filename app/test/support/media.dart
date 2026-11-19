@@ -10,7 +10,7 @@ abstract final class DemoFiles {
   static const String kuecheVorher =
       '6d50de34a9ba213d8ec751b72ba1b21c9fa8a1e939d2bf63146cc5a1edb7c97f';
   static const String kuecheRegal =
-      '37a4c5edcdca06fff65dbcbf3ab1293b4a084a92cc691d78be5e6ac37f01df2a';
+      'b3b82cccb169950ea2873530fb54b238757c8c49adee8c4c567dbabb93ee9ba8';
   static const String kuecheNachher =
       '314d114df4b1d7aca55e349198b3467adb683a2977e39fdf6fccc98cac254828';
   static const String kellerRegal =
@@ -23,22 +23,19 @@ abstract final class DemoFiles {
       'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 }
 
-String? _demoMediaFolder;
-
 /// A temporary media folder (D-240) holding the demo picture files under
-/// their hash, as the app keeps them; made once per test file.
+/// their hash, as the app keeps them. Call it inside a test: the folder is
+/// deleted when the test ends.
 String demoMediaFolder() {
-  if (_demoMediaFolder case final String folder) {
-    return folder;
-  }
   final target = Directory.systemTemp.createTempSync('wio-media-');
+  addTearDown(() => target.deleteSync(recursive: true));
   for (final file in Directory(DemoFiles.folder).listSync().whereType<File>()) {
     final name = file.uri.pathSegments.last;
     if (name.endsWith('.jpg')) {
       file.copySync('${target.path}/${name.replaceAll('.jpg', '')}');
     }
   }
-  return _demoMediaFolder = target.path;
+  return target.path;
 }
 
 /// Reads and decodes every picture on screen for real. File reads and image

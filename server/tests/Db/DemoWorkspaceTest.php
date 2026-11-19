@@ -159,8 +159,10 @@ final class DemoWorkspaceTest extends SchemaTestCase
                     if (str_contains($value, '@')) {
                         self::assertMatchesRegularExpression('/^[a-z0-9.]+@example\.org$/', $value, $what);
                     }
+                    // Dates, ids and file hashes (D-262) are not contact data.
                     if (preg_match('/^\d{4}-\d{2}-\d{2}(T[0-9:.]+Z)?$/', $value) !== 1
-                        && preg_match('/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/', $value) !== 1) {
+                        && preg_match('/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/', $value) !== 1
+                        && preg_match('/^[0-9a-f]{64}$/', $value) !== 1) {
                         self::assertDoesNotMatchRegularExpression('/\+?\d[\d \/()-]{5,}\d/', $value, $what . ' looks like a phone number');
                     }
                 }

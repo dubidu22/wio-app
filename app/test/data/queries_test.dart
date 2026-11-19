@@ -192,6 +192,26 @@ void main() {
     );
   });
 
+  test('picture view through a tombstoned room or site is null (N2)', () async {
+    Future<Picture?> inKueche() => watchPicture(
+      db,
+      TestIds.familieBeispiel,
+      TestIds.fotoVorher,
+      roomId: TestIds.kueche,
+    ).first;
+    expect(await inKueche(), isNotNull);
+    await LocalWriter(db).delete(entity: 'sites', id: TestIds.alteWohnung);
+    expect(await inKueche(), isNull, reason: 'site tombstoned');
+    await LocalWriter(db).restore(entity: 'sites', id: TestIds.alteWohnung);
+    await LocalWriter(db).delete(entity: 'rooms', id: TestIds.kueche);
+    expect(await inKueche(), isNull, reason: 'room tombstoned');
+    expect(
+      await watchPicture(db, TestIds.familieBeispiel, TestIds.fotoVorher).first,
+      isNotNull,
+      reason: 'without a room only the picture itself counts',
+    );
+  });
+
   test('customer view is null for unknown and deleted customers', () async {
     expect(await watchCustomer(db, 'no-such-id').first, isNull);
     expect(await watchCustomer(db, TestIds.geloescht).first, isNull);
