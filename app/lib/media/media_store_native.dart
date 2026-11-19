@@ -49,6 +49,9 @@ class MediaStore {
     return (sha256: digest, size: size, path: target.path);
   }
 
+  /// The media folder itself, created when missing (D-240).
+  Future<String> folder() async => (await _folder()).path;
+
   /// Where the file with [sha256] is or would be kept.
   Future<String> pathOf(String sha256) async =>
       '${(await _folder()).path}/$sha256';

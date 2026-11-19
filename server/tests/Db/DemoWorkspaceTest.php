@@ -20,6 +20,7 @@ final class DemoWorkspaceTest extends SchemaTestCase
         'workspaces' => 1, 'users' => 2, 'customers' => 3, 'sites' => 4, 'rooms' => 5, 'openings' => 6,
         'fixtures' => 7, 'labels' => 8, 'property_keys' => 9, 'entries' => 10, 'place_history' => 11,
         'entity_labels' => 12, 'entity_properties' => 13, 'notes' => 14, 'jobs' => 15,
+        'pictures' => 16,
     ];
 
     /** Where the subject of a polymorphic link or note lives (D-50). */
@@ -158,8 +159,10 @@ final class DemoWorkspaceTest extends SchemaTestCase
                     if (str_contains($value, '@')) {
                         self::assertMatchesRegularExpression('/^[a-z0-9.]+@example\.org$/', $value, $what);
                     }
+                    // Dates, ids and file hashes (D-262) are not contact data.
                     if (preg_match('/^\d{4}-\d{2}-\d{2}(T[0-9:.]+Z)?$/', $value) !== 1
-                        && preg_match('/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/', $value) !== 1) {
+                        && preg_match('/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/', $value) !== 1
+                        && preg_match('/^[0-9a-f]{64}$/', $value) !== 1) {
                         self::assertDoesNotMatchRegularExpression('/\+?\d[\d \/()-]{5,}\d/', $value, $what . ' looks like a phone number');
                     }
                 }

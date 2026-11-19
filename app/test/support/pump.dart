@@ -7,12 +7,14 @@ import 'package:wio_app/auth/session_provider.dart';
 import 'package:wio_app/auth/token_store.dart';
 import 'package:wio_app/data/database.dart';
 import 'package:wio_app/l10n/app_localizations.dart';
+import 'package:wio_app/media/media_store.dart';
 import 'package:wio_app/shell/providers.dart';
 import 'package:wio_app/sync/sync_runner.dart';
 import 'package:wio_app/sync/upload_queue.dart';
 import 'package:wio_app/update/app_version.dart';
 
 import 'fake_api.dart';
+import 'media.dart';
 import 'test_data.dart';
 
 /// Phone size used by goldens and screenshots in PRs (CLAUDE.md: 390 x 844).
@@ -66,6 +68,8 @@ Future<void> pumpWioApp(
   bool autoSync = false,
   SyncTiming syncTiming = const SyncTiming(),
   UploadStore? uploadStore,
+  String? mediaFolder,
+  Future<String?>? mediaFolderFuture,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -96,11 +100,18 @@ Future<void> pumpWioApp(
         uploadStoreProvider.overrideWithValue(
           uploadStore ?? UploadStore(() => Future<String>.error('no files')),
         ),
+        // Picture files only where a test brings a media folder (D-260).
+        mediaFolderProvider.overrideWith(
+          (ref) => mediaFolderFuture ?? Future<String?>.value(mediaFolder),
+        ),
       ],
       child: WioApp(initialLocation: location),
     ),
   );
   await tester.pumpAndSettle();
+  if (mediaFolder != null) {
+    await loadPictures(tester);
+  }
 }
 
 /// Lets sync's database and HTTP work finish: it runs on short timers and

@@ -17,6 +17,8 @@ class MediaStore {
   Future<({String sha256, int size, String path})> keep(String source) async =>
       _unsupported();
 
+  Future<String> folder() async => _unsupported();
+
   Future<String> pathOf(String sha256) async => _unsupported();
 
   Future<bool> has(String sha256) async => false;

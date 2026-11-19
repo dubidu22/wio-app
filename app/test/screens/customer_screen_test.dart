@@ -3,7 +3,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/data/database.dart';
 import 'package:wio_app/data/local_writer.dart';
 import 'package:wio_app/jobs/job_list_screen.dart';
+import 'package:wio_app/rooms/room_screen.dart';
 
+import '../support/media.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
 
@@ -12,7 +14,7 @@ void main() {
 
   setUp(() async {
     db = memoryDatabase();
-    await seedTestData(db);
+    await seedWithPictures(db);
   });
   tearDown(() => db.close());
 
@@ -35,10 +37,10 @@ void main() {
     expect(find.text('Noch keine Räume.'), findsOneWidget);
     expect(find.text('Wohnung Muster'), findsNothing, reason: 'other customer');
     expect(find.text('Noch keine Einträge.'), findsOneWidget);
-    expect(find.text('Noch keine Fotos.'), findsOneWidget);
+    expect(find.text('Noch keine Fotos.'), findsNothing, reason: 'one picture');
   });
 
-  testWidgets('no dead buttons: only Zurück can be tapped (D-75)', (
+  testWidgets('rooms are buttons with their picture count (D-259, D-264)', (
     tester,
   ) async {
     await pumpWioApp(
@@ -47,9 +49,64 @@ void main() {
       location: '/customers/${TestIds.familieBeispiel}',
     );
 
+    final kueche = find.widgetWithText(OutlinedButton, 'Küche');
+    final keller = find.widgetWithText(OutlinedButton, 'Keller');
+    expect(kueche, findsOneWidget);
+    expect(keller, findsOneWidget);
+    expect(
+      find.descendant(of: kueche, matching: find.text('4 Fotos')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: keller, matching: find.text('Noch keine Fotos')),
+      findsOneWidget,
+    );
+    expect(tester.getSize(kueche).height, greaterThanOrEqualTo(56));
+
+    await tester.tap(kueche);
+    await tester.pumpAndSettle();
+    final room = tester.widget<RoomScreen>(find.byType(RoomScreen));
+    expect(room.roomId, TestIds.kueche);
+    expect(room.customerId, TestIds.familieBeispiel);
+  });
+
+  testWidgets('Fotos lists only pictures without a room', (tester) async {
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: '/customers/${TestIds.familieBeispiel}',
+      mediaFolder: demoMediaFolder(),
+    );
+
+    expect(find.byType(Image), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Öffnen'), findsOneWidget);
+    expect(find.text('Nachher'), findsNothing);
+  });
+
+  testWidgets('a customer without pictures shows the hint', (tester) async {
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: '/customers/${TestIds.frauMuster}',
+    );
+
+    expect(find.text('Noch keine Fotos.'), findsOneWidget);
+  });
+
+  testWidgets('no dead buttons: Zurück, rooms and pictures only (D-75)', (
+    tester,
+  ) async {
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: '/customers/${TestIds.familieBeispiel}',
+      mediaFolder: demoMediaFolder(),
+    );
+
     expect(
       find.byWidgetPredicate((w) => w is ButtonStyleButton),
-      findsOneWidget,
+      findsNWidgets(4),
+      reason: 'Zurück, Keller, Küche, one picture; no Fotos button (D-258)',
     );
     expect(find.widgetWithText(TextButton, 'Zurück'), findsOneWidget);
     expect(find.byType(BackButton), findsNothing, reason: 'icon only (D-74)');

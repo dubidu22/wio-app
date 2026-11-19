@@ -517,5 +517,70 @@
   "undo": "Rückgängig",
   "@undo": {
     "description": "Undo button in a note (UX rule 10)."
+  },
+  "roomPictureCount": "{count, plural, =0{Noch keine Fotos} =1{1 Foto} other{{count} Fotos}}",
+  "@roomPictureCount": {
+    "description": "Second line of a room button on the customer screen: how many pictures the room has.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "roomPictures": "Fotos",
+  "@roomPictures": {
+    "description": "Heading above the room's pictures."
+  },
+  "roomPicturesEmpty": "Noch keine Fotos in diesem Raum.",
+  "@roomPicturesEmpty": {
+    "description": "Hint on the room screen when the room has no pictures (D-75; the Fotos button comes with the camera, D-258)."
+  },
+  "roomMissing": "Diesen Raum gibt es nicht mehr.",
+  "@roomMissing": {
+    "description": "Shown when a room was deleted or a link points to an unknown room."
+  },
+  "pictureTakenAt": "{time}",
+  "@pictureTakenAt": {
+    "description": "When a picture was taken, under its thumbnail and on the picture screen, e.g. 'Do. 19.11., 09:05'.",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "E d.M., HH:mm",
+        "isCustomDateFormat": "true"
+      }
+    }
+  },
+  "pictureOpen": "Öffnen",
+  "@pictureOpen": {
+    "description": "Word on a picture tile that opens the picture full screen (UX rule 1)."
+  },
+  "pictureOpenLabel": "Foto {time} öffnen",
+  "@pictureOpenLabel": {
+    "description": "Screen reader label of a picture tile.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pictureAfter": "Nachher",
+  "@pictureAfter": {
+    "description": "Marks an after picture (D-7); a word, not a colour (D-5)."
+  },
+  "pictureNotOnDevice": "Foto ist noch nicht auf diesem Gerät.",
+  "@pictureNotOnDevice": {
+    "description": "Tile and picture screen text when the picture's file is not on this device yet (D-260)."
+  },
+  "pictureTitle": "Foto",
+  "@pictureTitle": {
+    "description": "Title of the full-screen picture."
+  },
+  "pictureMissing": "Dieses Foto gibt es nicht mehr.",
+  "@pictureMissing": {
+    "description": "Shown when a picture was deleted or a link points to an unknown picture."
+  },
+  "pictureNoTime": "Ohne Zeit",
+  "@pictureNoTime": {
+    "description": "Shown instead of the time when a picture has none."
   }
 }
