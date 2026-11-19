@@ -10,7 +10,7 @@ import 'package:meta/meta.dart' as _i2;
 import 'package:tonik_util/tonik_util.dart' as _i1;
 import 'package:wio_api/src/model/workspace_ref.dart' as _i4;
 
-/// RFC 9457 problem details (D-98). `code` is an open string; documented values: invalid_request, token_invalid, invalid_credentials, forbidden, workspace_choice_required, too_many_attempts, too_many_changes, payload_too_large, offset_mismatch, hash_mismatch, maintenance, not_found, method_not_allowed, resync_required (410 on pull: drop pulled records, keep the outbox, pull from 0), upgrade_required (426: update the app; local data stays), internal. Apps treat an unknown code as a server error.
+/// RFC 9457 problem details (D-98). `code` is an open string; documented values: invalid_request, token_invalid, invalid_credentials, forbidden, workspace_choice_required, too_many_attempts, too_many_changes, payload_too_large, offset_mismatch, hash_mismatch, range_not_satisfiable, maintenance, not_found, method_not_allowed, resync_required (410 on pull: drop pulled records, keep the outbox, pull from 0), upgrade_required (426: update the app; local data stays), internal. Apps treat an unknown code as a server error.
 @_i2.immutable
 class Problem extends _i1.ObjectParameterEncodable implements _i1.UriEncodable {
   const Problem({

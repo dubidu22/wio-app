@@ -435,6 +435,7 @@
         ],
         "indexes": [
             "PRIMARY UNIQUE (id)",
+            "ix_notes_audio (workspace_id, audio_sha256)",
             "ix_notes_revision (workspace_id, revision)",
             "ix_notes_subject (workspace_id, subject_type, subject_id)",
             "uq_notes_customer_scope UNIQUE (workspace_id, customer_id, id)",
@@ -526,6 +527,7 @@
             "fk_pictures_room (workspace_id, room_id)",
             "fk_pictures_room_customer (workspace_id, customer_id, room_id)",
             "fk_pictures_room_no_customer (workspace_id, no_customer, room_id)",
+            "ix_pictures_file (workspace_id, file_sha256)",
             "ix_pictures_revision (workspace_id, revision)",
             "uq_pictures_customer_scope UNIQUE (workspace_id, customer_id, id)",
             "uq_pictures_no_customer_scope UNIQUE (workspace_id, no_customer, id)",

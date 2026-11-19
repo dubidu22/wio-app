@@ -154,6 +154,8 @@ final class MigrationRunnerTest extends TestCase
             '0011_users_email_key_index',
             '0012_applied_changes',
             '0013_field_versions',
+            '0014_pictures_file_sha256_index',
+            '0015_notes_audio_sha256_index',
         ], $applied);
         self::assertSame([
             'applied_changes', 'conflicts', 'customers', 'device_tokens', 'entity_labels', 'entity_properties', 'entries', 'expenses',

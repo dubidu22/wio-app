@@ -41,5 +41,10 @@ return [
     // own store. Helpers get 403 forbidden until M6 (D-206). A one-chunk file
     // completes at once (200). Upload rules: tests/Api/Files/FilesTest.php.
     'getFileState' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 403, 'expired_helper' => 401, 'other_workspace' => 200],
+    // Downloads need a readable picture or note (D-221, D-224): the cell's
+    // picture lies in the first workspace, of the customer's own customer
+    // for the customer cell, so other_workspace gets 404 (D-235). Rules:
+    // tests/Api/Files/DownloadTest.php.
+    'getFile' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 403, 'expired_helper' => 401, 'other_workspace' => 404],
     'putFileChunk' => ['anonymous' => 401, 'owner' => 200, 'customer' => 200, 'helper' => 403, 'expired_helper' => 401, 'other_workspace' => 200],
 ];
