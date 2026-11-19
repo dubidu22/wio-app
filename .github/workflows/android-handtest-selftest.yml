@@ -1,0 +1,155 @@
+# TEMPORARY self-test of android-handtest.yml on its PR branch (plan 056 T3):
+# a throwaway key made on the runner, no environment, no staging check.
+# Deleted before review.
+#
+# Builds the app as a release-signed Android APK against the staging API for
+# Colin's hand test (issue #56, plan 056, D-223, D-247 to D-256). Manual only,
+# from main. The signing key lives only in the GitHub environment
+# android-handtest, which Colin set up (plan 056 section 6); no other job
+# uses that environment. No store upload (D-256).
+name: android-handtest-selftest
+
+on:
+  push:
+    branches: [claude/project-thread-x3jfvk-android]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-handtest-selftest
+  cancel-in-progress: false
+
+env:
+  # Not a secret (D-252): the APK talks to staging only.
+  WIO_API_URL: https://api-staging.wieder-in-ordnung.de
+  FLUTTER_SUPPRESS_ANALYTICS: "true"
+  DART_SUPPRESS_ANALYTICS: "true"
+
+jobs:
+  apk:
+    name: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+
+      - name: Turn off tool analytics
+        run: flutter config --no-analytics && dart --disable-analytics
+
+      # D-253: a short safety net; CI ran the full set on main already.
+      - run: flutter pub get --enforce-lockfile
+      - name: Analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
+      - name: Unit and widget tests
+        run: ../tools/ci/flutter-test.sh --exclude-tags golden,ux
+
+      - name: Throwaway signing key (self-test only)
+        run: |
+          set -euo pipefail
+          umask 077
+          pass="selftest-$RANDOM$RANDOM$RANDOM"
+          keytool -genkeypair -storetype PKCS12 -keystore "$RUNNER_TEMP/handtest.p12" -alias wio-handtest \
+            -keyalg RSA -keysize 4096 -validity 2 -dname "CN=Wio Selftest" -storepass "$pass" -keypass "$pass" > /dev/null 2>&1
+          sha="$(keytool -list -v -keystore "$RUNNER_TEMP/handtest.p12" -storepass "$pass" | grep -m1 'SHA256:' | awk '{print $2}')"
+          {
+            echo "WIO_ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/handtest.p12"
+            echo "WIO_ANDROID_KEYSTORE_PASSWORD=$pass"
+            echo "WIO_ANDROID_KEY_PASSWORD=$pass"
+            echo "WIO_ANDROID_KEY_ALIAS=wio-handtest"
+            echo "CERT_SHA256=$sha"
+          } >> "$GITHUB_ENV"
+          echo "throwaway certificate $sha"
+
+      - name: Build the APK (D-249, D-250, D-255)
+        env:
+          WIO_HANDTEST: "true"
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          flutter build apk --release \
+            --build-number="$RUN_NUMBER" \
+            --dart-define=WIO_API_URL="$WIO_API_URL"
+
+      # D-251: the APK must carry Colin's certificate, never the debug key.
+      - name: Check the signature
+        id: check
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          certs="$("$apksigner" verify --print-certs "$apk")"
+          echo "$certs" | grep -i 'SHA-256'
+          want="$(tr -d ':[:space:]' <<< "$CERT_SHA256" | tr '[:upper:]' '[:lower:]')"
+          mapfile -t found < <(grep -i 'certificate SHA-256 digest' <<< "$certs" | awk '{print tolower($NF)}' | sort -u)
+          if [[ ${#found[@]} -ne 1 || "${found[0]}" != "$want" ]]; then
+            echo "::error::the APK is not signed with the android-handtest key (found: ${found[*]:-none})"
+            exit 1
+          fi
+          version="$(grep -E '^version:' pubspec.yaml | sed -E 's/^version:[[:space:]]*//; s/\+.*//')"
+          name="wio-handtest-${version}+${RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "$RUNNER_TEMP/out"
+          cp "$apk" "$RUNNER_TEMP/out/$name.apk"
+          {
+            echo "name=$name"
+            echo "version=${version}+${RUN_NUMBER}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: The check fails on a different certificate (self-test only)
+        run: |
+          set -euo pipefail
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          found="$("$apksigner" verify --print-certs "$apk" | grep -i 'certificate SHA-256 digest' | awk '{print tolower($NF)}' | sort -u)"
+          want="$(printf '0%.0s' {1..64})"
+          if [[ "$found" == "$want" ]]; then echo "::error::unexpected match"; exit 1; fi
+          echo "a wrong fingerprint does not match: ok"
+          aapt="$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f | sort -V | tail -n 1)"
+          "$aapt" dump badging "$apk" | grep -E "^package:|application-label:|uses-permission: name='android.permission.INTERNET'"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.check.outputs.name }}
+          path: ${{ runner.temp }}/out/${{ steps.check.outputs.name }}.apk
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Summary with install steps (plan 056 section 7)
+        env:
+          NAME: ${{ steps.check.outputs.name }}
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          ## Wio Test $VERSION
+
+          - Commit: \`$GITHUB_SHA\`, API: $WIO_API_URL
+          - Certificate SHA-256: \`$CERT_SHA256\`
+          - Artifact: **$NAME** (kept 7 days)
+
+          ### Install on the phone
+          1. Below on this page, under "Artifacts", download **$NAME**. GitHub gives a .zip: open it in the file manager and tap the .apk inside.
+          2. First time only: allow installing from that app; if Play Protect warns about an unknown developer, choose "Install anyway".
+          3. Open "Wio Test" and sign in with the staging owner account.
+          4. A newer build installs over the old one and keeps its data. "App not installed" means a different key: uninstall "Wio Test" first.
+          EOF
+
+      - name: Remove the signing key
+        if: always()
+        working-directory: .
+        run: rm -f -- "$RUNNER_TEMP/handtest.p12"
