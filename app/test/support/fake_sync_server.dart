@@ -107,6 +107,9 @@ class FakeSyncServer {
   /// Files answered with 416 this many more times.
   final Map<String, int> refuseRange = <String, int>{};
 
+  /// Files whose 416 answers leave out the Content-Range size (#82).
+  final Set<String> hideRangeSize = <String>{};
+
   /// Called with "METHOD /path" after each answer, to change the server
   /// between two requests.
   void Function(String key)? afterRequest;
@@ -488,6 +491,20 @@ class FakeSyncServer {
     return null;
   }
 
+  /// The 416 of `getFile`: the file size in Content-Range (plan 079).
+  http.Response _refused(String sha256, int size) {
+    final response = _json(416, problemBody(416, 'range_not_satisfiable'));
+    if (hideRangeSize.contains(sha256)) return response;
+    return http.Response(
+      response.body,
+      416,
+      headers: <String, String>{
+        ...response.headers,
+        'content-range': 'bytes */$size',
+      },
+    );
+  }
+
   /// `getFile` as plan 055: one range, 206/416, ETag, If-Range (D-230).
   http.Response _getFile(http.Request request, String sha256, String device) {
     final refused = _fileRefusal(device);
@@ -512,7 +529,7 @@ class FakeSyncServer {
     };
     if ((refuseRange[sha256] ?? 0) > 0) {
       refuseRange[sha256] = refuseRange[sha256]! - 1;
-      return _json(416, problemBody(416, 'range_not_satisfiable'));
+      return _refused(sha256, bytes.length);
     }
     final match = RegExp(r'^bytes=(\d+)-(\d*)$').firstMatch(range ?? '');
     if (match == null ||
@@ -529,7 +546,7 @@ class FakeSyncServer {
     }
     final first = int.parse(match[1]!);
     if (first >= bytes.length) {
-      return _json(416, problemBody(416, 'range_not_satisfiable'));
+      return _refused(sha256, bytes.length);
     }
     var last = match[2]!.isEmpty ? bytes.length - 1 : int.parse(match[2]!);
     if (last >= bytes.length) last = bytes.length - 1;

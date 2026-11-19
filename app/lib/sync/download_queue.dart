@@ -183,8 +183,8 @@ class DownloadWorker {
           // be sending it (D-331). Next run.
           notNow.add(sha256);
           return null;
-        case TonikSuccess(value: GetFileResponse416()):
-          step = const _RangeRefused();
+        case TonikSuccess(value: GetFileResponse416(:final body)):
+          step = _RangeRefused(_refusedTotal(body.contentRange));
         case TonikSuccess(value: GetFileResponse400()) ||
             TonikSuccess(value: GetFileResponse403()):
           memory.skipped.add(sha256);
@@ -226,10 +226,18 @@ class DownloadWorker {
             if (++unexpected > 3) return const SyncResult(SyncStop.failed);
             await store.deletePart(sha256);
             offset = 0;
-          case _RangeRefused():
+          case _RangeRefused(:final total):
+            // The part already holds the whole file (the app stopped between
+            // the last write and the rename): check and name it, no new
+            // download (#82). A wrong hash starts from 0 once, as always.
+            if (total != null && total > 0 && total == offset) {
+              if (await _finish(sha256)) return null;
+              offset = 0;
+              break;
+            }
             await store.deletePart(sha256);
-            // The contract does not declare Content-Range on 416 (plan 055
-            // N1): start from 0 once, then leave the file (D-331).
+            // No usable size (a part bigger than the file, a missing or odd
+            // header): start from 0 once, then leave the file (D-331).
             if (!memory.restartedAfterRange.add(sha256)) {
               memory.skipped.add(sha256);
               return null;
@@ -259,6 +267,13 @@ class DownloadWorker {
     if (memory.restartedAfterHash.add(sha256)) return false;
     memory.skipped.add(sha256);
     throw const _Done();
+  }
+
+  /// The file size of `Content-Range: bytes */<total>`, or null.
+  static int? _refusedTotal(FilesSha256Get416Response body) {
+    final match = RegExp(r'^bytes \*/(\d{1,15})$')
+        .firstMatch(body.contentRange?.trim() ?? '');
+    return match == null ? null : int.parse(match[1]!);
   }
 
   _Step _range(FilesSha256Get206Response body, int offset) {
@@ -318,7 +333,10 @@ final class _Mismatch extends _Step {
 }
 
 final class _RangeRefused extends _Step {
-  const _RangeRefused();
+  const _RangeRefused(this.total);
+
+  /// The size the server reported, when it did.
+  final int? total;
 }
 
 /// The file was left for this app run.
