@@ -82,7 +82,13 @@ struct M4aWriterTests {
       .appendingPathComponent("wio-writer-\(UUID().uuidString).m4a")
     defer { try? FileManager.default.removeItem(at: url) }
     let input = try #require(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1))
-    let writer = try M4aWriter(url: url, input: input)
+    let writer: M4aWriter
+    do {
+      writer = try M4aWriter(url: url, input: input)
+    } catch {
+      Issue.record("M4aWriter init threw: \(error)")
+      throw error
+    }
     // One second of a quiet 440 Hz tone in 4800-frame blocks, as a tap does.
     for block in 0..<10 {
       let buffer = try #require(AVAudioPCMBuffer(pcmFormat: input, frameCapacity: 4_800))
@@ -110,5 +116,19 @@ struct M4aWriterTests {
     // packets either way around one second.
     #expect((14_000...18_100).contains(file.length), "frames on disk: \(file.length)")
     #expect(M4aWriter.fileSettings[AVEncoderBitRateKey] as? Int == 64_000)
+  }
+
+  /// Whether Apple's AAC-LC encoder offers 64 kbit/s at 16 kHz mono
+  /// (D-285); the message lists what it offers.
+  @Test func encoderOffers64kbitAt16kHzMono() throws {
+    let pcm = try #require(AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1))
+    var aac = AudioStreamBasicDescription(
+      mSampleRate: 16_000, mFormatID: kAudioFormatMPEG4AAC, mFormatFlags: 0,
+      mBytesPerPacket: 0, mFramesPerPacket: 1024, mBytesPerFrame: 0,
+      mChannelsPerFrame: 1, mBitsPerChannel: 0, mReserved: 0)
+    let out = try #require(AVAudioFormat(streamDescription: &aac))
+    let converter = try #require(AVAudioConverter(from: pcm, to: out))
+    let offered = (converter.applicableEncodeBitRates ?? []).map(\.intValue)
+    #expect(offered.contains(64_000), "AAC-LC 16 kHz mono offers: \(offered)")
   }
 }

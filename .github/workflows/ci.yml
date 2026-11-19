@@ -172,6 +172,7 @@ jobs:
             -configuration Debug \
             -destination "id=$udid" \
             -only-testing:RunnerTests \
+            -resultBundlePath "$RUNNER_TEMP/RunnerTests.xcresult" \
             CODE_SIGNING_ALLOWED=NO \
             > "$RUNNER_TEMP/runner-tests.log" 2>&1 || true
           # Test results, Swift Testing issues (failed #expect lines) and
@@ -180,6 +181,21 @@ jobs:
             "$RUNNER_TEMP/runner-tests.log" || true
           if ! grep -q '\*\* TEST SUCCEEDED \*\*' "$RUNNER_TEMP/runner-tests.log"; then
             tail -n 300 "$RUNNER_TEMP/runner-tests.log"
+            # Swift Testing writes its failure messages only to the result
+            # bundle, not to xcodebuild's output.
+            xcrun xcresulttool get test-results tests \
+              --path "$RUNNER_TEMP/RunnerTests.xcresult" --compact \
+              | python3 -c '
+          import json, sys
+          def walk(node, path):
+              name = node.get("name", "")
+              if node.get("nodeType") == "Failure Message":
+                  print("FAILED:", " / ".join(path), "--", name)
+              for child in node.get("children", []):
+                  walk(child, path + [name] if name else path)
+          for root in json.load(sys.stdin).get("testNodes", []):
+              walk(root, [])
+          ' || true
             exit 1
           fi
 
