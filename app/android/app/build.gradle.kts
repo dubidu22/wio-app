@@ -47,6 +47,13 @@ android {
         versionName = flutter.versionName
     }
 
+    // D-392: the lint check inside assembleRelease crashes in the AGP lint
+    // JavaDocParser (NoSuchMethodError) and no APK is produced. Dart analyze
+    // and the tests cover the code, so release lint stays off.
+    lint {
+        checkReleaseBuilds = false
+    }
+
     signingConfigs {
         if (hasReleaseKey) {
             create("handtest") {
