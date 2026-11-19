@@ -138,6 +138,30 @@ jobs:
             echo "version=${version}+${RUN_NUMBER}"
           } >> "$GITHUB_OUTPUT"
 
+      # The key is no longer needed; the emulator step runs without it on disk.
+      - name: Remove the signing key before the emulator
+        working-directory: .
+        run: rm -f -- "$RUNNER_TEMP/handtest.p12"
+
+      # D-396 (plan 091): the signed APK must start on an emulator before it
+      # is uploaded, so a build that dies at launch never reaches the phone
+      # (Wio Test 0.1.0+2 did, issue #91).
+      - name: Launch on an emulator (D-396)
+        run: >-
+          ../tools/ci/android-launch-check.sh
+          build/app/outputs/flutter-apk/app-release.apk
+          de.wiederinordnung.app.handtest
+          "$RUNNER_TEMP/logcat.txt"
+
+      - name: Upload the logcat of a failed launch
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: launch-check-logcat
+          path: ${{ runner.temp }}/logcat.txt
+          retention-days: 3
+          if-no-files-found: ignore
+
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.check.outputs.name }}
