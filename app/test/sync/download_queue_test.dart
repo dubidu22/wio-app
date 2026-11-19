@@ -266,7 +266,7 @@ void main() {
       expect(phone.file(sha).readAsBytesSync(), bytes);
       expect(phone.part(sha).existsSync(), isFalse);
       expect(server.downloads, hasLength(1));
-      expect(server.downloads.single.range, 'bytes=1000-4194303');
+      expect(server.downloads.single.range, 'bytes=1000-4195303');
     });
 
     test('a wrong hash deletes the part and starts from 0', () async {
@@ -278,7 +278,7 @@ void main() {
       await phone.engine.run();
       expect(phone.file(sha).readAsBytesSync(), bytes);
       expect(server.downloads.map((d) => d.range), <String?>[
-        'bytes=1000-4194303',
+        'bytes=1000-4195303',
         'bytes=0-4194303',
       ]);
     });
