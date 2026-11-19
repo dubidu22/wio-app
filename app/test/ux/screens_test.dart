@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart' show Size;
 import 'package:flutter_test/flutter_test.dart';
 
+import '../support/media.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
 import '../support/ux_guidelines.dart';
@@ -30,7 +31,13 @@ void main() {
         final db = memoryDatabase();
         addTearDown(db.close);
         await screen.seed(db);
-        await pumpWioApp(tester, db: db, location: screen.location, size: size);
+        await pumpWioApp(
+          tester,
+          db: db,
+          location: screen.location,
+          size: size,
+          mediaFolder: demoMediaFolder(),
+        );
         await expectMeetsUxRules(tester);
       });
     }
@@ -41,7 +48,13 @@ void main() {
       final db = memoryDatabase();
       addTearDown(db.close);
       await screen.seed(db);
-      await pumpWioApp(tester, db: db, location: screen.location, textScale: 2);
+      await pumpWioApp(
+        tester,
+        db: db,
+        location: screen.location,
+        textScale: 2,
+        mediaFolder: demoMediaFolder(),
+      );
       expect(tester.takeException(), isNull);
       await expectMeetsUxRules(tester);
     });

@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:wio_app/data/database.dart';
 
+import 'media.dart';
+
 /// A fresh in-memory database for one test.
 WioDatabase memoryDatabase() => WioDatabase(NativeDatabase.memory());
 
@@ -21,7 +23,36 @@ abstract final class TestIds {
   static const String kueche = '01970000-0000-7000-8000-0000000000b1';
   static const String keller = '01970000-0000-7000-8000-0000000000b2';
   static const String alterRaum = '01970000-0000-7000-8000-0000000000b3';
+  static const String fotoVorher = '01970000-0000-7000-8000-0000000000f1';
+  static const String fotoRegal = '01970000-0000-7000-8000-0000000000f2';
+  static const String fotoNachher = '01970000-0000-7000-8000-0000000000f3';
+  static const String fotoFehlt = '01970000-0000-7000-8000-0000000000f4';
+  static const String fotoFlur = '01970000-0000-7000-8000-0000000000f5';
+  static const String fotoGeloescht = '01970000-0000-7000-8000-0000000000f6';
 }
+
+PicturesCompanion _picture(
+  String id,
+  String sha256,
+  String takenAt, {
+  String? roomId,
+  String? afterOf,
+  String? deletedAt,
+}) => PicturesCompanion.insert(
+  id: id,
+  workspaceId: TestIds.workspace,
+  customerId: const Value<String?>(TestIds.familieBeispiel),
+  fileSha256: sha256,
+  fileBytes: 12000,
+  fileMime: 'image/jpeg',
+  widthPx: 640,
+  heightPx: 480,
+  takenAt: Value<String?>(takenAt),
+  roomId: Value<String?>(roomId),
+  afterOf: Value<String?>(afterOf),
+  revision: const Value<int?>(1),
+  deletedAt: Value<String?>(deletedAt),
+);
 
 CustomersCompanion _customer(String id, String name, {String? deletedAt}) =>
     CustomersCompanion.insert(
@@ -142,6 +173,55 @@ Future<void> seedTestData(WioDatabase db) async {
         name: const Value<String?>('Abstellraum'),
         revision: const Value<int?>(1),
         deletedAt: const Value<String?>('2026-11-11T08:00:00.000Z'),
+      ),
+    ]);
+  });
+}
+
+/// [seedTestData] plus pictures (D-263): the Küche has three pictures with
+/// files in the demo media folder (one an after picture), one whose file is
+/// on no device and one tombstoned; the Keller has none; one picture of
+/// Familie Beispiel belongs to no room.
+Future<void> seedWithPictures(WioDatabase db) async {
+  await seedTestData(db);
+  await db.batch((b) {
+    b.insertAll(db.pictures, <PicturesCompanion>[
+      _picture(
+        TestIds.fotoVorher,
+        DemoFiles.kuecheVorher,
+        '2026-11-19T08:05:00.000Z',
+        roomId: TestIds.kueche,
+      ),
+      _picture(
+        TestIds.fotoRegal,
+        DemoFiles.kuecheRegal,
+        '2026-11-19T08:07:00.000Z',
+        roomId: TestIds.kueche,
+      ),
+      _picture(
+        TestIds.fotoNachher,
+        DemoFiles.kuecheNachher,
+        '2026-11-19T09:40:00.000Z',
+        roomId: TestIds.kueche,
+        afterOf: TestIds.fotoVorher,
+      ),
+      _picture(
+        TestIds.fotoFehlt,
+        DemoFiles.missing,
+        '2026-11-19T09:45:00.000Z',
+        roomId: TestIds.kueche,
+      ),
+      _picture(
+        TestIds.fotoGeloescht,
+        DemoFiles.kuecheRegal,
+        '2026-11-19T08:06:00.000Z',
+        roomId: TestIds.kueche,
+        deletedAt: '2026-11-19T08:30:00.000Z',
+      ),
+      _picture(
+        TestIds.fotoFlur,
+        DemoFiles.flurKartons,
+        '2026-11-19T08:20:00.000Z',
       ),
     ]);
   });

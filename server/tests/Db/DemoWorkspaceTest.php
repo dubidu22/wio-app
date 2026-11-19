@@ -20,6 +20,7 @@ final class DemoWorkspaceTest extends SchemaTestCase
         'workspaces' => 1, 'users' => 2, 'customers' => 3, 'sites' => 4, 'rooms' => 5, 'openings' => 6,
         'fixtures' => 7, 'labels' => 8, 'property_keys' => 9, 'entries' => 10, 'place_history' => 11,
         'entity_labels' => 12, 'entity_properties' => 13, 'notes' => 14, 'jobs' => 15,
+        'pictures' => 16,
     ];
 
     /** Where the subject of a polymorphic link or note lives (D-50). */

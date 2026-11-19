@@ -4,7 +4,7 @@
 
 | Workspace | Plan | What it holds |
 | --- | --- | --- |
-| Demo Umzüge | professional | Owner Kim Muster; customer Familie Beispiel with a customer user and a helper; sites Alte Wohnung (Küche, Keller) and Neue Wohnung (Küche); doors, a window and three fixtures (the cellar shelf has 4 levels × 2 compartments); labels and property keys; seven entries in every place state (on a shelf, on the floor, not placed, moved twice, with a target place, deleted); place history; text notes; jobs on 19 and 20 Nov 2026 |
+| Demo Umzüge | professional | Owner Kim Muster; customer Familie Beispiel with a customer user and a helper; sites Alte Wohnung (Küche, Keller) and Neue Wohnung (Küche); doors, a window and three fixtures (the cellar shelf has 4 levels × 2 compartments); labels and property keys; seven entries in every place state (on a shelf, on the floor, not placed, moved twice, with a target place, deleted); place history; text notes; jobs on 19 and 20 Nov 2026; five pictures of 19 Nov (Küche two and an after picture, Keller one, one without a room) |
 | Demo privat | personal | Owner Robin Probe; one site, one room, one entry; no customer (the null-customer path) |
 
 ## Format
@@ -32,15 +32,20 @@
 | customers | `0003` | labels | `0008` | entity_properties | `000d` |
 | sites | `0004` | property_keys | `0009` | notes | `000e` |
 | rooms | `0005` | entries | `000a` | jobs | `000f` |
+| pictures | `0010` | | | | |
 
-The next table takes 16, code `0010`.
+The next table takes 17, code `0011`.
 
 ## Changing it
 
 1. Edit the JSON by hand; keep one row per line, so a review diff shows whole rows.
 2. A migration that adds a column to a table in the file makes the server test fail until every row of that table lists the column. Set `schema_up_to` to the newest migration the file was checked against.
-3. Pictures and voice notes (M2), time blocks, sign-offs and expenses (M5) and conflicts (sync) are added by the issue that first needs them.
+3. Voice notes (M2), time blocks, sign-offs and expenses (M5) and conflicts (sync) are added by the issue that first needs them.
 4. Run `cd server && composer test` (needs MariaDB); the test is `tests/Db/DemoWorkspaceTest.php`. Run `cd app && flutter test test/data/demo_workspace_test.dart` too: a column added to a table the app holds fails there until the app's local table has it (D-84).
+
+## Picture files
+
+Every `pictures` row has its file in `media/<file_sha256>.jpg` (D-262): drawn scenes, 640 × 480 JPEG, quality 85, no EXIF, no camera photos. `file_bytes`, `width_px`, `height_px` and `file_mime` match the file; the app test `test/data/demo_workspace_test.dart` checks that. A new picture needs a new file named by its hash; never change the bytes of an existing file, the hash in the rows would no longer match.
 
 ## Users
 

@@ -10,7 +10,7 @@ void main() {
 
   setUp(() async {
     db = memoryDatabase();
-    await seedTestData(db);
+    await seedWithPictures(db);
   });
   tearDown(() => db.close());
 
@@ -91,6 +91,105 @@ void main() {
       'Küche',
     ]);
     expect(view.sites.last.rooms, isEmpty);
+  });
+
+  test('customer view counts the live pictures of each room', () async {
+    final view = await watchCustomer(db, TestIds.familieBeispiel).first;
+    expect(
+      <String?, int>{
+        for (final room in view!.sites.first.rooms)
+          room.name: room.pictureCount,
+      },
+      <String?, int>{'Keller': 0, 'Küche': 4},
+      reason: 'the tombstoned picture is not counted',
+    );
+  });
+
+  test('customer view updates when a picture is added', () async {
+    final views = watchCustomer(db, TestIds.familieBeispiel);
+    final counts = views
+        .map((v) => v!.sites.first.rooms.first.pictureCount)
+        .take(2)
+        .toList();
+    await Future<void>.delayed(Duration.zero);
+    await LocalWriter(db).write(
+      entity: 'pictures',
+      id: '01970000-0000-7000-8000-0000000000f9',
+      fields: <String, Object?>{
+        'workspace_id': TestIds.workspace,
+        'file_sha256': 'd' * 64,
+        'file_bytes': 1,
+        'file_mime': 'image/jpeg',
+        'width_px': 1,
+        'height_px': 1,
+        'room_id': TestIds.keller,
+      },
+    );
+    expect(await counts, <int>[0, 1]);
+  });
+
+  test('room view holds the room and its site', () async {
+    final room = await watchRoom(
+      db,
+      TestIds.familieBeispiel,
+      TestIds.kueche,
+    ).first;
+    expect(room!.name, 'Küche');
+    expect(room.siteName, 'Alte Wohnung');
+  });
+
+  test(
+    'room view is null for deleted, unknown and other customers\' rooms',
+    () async {
+      expect(
+        await watchRoom(db, TestIds.familieBeispiel, TestIds.alterRaum).first,
+        isNull,
+      );
+      expect(
+        await watchRoom(db, TestIds.familieBeispiel, 'no-such-id').first,
+        isNull,
+      );
+      expect(
+        await watchRoom(db, TestIds.frauMuster, TestIds.kueche).first,
+        isNull,
+      );
+    },
+  );
+
+  test('picture view checks customer, room and tombstone', () async {
+    Future<Picture?> picture(String customer, String id, {String? room}) =>
+        watchPicture(db, customer, id, roomId: room).first;
+    expect(
+      (await picture(TestIds.familieBeispiel, TestIds.fotoVorher))!.id,
+      TestIds.fotoVorher,
+    );
+    expect(
+      await picture(
+        TestIds.familieBeispiel,
+        TestIds.fotoVorher,
+        room: TestIds.kueche,
+      ),
+      isNotNull,
+    );
+    expect(
+      await picture(
+        TestIds.familieBeispiel,
+        TestIds.fotoVorher,
+        room: TestIds.keller,
+      ),
+      isNull,
+      reason: 'not in that room',
+    );
+    expect(
+      await picture(TestIds.frauMuster, TestIds.fotoVorher),
+      isNull,
+      reason: 'another customer',
+    );
+    expect(
+      await picture(TestIds.familieBeispiel, TestIds.fotoGeloescht),
+      isNull,
+      reason: 'tombstoned',
+    );
   });
 
   test('customer view is null for unknown and deleted customers', () async {
