@@ -102,6 +102,15 @@ jobs:
             --build-number="$RUN_NUMBER" \
             --dart-define=WIO_API_URL="$WIO_API_URL"
 
+      # D-310..D-319 (#70): the release APK asks for exactly the permissions
+      # in app/android/permissions.txt, same check as ci.yml app-android.
+      - name: Check the APK's permissions and features
+        run: >-
+          ../tools/ci/android-permissions-check.sh
+          build/app/outputs/flutter-apk/app-release.apk
+          android/permissions.txt
+          build/app/outputs/logs/manifest-merger-release-report.txt
+
       # D-251: the APK must carry Colin's certificate, never the debug key.
       - name: Check the signature
         id: check

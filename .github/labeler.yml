@@ -64,3 +64,6 @@ risk:high:
           - THIRD-PARTY-LICENCES.md
           - server/bin/migrate
           - "**/privacy/**"
+          # D-319: a new permission can start a new data path.
+          - app/android/permissions.txt
+          - app/android/**/AndroidManifest.xml
