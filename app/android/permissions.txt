@@ -17,3 +17,9 @@ uses-permission android.permission.ACCESS_NETWORK_STATE
 # this signature permission (D-314); only this app holds it.
 permission ${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 uses-permission ${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+# Background sync (D-376, D-379), added by androidx.work: WorkManager holds
+# a wake lock while a worker runs, and re-schedules the hourly job after a
+# restart. Both are normal permissions without a prompt. FOREGROUND_SERVICE
+# is removed in the manifest: no foreground service, no notification.
+uses-permission android.permission.WAKE_LOCK
+uses-permission android.permission.RECEIVE_BOOT_COMPLETED

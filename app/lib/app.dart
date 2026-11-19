@@ -9,6 +9,7 @@ import 'camera/camera_providers.dart';
 import 'l10n/app_localizations.dart';
 import 'shell/providers.dart';
 import 'shell/router.dart';
+import 'sync/background_sync.dart';
 import 'sync/sync_runner.dart';
 import 'sync/upload_queue.dart';
 import 'update/app_too_old.dart';
@@ -80,9 +81,12 @@ class _WioAppState extends ConsumerState<WioApp> {
     _lifecycle = AppLifecycleListener(
       onResume: () {
         unawaited(ref.read(sessionProvider.notifier).checkIfStale());
-        ref.read(syncProvider.notifier).trigger();
+        ref.read(syncProvider.notifier).resumed();
       },
+      // Leaving the app hands sync to the phone's background work (D-376).
+      onPause: () => unawaited(ref.read(backgroundSyncProvider).left()),
     );
+    ref.read(backgroundSyncProvider).start();
     // The update notice opens once, from whatever screen is showing, when
     // the server first says the app is too old (D-154).
     ref.listenManual(appTooOldProvider, (previous, next) {

@@ -25,7 +25,8 @@ EOF
 chmod +x "$work/aapt2"
 touch "$work/app.apk"
 
-# Today's APK after D-313 (main 5d34cec without READ_EXTERNAL_STORAGE).
+# Today's APK after D-313 (main 5d34cec without READ_EXTERNAL_STORAGE), with
+# WorkManager's WAKE_LOCK and RECEIVE_BOOT_COMPLETED (#52, D-379).
 good_perms() {
   local package="${1:-de.wiederinordnung.app}"
   cat <<EOF
@@ -36,6 +37,8 @@ uses-permission: name='android.permission.CAMERA'
 permission: $package.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 uses-permission: name='$package.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
 uses-permission: name='android.permission.ACCESS_NETWORK_STATE'
+uses-permission: name='android.permission.WAKE_LOCK'
+uses-permission: name='android.permission.RECEIVE_BOOT_COMPLETED'
 EOF
 }
 good_badging() {

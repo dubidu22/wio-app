@@ -58,10 +58,30 @@ enum SyncActivity {
   offline,
 }
 
-/// Runs sync in the foreground, one run at a time (D-201): after start-up,
+bool _never() => false;
+
+/// True when the engine was started by the phone for background work
+/// (`main` got the argument `background`, D-381): no run starts by itself
+/// until the app comes to the front.
+final startedInBackgroundProvider = Provider<bool>((ref) => false);
+
+/// How a background run ended, as the channel answers it (D-374).
+enum BackgroundOutcome {
+  /// Nothing left for this kind of run.
+  done,
+
+  /// Offline, failed, or stopped with work left: try again later.
+  retry,
+
+  /// Signed out, no server, or the app is too old: nothing to do (D-377).
+  skip,
+}
+
+/// Runs sync one run at a time (D-201): in the foreground after start-up,
 /// after local writes, on resume, every few minutes, and again after a
-/// failure with growing waits. Never while signed out, without a server or
-/// while the app is too old (D-156).
+/// failure with growing waits; in the background only when the phone asks
+/// for a run (D-376). Never while signed out, without a server or while the
+/// app is too old (D-156).
 final syncProvider = NotifierProvider<SyncNotifier, SyncActivity>(
   SyncNotifier.new,
 );
@@ -75,13 +95,27 @@ class SyncNotifier extends Notifier<SyncActivity> {
   int _failures = 0;
   bool _running = false;
   bool _again = false;
+  Completer<void>? _current;
+  bool _background = false;
+  bool _filesLeft = false;
+
+  /// Background runs, one after another (PR 87 review M3): each waits for
+  /// the whole run before it.
+  Future<void> _backgroundChain = Future<void>.value();
+
+  /// Ids the phone asked to stop, of runs going or waiting (D-375).
+  final Set<String> _stopIds = <String>{};
+
+  /// Ids of background runs going or waiting.
+  final Set<String> _backgroundIds = <String>{};
 
   @override
   SyncActivity build() {
     ref.onDispose(_stop);
+    _background = ref.read(startedInBackgroundProvider);
     if (ref.read(syncAutoStartProvider)) {
       final timing = ref.read(syncTimingProvider);
-      _every = Timer.periodic(timing.every, (_) => trigger());
+      if (!_background) _startEvery();
       final db = ref.read(databaseProvider);
       // Only new outbox rows start a push; sync's own updates and deletes
       // of the outbox do not.
@@ -109,6 +143,14 @@ class SyncNotifier extends Notifier<SyncActivity> {
     unawaited(_writes?.cancel());
   }
 
+  void _startEvery() {
+    _every?.cancel();
+    _every = Timer.periodic(
+      ref.read(syncTimingProvider).every,
+      (_) => trigger(),
+    );
+  }
+
   void _scheduleAfterWrite(Duration wait) {
     _afterWrite?.cancel();
     _afterWrite = Timer(wait, trigger);
@@ -127,65 +169,120 @@ class SyncNotifier extends Notifier<SyncActivity> {
     });
   }
 
-  /// Starts a run when sync may start by itself.
-  void trigger() {
-    if (ref.read(syncAutoStartProvider)) unawaited(run());
+  /// Whether the app is in the background now (D-376).
+  bool get inBackground => _background;
+
+  /// Whether a run that skipped files left files behind (D-378).
+  bool get filesLeft => _filesLeft;
+
+  /// The app went to the background: runs no longer start by themselves;
+  /// the phone asks for them (D-376).
+  /// The 5-minute timer pauses until the app is in front again (D-376).
+  void left() {
+    _background = true;
+    _every?.cancel();
+    _every = null;
   }
 
-  /// One run: push, then pull (D-201). A run asked for while one is going
-  /// follows it.
+  /// The app is in front again: sync runs by itself again, starting now.
+  /// A background run that is going finishes first; this run follows it
+  /// (PR 87 review M1).
+  void resumed() {
+    _background = false;
+    if (ref.read(syncAutoStartProvider)) _startEvery();
+    trigger();
+  }
+
+  /// Starts a run when sync may start by itself: in the foreground only.
+  void trigger() {
+    if (ref.read(syncAutoStartProvider) && !_background) unawaited(run());
+  }
+
+  /// Asks the background run [id] to end at its next safe point, or not
+  /// to start if it waits (D-375). Ignored for runs that already ended
+  /// (PR 87 review M2); foreground runs never stop this way.
+  void stopRun(String id) {
+    if (_backgroundIds.contains(id)) _stopIds.add(id);
+  }
+
+  bool _mayRun() =>
+      ref.read(sessionProvider).value != null &&
+      ref.read(apiServerProvider) != null &&
+      ref.read(appTooOldProvider) == null;
+
+  /// One run asked for by the phone (D-374), identified by [id]. Background
+  /// runs go one after another; each first waits for a run that is going,
+  /// then runs until nothing is left, [deadline] passes or [stopRun] is
+  /// called with its id. Files only when [files] (D-378).
+  Future<BackgroundOutcome> runInBackground({
+    required String id,
+    required DateTime deadline,
+    required bool files,
+  }) {
+    _backgroundIds.add(id);
+    final outcome = _backgroundChain.then(
+      (_) => _runInBackground(id: id, deadline: deadline, files: files),
+    );
+    _backgroundChain = outcome.then<void>((_) {}, onError: (Object _) {});
+    return outcome.whenComplete(() {
+      _backgroundIds.remove(id);
+      _stopIds.remove(id);
+      // A foreground run asked for meanwhile follows now (review M1).
+      if (ref.mounted && _again && !_background) {
+        _again = false;
+        trigger();
+      }
+    });
+  }
+
+  Future<BackgroundOutcome> _runInBackground({
+    required String id,
+    required DateTime deadline,
+    required bool files,
+  }) async {
+    bool stopped() =>
+        _stopIds.contains(id) || !ref.read(clockProvider)().isBefore(deadline);
+    while (true) {
+      // A foreground run is going: wait for it, never answer skip for it
+      // (review M3).
+      for (var current = _current; current != null; current = _current) {
+        await current.future;
+      }
+      if (!ref.mounted || !_mayRun()) return BackgroundOutcome.skip;
+      if (stopped()) return BackgroundOutcome.retry;
+      final result = await _runOnce(files: files, stopped: stopped);
+      if (!ref.mounted) return BackgroundOutcome.skip;
+      // Another run started first in the same moment: wait and try again.
+      if (result == null) continue;
+      switch (result.stop) {
+        case SyncStop.done:
+          if (!result.more) return BackgroundOutcome.done;
+        case SyncStop.offline || SyncStop.failed || SyncStop.interrupted:
+          return BackgroundOutcome.retry;
+        case SyncStop.tooOld || SyncStop.signedOut:
+          return BackgroundOutcome.skip;
+      }
+    }
+  }
+
+  /// One foreground run: push, then pull (D-201). A run asked for while one
+  /// is going follows it.
   Future<void> run() async {
     if (_running) {
       _again = true;
       return;
     }
-    final session = ref.read(sessionProvider).value;
-    final server = ref.read(apiServerProvider);
-    if (session == null ||
-        server == null ||
-        ref.read(appTooOldProvider) != null) {
-      return;
-    }
-    _running = true;
-    _retry?.cancel();
-    state = SyncActivity.running;
-    final SyncResult result;
-    try {
-      final db = ref.read(databaseProvider);
-      bool tooOld() => ref.mounted && ref.read(appTooOldProvider) != null;
-      result = await SyncEngine(
-        db: db,
-        api: SyncApi(server),
-        workspaceId: session.workspace.id,
-        tooOld: tooOld,
-        clock: ref.read(clockProvider),
-        uploads: UploadWorker(
-          db: db,
-          api: FilesApi(server),
-          store: ref.read(uploadStoreProvider),
-          tooOld: tooOld,
-        ),
-        downloads: _downloads(server, tooOld),
-      ).run();
-    } on Object {
-      if (ref.mounted) _failed(null);
-      return;
-    } finally {
-      _running = false;
-    }
-    if (!ref.mounted) return;
+    final result = await _runOnce(files: true, stopped: _never);
+    if (result == null || !ref.mounted) return;
     switch (result.stop) {
       case SyncStop.done:
-        _failures = 0;
-        state = SyncActivity.idle;
         // New changes came in while files were sent (D-211).
         if (result.more) _again = true;
       case SyncStop.offline || SyncStop.failed:
         _failed(result.retryAfter);
-      case SyncStop.tooOld:
-        state = SyncActivity.idle;
+      case SyncStop.interrupted || SyncStop.tooOld:
+        break;
       case SyncStop.signedOut:
-        state = SyncActivity.idle;
         // getMe decides: token_invalid forgets the session, data stays.
         unawaited(ref.read(sessionProvider.notifier).check());
     }
@@ -195,7 +292,67 @@ class SyncNotifier extends Notifier<SyncActivity> {
     }
   }
 
-  DownloadWorker _downloads(Server server, bool Function() tooOld) {
+  /// Runs the engine once; null when sync may not run now or another run
+  /// is going. Sets the status line. Only background runs pass a [stopped]
+  /// that can say yes (review M2).
+  Future<SyncResult?> _runOnce({
+    required bool files,
+    required bool Function() stopped,
+  }) async {
+    if (_running || !_mayRun()) return null;
+    final session = ref.read(sessionProvider).value!;
+    final server = ref.read(apiServerProvider)!;
+    _running = true;
+    final current = _current = Completer<void>();
+    _retry?.cancel();
+    state = SyncActivity.running;
+    SyncResult result;
+    try {
+      final db = ref.read(databaseProvider);
+      bool tooOld() => ref.mounted && ref.read(appTooOldProvider) != null;
+      result = await SyncEngine(
+        db: db,
+        api: SyncApi(server),
+        workspaceId: session.workspace.id,
+        tooOld: tooOld,
+        clock: ref.read(clockProvider),
+        files: files,
+        stopped: stopped,
+        uploads: UploadWorker(
+          db: db,
+          api: FilesApi(server),
+          store: ref.read(uploadStoreProvider),
+          tooOld: tooOld,
+          stopped: stopped,
+        ),
+        downloads: _downloads(server, tooOld, stopped),
+      ).run();
+    } on Object {
+      result = const SyncResult(SyncStop.failed);
+    } finally {
+      _running = false;
+      _current = null;
+      current.complete();
+    }
+    if (!ref.mounted) return result;
+    if (result.stop == SyncStop.done) {
+      _failures = 0;
+      _filesLeft = !files;
+      state = SyncActivity.idle;
+    } else if (result.stop == SyncStop.offline ||
+        result.stop == SyncStop.failed) {
+      state = SyncActivity.offline;
+    } else {
+      state = SyncActivity.idle;
+    }
+    return result;
+  }
+
+  DownloadWorker _downloads(
+    Server server,
+    bool Function() tooOld,
+    bool Function() stopped,
+  ) {
     final store = ref.read(mediaStoreProvider);
     final presence = ref.read(mediaPresenceProvider.notifier);
     final wants = ref.read(mediaWantsProvider);
@@ -225,11 +382,11 @@ class SyncNotifier extends Notifier<SyncActivity> {
       tooOld: tooOld,
       // The web fetches only what a screen shows (D-334).
       onlyWanted: !store.supported,
+      stopped: stopped,
     );
   }
 
   void _failed(Duration? retryAfter) {
-    state = SyncActivity.offline;
     final steps = ref.read(syncTimingProvider).backOff;
     var wait = steps[_failures < steps.length ? _failures : steps.length - 1];
     if (retryAfter != null && retryAfter > wait) wait = retryAfter;

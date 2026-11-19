@@ -30,6 +30,8 @@ final downloadMemoryProvider = Provider<DownloadMemory>(
   (ref) => DownloadMemory(),
 );
 
+bool _never() => false;
+
 /// Fetches files that live rows point at but this device lacks, one at a
 /// time in ranges of [downloadRangeBytes] (D-326 to D-331, D-336). Files a
 /// screen shows go first, then the newest rows (D-328). With [onlyWanted]
@@ -46,7 +48,8 @@ class DownloadWorker {
     required this.wanted,
     required this.tooOld,
     this.onlyWanted = false,
-  });
+    bool Function()? stopped,
+  }) : stopped = stopped ?? _never;
 
   final WioDatabase db;
   final FilesApi api;
@@ -65,6 +68,9 @@ class DownloadWorker {
   final Set<String> Function() wanted;
   final bool Function() tooOld;
   final bool onlyWanted;
+
+  /// True once the run should end before its next range (D-375).
+  final bool Function() stopped;
 
   /// Fetches until nothing is left to fetch now. Ends early with
   /// [SyncResult.runAgain] when new changes or uploads wait (D-326).
@@ -151,6 +157,8 @@ class DownloadWorker {
     var unexpected = 0;
     while (true) {
       if (tooOld()) return const SyncResult(SyncStop.tooOld);
+      // The `.part` file keeps what came; the next run resumes there.
+      if (stopped()) return SyncResult.interrupted;
       final TonikResult<GetFileResponse, http.Response> response;
       try {
         response = await api
