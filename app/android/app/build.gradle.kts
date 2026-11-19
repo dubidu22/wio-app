@@ -1,4 +1,4 @@
-// App ID de.wiederinordnung.wio (D-136, D-249). Hand-test builds from
+// App ID de.wiederinordnung.app (D-136, final 19 Nov 2026; D-249). Hand-test builds from
 // .github/workflows/android-handtest.yml set WIO_HANDTEST=true: they get the
 // suffix .handtest and the label "Wio Test", so they live next to a later
 // store build (D-249). Release signing comes from four environment variables
@@ -20,7 +20,7 @@ plugins {
 }
 
 android {
-    namespace = "de.wiederinordnung.wio"
+    namespace = "de.wiederinordnung.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -30,7 +30,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "de.wiederinordnung.wio"
+        applicationId = "de.wiederinordnung.app"
         if (handtest) {
             applicationIdSuffix = ".handtest"
         }
