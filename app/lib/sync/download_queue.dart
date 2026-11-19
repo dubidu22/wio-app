@@ -270,9 +270,9 @@ class DownloadWorker {
   }
 
   /// The file size of `Content-Range: bytes */<total>`, or null.
-  static int? _refusedTotal(FilesSha256Get416Response body) {
+  static int? _refusedTotal(String? contentRange) {
     final match = RegExp(r'^bytes \*/(\d{1,15})$')
-        .firstMatch(body.contentRange?.trim() ?? '');
+        .firstMatch(contentRange?.trim() ?? '');
     return match == null ? null : int.parse(match[1]!);
   }
 
