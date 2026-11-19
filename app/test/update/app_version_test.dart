@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:wio_app/update/app_version.dart';
 
 /// The Wio-App-Version parameter's text in the contract (D-140).
@@ -28,6 +30,7 @@ int contractMaxLength() {
 
 /// Plan 038 test 1 (D-150).
 void main() {
+  readInstalledAppTests();
   test('the app pattern and length are the contract ones', () {
     expect(appVersionPattern.pattern, contractPattern().pattern);
     expect(appVersionMaxLength, contractMaxLength());
@@ -82,5 +85,43 @@ void main() {
       expect(pattern.hasMatch(value!), isTrue, reason: value);
       expect(value.length, lessThanOrEqualTo(maxLength), reason: value);
     }
+  });
+}
+
+/// Plan 097 (D-412, D-413): the platform read never waits long.
+void readInstalledAppTests() {
+  group('readInstalledApp', () {
+    const short = Duration(milliseconds: 20);
+
+    test('a read that never completes gives unknown after the timeout', () async {
+      final app = await readInstalledApp(
+        () => Completer<PackageInfo>().future,
+        timeout: short,
+      );
+      expect(app.version, isNull);
+      expect(app.packageName, '');
+    });
+
+    test('a normal read gives version and package name', () async {
+      final app = await readInstalledApp(
+        () async => PackageInfo(
+          appName: 'Wio',
+          packageName: 'de.wiederinordnung.app',
+          version: '1.2.3',
+          buildNumber: '45',
+        ),
+        timeout: short,
+      );
+      expect(app.version, '1.2.3+45');
+      expect(app.packageName, 'de.wiederinordnung.app');
+    });
+
+    test('a read that throws gives unknown', () async {
+      final app = await readInstalledApp(
+        () async => throw StateError('no version.json'),
+        timeout: short,
+      );
+      expect(app.version, isNull);
+    });
   });
 }
