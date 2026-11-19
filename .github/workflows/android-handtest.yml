@@ -138,6 +138,11 @@ jobs:
             echo "version=${version}+${RUN_NUMBER}"
           } >> "$GITHUB_OUTPUT"
 
+      # The key is no longer needed; the emulator step runs without it on disk.
+      - name: Remove the signing key before the emulator
+        working-directory: .
+        run: rm -f -- "$RUNNER_TEMP/handtest.p12"
+
       # D-396 (plan 091): the signed APK must start on an emulator before it
       # is uploaded, so a build that dies at launch never reaches the phone
       # (Wio Test 0.1.0+2 did, issue #91).

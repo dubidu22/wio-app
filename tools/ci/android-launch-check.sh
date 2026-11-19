@@ -45,6 +45,8 @@ export ANDROID_AVD_HOME="$HOME/.android/avd"
 mkdir -p "$ANDROID_AVD_HOME"
 echo no | "$sdk/cmdline-tools/latest/bin/avdmanager" create avd -n wio -k "$image" -d pixel_6 --force
 "$adb" start-server
+# The logcat is the diagnosis: keep it even when a step below exits early.
+trap '[[ -s "$logcat_out" ]] || timeout 30 "$adb" logcat -d > "$logcat_out" 2> /dev/null || true' EXIT
 setsid nohup "$sdk/emulator/emulator" -avd wio -no-window -no-audio -no-boot-anim -no-snapshot \
   -gpu swiftshader_indirect < /dev/null > "$emulator_log" 2>&1 &
 
@@ -66,7 +68,7 @@ fi
 
 "$adb" install -r "$apk"
 "$adb" logcat -c
-"$adb" shell monkey -p "$package" -c android.intent.category.LAUNCHER 1
+"$adb" shell monkey -p "$package" -c android.intent.category.LAUNCHER 1 || echo "::warning::monkey exited non-zero"
 sleep 20
 "$adb" logcat -d > "$logcat_out"
 
