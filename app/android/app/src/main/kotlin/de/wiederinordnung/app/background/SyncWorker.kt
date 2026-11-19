@@ -29,13 +29,15 @@ class SyncWorker(
     private suspend fun runInEngine(): String? =
         suspendCancellableCoroutine { continuation ->
             val context = applicationContext
+            val runId = id.toString()
             val background = WioEngine.beginBackground(context)
             // WorkManager stopped the worker: end the run at a safe point;
             // the engine is let go when Dart answers.
             continuation.invokeOnCancellation {
-                Handler(Looper.getMainLooper()).post { background.stop() }
+                Handler(Looper.getMainLooper()).post { background.stop(runId) }
             }
             background.run(
+                runId,
                 System.currentTimeMillis() + BackgroundPlan.RUN_TIME_MS,
                 BackgroundChannel.unmetered(context),
             ) { answer ->

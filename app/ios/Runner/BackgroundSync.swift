@@ -52,9 +52,10 @@ enum BackgroundPlan {
   }
 }
 
-/// The app's channel `wio/background` on iOS (D-374): Dart sends
-/// `schedule`; task handlers and the grace time after leaving the app ask
-/// Dart to `run` and to `stop`. Main thread only.
+/// The app's channel `wio/background` on iOS (D-374): Dart sends `ready`
+/// and `schedule`; task handlers and the grace time after leaving the app
+/// ask Dart to `run` and to `stop`. A `run` asked for before Dart is ready
+/// waits here (PR 87 review S1). Main thread only.
 final class BackgroundSync {
   static let channelName = "wio/background"
 
@@ -63,6 +64,9 @@ final class BackgroundSync {
   private var path: NWPath?
   private var grace: UIBackgroundTaskIdentifier = .invalid
   private var runs = 0
+  private var ready = false
+  private var waiting: [() -> Void] = []
+  private var stoppedWhileWaiting = Set<String>()
 
   init(messenger: FlutterBinaryMessenger) {
     channel = FlutterMethodChannel(name: Self.channelName, binaryMessenger: messenger)
@@ -84,6 +88,14 @@ final class BackgroundSync {
   }
 
   private func handle(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+    if call.method == "ready" {
+      ready = true
+      let queued = waiting
+      waiting = []
+      queued.forEach { $0() }
+      result(nil)
+      return
+    }
     guard call.method == "schedule" else {
       result(FlutterMethodNotImplemented)
       return
@@ -132,10 +144,24 @@ final class BackgroundSync {
       constrained: path.isConstrained)
   }
 
-  /// Asks Dart for one run; [done] gets "done", "retry", "skip" or nil.
-  func run(until deadline: Date, done: @escaping (String?) -> Void) {
+  /// Asks Dart for run [id]; [done] gets "done", "retry", "skip" or nil.
+  /// Waits until Dart is ready.
+  func run(_ id: String, until deadline: Date, done: @escaping (String?) -> Void) {
+    guard ready else {
+      waiting.append { [weak self] in
+        guard let self else { return }
+        // Stopped before Dart was ready: never started.
+        if self.stoppedWhileWaiting.remove(id) != nil {
+          done("retry")
+        } else {
+          self.run(id, until: deadline, done: done)
+        }
+      }
+      return
+    }
     runs += 1
     let arguments: [String: Any] = [
+      "id": id,
       "deadlineMs": Int64(deadline.timeIntervalSince1970 * 1000),
       "files": filesAllowed(),
     ]
@@ -145,23 +171,28 @@ final class BackgroundSync {
     }
   }
 
-  /// The run ends at its next safe point (D-375).
-  func stop() {
-    channel.invokeMethod("stop", arguments: nil)
+  /// Run [id] ends at its next safe point, or does not start (D-375).
+  func stop(_ id: String) {
+    guard ready else {
+      stoppedWhileWaiting.insert(id)
+      return
+    }
+    channel.invokeMethod("stop", arguments: ["id": id])
   }
 
   private func useGraceTime() {
     guard grace == .invalid, runs == 0 else { return }
+    let id = UUID().uuidString
     grace = UIApplication.shared.beginBackgroundTask(withName: "wio sync") { [weak self] in
       // Out of time: the run stops at its next safe point; the task must
       // end now.
-      self?.stop()
+      self?.stop(id)
       self?.endGrace()
     }
     guard grace != .invalid else { return }
     let remaining = UIApplication.shared.backgroundTimeRemaining
     let seconds = remaining.isFinite ? max(0, remaining - 5) : BackgroundPlan.refreshRunTime
-    run(until: Date().addingTimeInterval(seconds)) { [weak self] _ in
+    run(id, until: Date().addingTimeInterval(seconds)) { [weak self] _ in
       self?.endGrace()
     }
   }
@@ -179,11 +210,12 @@ final class BackgroundSync {
     if refresh {
       submit(BackgroundPlan.refreshRequest(now: Date()))
     }
+    let id = UUID().uuidString
     task.expirationHandler = { [weak self] in
-      DispatchQueue.main.async { self?.stop() }
+      DispatchQueue.main.async { self?.stop(id) }
     }
     let runTime = refresh ? BackgroundPlan.refreshRunTime : BackgroundPlan.processingRunTime
-    run(until: Date().addingTimeInterval(runTime)) { [weak self] answer in
+    run(id, until: Date().addingTimeInterval(runTime)) { [weak self] answer in
       let retry = BackgroundPlan.retry(answer)
       if retry && !refresh {
         self?.submit(BackgroundPlan.processingRequest())

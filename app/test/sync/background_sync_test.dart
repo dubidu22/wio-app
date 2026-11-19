@@ -99,12 +99,16 @@ Future<Object?> ask(
   return answer.future;
 }
 
-Map<String, Object?> runArgs({required bool files, DateTime? deadline}) =>
-    <String, Object?>{
-      'deadlineMs': (deadline ?? testNow.add(const Duration(minutes: 9)))
-          .millisecondsSinceEpoch,
-      'files': files,
-    };
+Map<String, Object?> runArgs({
+  required bool files,
+  DateTime? deadline,
+  String id = 'work-1',
+}) => <String, Object?>{
+  'id': id,
+  'deadlineMs': (deadline ?? testNow.add(const Duration(minutes: 9)))
+      .millisecondsSinceEpoch,
+  'files': files,
+};
 
 Future<void> leave(WidgetTester tester) async {
   for (final state in <AppLifecycleState>[
@@ -369,5 +373,114 @@ void main() {
     );
     await leave(tester);
     expect(plans, isEmpty);
+  });
+
+  group('PR 87 review round 1', () {
+    Future<(WioDatabase, FakeApi, ProviderContainer)> started(
+      WidgetTester tester, {
+      bool background = true,
+    }) async {
+      final db = await seeded();
+      final server = phoneServer();
+      final api = apiWith(server);
+      recordSchedules(tester);
+      await pumpWioApp(
+        tester,
+        db: db,
+        api: api,
+        autoSync: true,
+        syncTiming: quick,
+        overrides: [
+          supported,
+          startedInBackgroundProvider.overrideWithValue(background),
+        ],
+      );
+      await settle(tester);
+      return (db, api, containerOf(tester));
+    }
+
+    testWidgets('M1: opening the app during a background run runs once '
+        'more after it', (tester) async {
+      final (db, api, container) = await started(tester);
+      await tester.runAsync(() => rename(db, 'Erst'));
+      final sync = container.read(syncProvider.notifier);
+      final background = sync.runInBackground(
+        id: 'a',
+        deadline: testNow.add(const Duration(minutes: 9)),
+        files: true,
+      );
+      // The run is going when the app comes to the front.
+      sync.resumed();
+      await settle(tester);
+      expect(await background, BackgroundOutcome.done);
+      await settle(tester);
+      expect(api.to('/sync/push'), hasLength(1));
+      expect(api.to('/sync/pull'), hasLength(2));
+    });
+
+    testWidgets('M2: a stop after the background run ended does not stop '
+        'later foreground runs', (tester) async {
+      final (db, api, container) = await started(tester);
+      expect(await ask(tester, 'run', runArgs(files: true, id: 'a')), 'done');
+      await ask(tester, 'stop', <String, Object?>{'id': 'a'});
+      container.read(syncProvider.notifier).resumed();
+      await settle(tester);
+      await tester.runAsync(() => rename(db, 'Danach'));
+      await tester.pump(const Duration(seconds: 4));
+      await settle(tester);
+      expect(api.to('/sync/push'), hasLength(1));
+      expect((await countRows(db))['outbox'], 0);
+    });
+
+    testWidgets('M3: overlapping background runs go one after another, each '
+        'with its own deadline and stop', (tester) async {
+      final (db, api, container) = await started(tester);
+      await tester.runAsync(() => rename(db, 'Zwei Läufe'));
+      final sync = container.read(syncProvider.notifier);
+      final first = sync.runInBackground(
+        id: 'records',
+        deadline: testNow.add(const Duration(minutes: 9)),
+        files: false,
+      );
+      final second = sync.runInBackground(
+        id: 'files',
+        deadline: testNow.add(const Duration(minutes: 9)),
+        files: true,
+      );
+      final third = sync.runInBackground(
+        id: 'late',
+        deadline: testNow,
+        files: true,
+      );
+      // A stop for the waiting second run leaves the first alone.
+      sync.stopRun('files');
+      await settle(tester);
+      expect(await first, BackgroundOutcome.done);
+      expect(await second, BackgroundOutcome.retry);
+      expect(await third, BackgroundOutcome.retry);
+      // Only the first run sent anything; nobody answered skip.
+      expect(api.to('/sync/push'), hasLength(1));
+      expect(api.to('/sync/pull'), hasLength(1));
+      expect((await countRows(db))['outbox'], 0);
+    });
+
+    testWidgets('S1: Dart tells the phone when it listens', (tester) async {
+      final calls = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        backgroundChannel,
+        (call) async {
+          calls.add(call.method);
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          backgroundChannel,
+          null,
+        ),
+      );
+      await pumpWioApp(tester, db: await seeded(), overrides: [supported]);
+      expect(calls.first, 'ready');
+    });
   });
 }

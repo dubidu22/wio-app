@@ -37,7 +37,9 @@ class BackgroundPlan {
   /// Unsent changes wait in the outbox.
   final bool pending;
 
-  /// Uploads wait, or a run skipped files (D-378).
+  /// Uploads wait, or a run on a metered network skipped files (D-378).
+  /// Downloads count only through that skip: the hourly pull fetches the
+  /// rest on Wi-Fi (PR 87 review N2).
   final bool files;
 
   Map<String, Object?> toMap() => <String, Object?>{
@@ -84,6 +86,8 @@ class BackgroundSync {
     if (_started || !_supported) return;
     _started = true;
     backgroundChannel.setMethodCallHandler(_handle);
+    // The phone holds back `run` until Dart listens (PR 87 review S1).
+    unawaited(_ready());
     _ref
       ..listen(sessionProvider, (previous, next) {
         if (previous?.value?.token != next.value?.token) {
@@ -93,6 +97,14 @@ class BackgroundSync {
       ..listen(appTooOldProvider, (previous, next) {
         if (previous == null && next != null) unawaited(schedule());
       });
+  }
+
+  Future<void> _ready() async {
+    try {
+      await backgroundChannel.invokeMethod<void>('ready');
+    } on Object {
+      // No background work on this build.
+    }
   }
 
   void dispose() {
@@ -105,17 +117,21 @@ class BackgroundSync {
       case 'run':
         final args = (call.arguments as Map<Object?, Object?>?) ?? const {};
         final deadlineMs = args['deadlineMs'] as int?;
+        // The phone always sends a deadline; 25 s is the shortest phone
+        // budget (an iOS refresh), should one ever be missing.
         final deadline = deadlineMs == null
             ? _ref.read(clockProvider)().add(const Duration(seconds: 25))
             : DateTime.fromMillisecondsSinceEpoch(deadlineMs);
         final outcome = await sync.runInBackground(
+          id: args['id'] as String? ?? '',
           deadline: deadline,
           files: args['files'] == true,
         );
         await schedule();
         return outcome.name;
       case 'stop':
-        sync.stopRun();
+        final args = (call.arguments as Map<Object?, Object?>?) ?? const {};
+        sync.stopRun(args['id'] as String? ?? '');
         return null;
     }
     throw MissingPluginException('wio/background: ${call.method}');
