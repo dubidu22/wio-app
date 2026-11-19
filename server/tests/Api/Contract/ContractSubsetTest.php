@@ -106,8 +106,9 @@ final class ContractSubsetTest extends TestCase
         $schema = Contract::map($header['schema'] ?? null);
 
         self::assertSame('string', $schema['type'] ?? null, 'getFile 416 must declare Content-Range');
-        self::assertSame('^bytes \\*/[0-9]{1,15}$', $schema['pattern'] ?? null);
-        self::assertSame(1, preg_match('~' . $schema['pattern'] . '~', 'bytes */10'));
+        $pattern = '^bytes \\*/[0-9]{1,15}$';
+        self::assertSame($pattern, $schema['pattern'] ?? null);
+        self::assertSame(1, preg_match('~' . $pattern . '~', 'bytes */10'));
     }
 
     public function testEveryOperationTakesTheAppVersionHeaderAndLists426(): void
