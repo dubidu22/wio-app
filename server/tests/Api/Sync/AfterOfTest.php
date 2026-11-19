@@ -142,9 +142,14 @@ final class AfterOfTest extends SyncTestCase
 
         $missing = self::id();
         $early = self::change('pictures', self::id(), fields: self::file(['room_id' => $this->anna['rooms'], 'after_of' => $missing]));
-        $this->assertWrongTarget($this->pushOne($early));
+        $rejected = $this->pushOne($early);
+        $this->assertWrongTarget($rejected);
         $this->write('pictures', $missing, self::file(['room_id' => $this->anna['rooms']]));
-        $this->assertWrongTarget($this->pushOne($early), 'the stored rejection, although the target exists now');
+
+        // D-172 stores status, reason and existing_id, not the detail text.
+        unset($rejected['detail']);
+        self::assertSame($rejected, $this->pushOne($early), 'the stored rejection, although the target exists now');
+        self::assertNull($this->pulled('pictures', self::str($early['id'])));
     }
 
     public function testAnAfterPictureCannotMoveToAnotherCustomersRoom(): void
