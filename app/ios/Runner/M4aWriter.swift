@@ -81,11 +81,32 @@ final class M4aWriter {
     }
   }
 
-  /// Finishes the file; later writes do nothing.
+  /// Finishes the file; later writes do nothing. Frames the sample rate
+  /// converter still holds are written first, so the end of the note is
+  /// not cut.
   func close() {
+    drain()
     // AVAudioFile finishes the M4A when it is released; this writer holds
     // the only reference.
     file = nil
+  }
+
+  private func drain() {
+    guard let file = file,
+      let rest = AVAudioPCMBuffer(pcmFormat: output, frameCapacity: 4_096)
+    else { return }
+    var failure: NSError?
+    let status = converter.convert(to: rest, error: &failure) { _, inputStatus in
+      inputStatus.pointee = .endOfStream
+      return nil
+    }
+    guard status != .error, rest.frameLength > 0 else { return }
+    do {
+      try file.write(from: rest)
+      frames += AVAudioFramePosition(rest.frameLength)
+    } catch {
+      remember(error.localizedDescription)
+    }
   }
 
   private func remember(_ message: String) {

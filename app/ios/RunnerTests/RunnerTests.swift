@@ -94,16 +94,21 @@ struct M4aWriterTests {
       }
       writer.write(buffer)
     }
-    #expect(writer.error == nil)
-    #expect(abs(writer.millis - 1_000) <= 20)
+    #expect(writer.error == nil, "writer error: \(writer.error ?? "")")
     writer.close()
+    // The converter holds back a few frames until close drains it; the
+    // length counts what reached the file (PR 78 review round 1).
+    #expect((950...1_010).contains(writer.millis), "millis: \(writer.millis)")
+    #expect(writer.error == nil, "writer error after close: \(writer.error ?? "")")
 
     let file = try AVAudioFile(forReading: url)
     let format = file.fileFormat.streamDescription.pointee
-    #expect(format.mFormatID == kAudioFormatMPEG4AAC)
-    #expect(file.fileFormat.sampleRate == 16_000)
-    #expect(file.fileFormat.channelCount == 1)
-    #expect(abs(Double(file.length) - 16_000) <= 2_048)
+    #expect(format.mFormatID == kAudioFormatMPEG4AAC, "format id: \(format.mFormatID)")
+    #expect(file.fileFormat.sampleRate == 16_000, "rate: \(file.fileFormat.sampleRate)")
+    #expect(file.fileFormat.channelCount == 1, "channels: \(file.fileFormat.channelCount)")
+    // AAC works in 1024-frame packets with encoder priming: allow two
+    // packets either way around one second.
+    #expect((14_000...18_100).contains(file.length), "frames on disk: \(file.length)")
     #expect(M4aWriter.fileSettings[AVEncoderBitRateKey] as? Int == 64_000)
   }
 }

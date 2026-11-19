@@ -173,8 +173,15 @@ jobs:
             -destination "id=$udid" \
             -only-testing:RunnerTests \
             CODE_SIGNING_ALLOWED=NO \
-            | tee "$RUNNER_TEMP/runner-tests.log" | grep -E 'Test|error:|\*\*' || true
-          grep -q '\*\* TEST SUCCEEDED \*\*' "$RUNNER_TEMP/runner-tests.log"
+            > "$RUNNER_TEMP/runner-tests.log" 2>&1 || true
+          # Test results, Swift Testing issues (failed #expect lines) and
+          # build errors; the full log only when the tests did not pass.
+          grep -E 'Test|[Ee]xpectation|recorded an issue|failed|error:|\*\*' \
+            "$RUNNER_TEMP/runner-tests.log" || true
+          if ! grep -q '\*\* TEST SUCCEEDED \*\*' "$RUNNER_TEMP/runner-tests.log"; then
+            tail -n 300 "$RUNNER_TEMP/runner-tests.log"
+            exit 1
+          fi
 
   app-android:
     name: app-android
