@@ -72,11 +72,13 @@ config_file() {
   WIO_DB_PASSWORD="${WIO_DB_PASSWORD:?}" \
   WIO_FILES_DIR="$root/shared/files" \
   WIO_CORS_ORIGINS="${WIO_WEB_ORIGIN:-}" \
+  WIO_ENVIRONMENT="$environment" \
     php -r '
       $c = [];
       // Uploaded files survive releases, outside the web root (D-207).
       // The CORS allow-list is the web origin, when one is set (D-163).
-      foreach (["WIO_DB_DSN", "WIO_DB_USER", "WIO_DB_PASSWORD", "WIO_FILES_DIR", "WIO_CORS_ORIGINS"] as $n) {
+      // WIO_ENVIRONMENT lets staging-only tools refuse production (D-406).
+      foreach (["WIO_DB_DSN", "WIO_DB_USER", "WIO_DB_PASSWORD", "WIO_FILES_DIR", "WIO_CORS_ORIGINS", "WIO_ENVIRONMENT"] as $n) {
           $v = (string) getenv($n);
           if ($v !== "") { $c[$n] = $v; }
       }

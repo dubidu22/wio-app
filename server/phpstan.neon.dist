@@ -8,6 +8,7 @@ parameters:
     paths:
         - bin/create-owner
         - bin/migrate
+        - bin/seed-demo
         - bin/set-owner-password
         - public
         - src

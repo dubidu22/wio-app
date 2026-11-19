@@ -15,6 +15,7 @@
         <directory name="public"/>
         <file name="bin/create-owner"/>
         <file name="bin/migrate"/>
+        <file name="bin/seed-demo"/>
         <file name="bin/set-owner-password"/>
         <ignoreFiles>
             <directory name="vendor"/>

@@ -52,4 +52,5 @@ Every `pictures` row has its file in `media/<file_sha256>.jpg` (D-262): drawn sc
 | Who | How |
 | --- | --- |
 | Server tests | `Wio\Tests\Support\DemoWorkspace::fromFile()->load($pdo)` on a migrated database |
+| Staging hand tests | `php bin/seed-demo --email=…` loads one demo workspace into an empty staging workspace with new ids, today's dates and the picture files (plan 094); the release ships this folder's JSON and `media/` as `demo/` |
 | App tests | `DemoWorkspace.fromFile().load(db)` from `app/test/support/demo_workspace.dart` loads the rows of the app's local tables into an in-memory database and sets `sync_state` (D-84) |

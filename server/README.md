@@ -10,6 +10,7 @@ PHP 8.3 API (Slim 4, D-37) and versioned SQL migrations for MariaDB (D-38). Lane
 | `php bin/migrate` | Apply pending migrations to the database in `WIO_DB_DSN` |
 | `php bin/create-owner …` | Create a workspace and its owner (see below) |
 | `php bin/set-owner-password …` | Set a lost owner password, optionally signing out all devices |
+| `php bin/seed-demo …` | Staging only: load the demo data into an empty workspace (see below) |
 
 A local MariaDB for the tests, with the throw-away settings that `phpunit.xml.dist` expects:
 
@@ -66,3 +67,12 @@ php bin/set-owner-password --email=inhaber@example.org [--workspace-id=UUID] [--
 ```
 
 Passwords set here need 12 to 1024 characters. Both scripts print only ids. There is no reset e-mail in M1. If the hosting has no SSH (O-6), #10's ops endpoint calls the same classes (`Wio\Ops\CreateOwner`, `Wio\Ops\SetOwnerPassword`).
+
+### Demo data for hand tests (staging only)
+
+```sh
+php bin/seed-demo --email=inhaber@example.org
+php bin/seed-demo --workspace-id=UUID [--email=inhaber@example.org]
+```
+
+Loads the invented demo workspace of `tools/demo/demo-workspace.json` whose plan matches the target (professional: Demo Umzüge; personal: Demo privat) into an existing workspace that holds no customers, sites, rooms, entries, jobs, pictures or notes (plan 094, D-399..D-408). New ids, the owner as author, revisions from the workspace counter, dates moved by whole days so the first job is today in Europe/Berlin, picture files into the file store, all in one transaction. A second run is refused. It runs only where `WIO_ENVIRONMENT` is `staging`; the deploy writes that value into `config.php`, and the release carries the demo data as `demo/`.
