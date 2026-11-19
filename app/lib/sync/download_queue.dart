@@ -254,9 +254,8 @@ class DownloadWorker {
   }
 
   _Step _range(FilesSha256Get206Response body, int offset) {
-    final match = RegExp(
-      r'^bytes (\d+)-(\d+)/(\d+)$',
-    ).firstMatch(body.contentRange.trim());
+    final match = RegExp(r'^bytes (\d+)-(\d+)/(\d+)$')
+        .firstMatch(body.contentRange.trim());
     if (match == null) return const _Mismatch();
     final first = int.parse(match[1]!);
     final last = int.parse(match[2]!);

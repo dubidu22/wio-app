@@ -84,23 +84,22 @@ class MediaPresenceNotifier extends Notifier<MediaPresence> {
       present = <String>{};
     }
     final checked = <String>{};
-    final subscription = watchMediaRefs(ref.read(databaseProvider)).listen((
-      refs,
-    ) {
-      if (!ref.mounted) return;
-      for (final item in refs) {
-        final sha = item.sha256;
-        // Known present or already looked at: no second stat (D-332).
-        if (state.present.contains(sha) || !checked.add(sha)) continue;
-        bool exists;
-        try {
-          exists = mediaFileExists(path, sha);
-        } on Object {
-          exists = false;
-        }
-        if (exists) markPresent(sha);
-      }
-    }, onError: (Object _) {});
+    final subscription = watchMediaRefs(ref.read(databaseProvider))
+        .listen((refs) {
+          if (!ref.mounted) return;
+          for (final item in refs) {
+            final sha = item.sha256;
+            // Known present or already looked at: no second stat (D-332).
+            if (state.present.contains(sha) || !checked.add(sha)) continue;
+            bool exists;
+            try {
+              exists = mediaFileExists(path, sha);
+            } on Object {
+              exists = false;
+            }
+            if (exists) markPresent(sha);
+          }
+        }, onError: (Object _) {});
     ref.onDispose(() => unawaited(subscription.cancel()));
     return MediaPresence(listed: true, present: present);
   }
@@ -124,9 +123,7 @@ class MediaPresenceNotifier extends Notifier<MediaPresence> {
 
   void _dropped(String sha256) {
     if (!ref.mounted) return;
-    state = state.copyWith(
-      present: <String>{...state.present}..remove(sha256),
-    );
+    state = state.copyWith(present: <String>{...state.present}..remove(sha256));
   }
 }
 

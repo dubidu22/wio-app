@@ -3,9 +3,12 @@ library;
 
 import 'dart:io';
 
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/data/local_writer.dart';
+import 'package:wio_app/media/media_presence.dart';
+import 'package:wio_app/sync/sync_runner.dart';
 
 import '../support/pump.dart';
 import '../support/test_data.dart';
@@ -63,4 +66,31 @@ void main() {
       );
     },
   );
+  testWidgets(
+    'job list while files come in at phone size (D-333)',
+    skip: _notLinux,
+    (tester) async {
+      final db = memoryDatabase();
+      addTearDown(db.close);
+      await seedTestData(db);
+      await pumpWioApp(
+        tester,
+        db: db,
+        overrides: <Override>[
+          syncProvider.overrideWith(_Running.new),
+          downloadingCountProvider.overrideWithValue(3),
+        ],
+      );
+      await expectLater(
+        find.byType(WidgetsApp),
+        matchesGoldenFile('goldens/job_list_downloads_phone.png'),
+      );
+    },
+  );
+}
+
+/// Sync shown as running, without a run.
+class _Running extends SyncNotifier {
+  @override
+  SyncActivity build() => SyncActivity.running;
 }

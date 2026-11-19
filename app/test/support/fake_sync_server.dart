@@ -93,6 +93,17 @@ class FakeSyncServer {
   /// Lose the answers of this many chunk uploads after storing them.
   int loseChunkAnswers = 0;
 
+  /// Range headers of every download that reached the server, with their
+  /// If-Range (#62).
+  final List<({String? range, String? ifRange})> downloads =
+      <({String? range, String? ifRange})>[];
+
+  /// Files served with their first byte changed this many more times.
+  final Map<String, int> serveWrongBytes = <String, int>{};
+
+  /// Files answered with 416 this many more times.
+  final Map<String, int> refuseRange = <String, int>{};
+
   /// Called with "METHOD /path" after each answer, to change the server
   /// between two requests.
   void Function(String key)? afterRequest;
@@ -158,6 +169,8 @@ class FakeSyncServer {
         response = _fileState(request.url.pathSegments[1], device);
       case _ when key.startsWith('PUT /files/'):
         response = _putChunk(request, request.url.pathSegments[1], device);
+      case _ when key.startsWith('GET /files/'):
+        response = _getFile(request, request.url.pathSegments[1], device);
       default:
         response = _json(404, problemBody(404, 'not_found'));
     }
@@ -457,6 +470,75 @@ class FakeSyncServer {
 
   http.Response _fileState(String sha256, String device) =>
       _fileRefusal(device) ?? _json(200, _state(sha256));
+
+  /// The mime of a live record that points at [sha256], or null: then the
+  /// hash answers the same 404 as an unknown one (D-224).
+  String? _readableMime(String sha256) {
+    for (final picture in live('pictures').values) {
+      if (picture['file_sha256'] == sha256) {
+        return picture['file_mime'] as String? ?? 'application/octet-stream';
+      }
+    }
+    for (final note in live('notes').values) {
+      if (note['audio_sha256'] == sha256) return 'audio/mp4';
+    }
+    return null;
+  }
+
+  /// `getFile` as plan 055: one range, 206/416, ETag, If-Range (D-230).
+  http.Response _getFile(http.Request request, String sha256, String device) {
+    final refused = _fileRefusal(device);
+    if (refused != null) return refused;
+    final range = request.headers['range'];
+    final ifRange = request.headers['if-range'];
+    downloads.add((range: range, ifRange: ifRange));
+    final mime = _readableMime(sha256);
+    var bytes = files[sha256];
+    if (mime == null || bytes == null) {
+      return _json(404, problemBody(404, 'not_found'));
+    }
+    if ((serveWrongBytes[sha256] ?? 0) > 0) {
+      serveWrongBytes[sha256] = serveWrongBytes[sha256]! - 1;
+      bytes = Uint8List.fromList(bytes)..[0] ^= 0xff;
+    }
+    final headers = <String, String>{
+      'content-type': mime,
+      'etag': '"$sha256"',
+      'accept-ranges': 'bytes',
+      'cache-control': 'private, no-cache',
+    };
+    if ((refuseRange[sha256] ?? 0) > 0) {
+      refuseRange[sha256] = refuseRange[sha256]! - 1;
+      return _json(416, problemBody(416, 'range_not_satisfiable'));
+    }
+    final match = RegExp(r'^bytes=(\d+)-(\d*)$').firstMatch(range ?? '');
+    if (match == null || (ifRange != null && ifRange != '"$sha256"')) {
+      return http.Response.bytes(
+        bytes,
+        200,
+        headers: <String, String>{
+          ...headers,
+          'content-length': '${bytes.length}',
+        },
+      );
+    }
+    final first = int.parse(match[1]!);
+    if (first >= bytes.length) {
+      return _json(416, problemBody(416, 'range_not_satisfiable'));
+    }
+    var last = match[2]!.isEmpty ? bytes.length - 1 : int.parse(match[2]!);
+    if (last >= bytes.length) last = bytes.length - 1;
+    final piece = bytes.sublist(first, last + 1);
+    return http.Response.bytes(
+      piece,
+      206,
+      headers: <String, String>{
+        ...headers,
+        'content-length': '${piece.length}',
+        'content-range': 'bytes $first-$last/${bytes.length}',
+      },
+    );
+  }
 
   http.Response _putChunk(http.Request request, String sha256, String device) {
     final refused = _fileRefusal(device);

@@ -203,9 +203,7 @@ class _SyncStatusLine extends ConsumerWidget {
     final downloads = ref.watch(downloadingCountProvider);
     final text = switch (ref.watch(syncProvider)) {
       // Files from other devices come in (D-333).
-      SyncActivity.running when downloads > 0 => l10n.syncDownloads(
-        downloads,
-      ),
+      SyncActivity.running when downloads > 0 => l10n.syncDownloads(downloads),
       SyncActivity.running => l10n.syncRunning,
       SyncActivity.offline when pending > 0 || uploads > 0 => l10n.syncOffline,
       _ when pending > 0 => l10n.syncPending(pending),

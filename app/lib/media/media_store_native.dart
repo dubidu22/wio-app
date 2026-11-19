@@ -40,7 +40,8 @@ class MediaStore {
     final temporary = await File(source)
         .copy('$folder/$stamp-${_random.nextInt(1 << 32)}.tmp');
     final size = await temporary.length();
-    final digest = (await crypto.sha256.bind(temporary.openRead()).first).toString();
+    final digest = (await crypto.sha256.bind(temporary.openRead()).first)
+        .toString();
     final target = File('$folder/$digest');
     if (target.existsSync()) {
       await temporary.delete();
