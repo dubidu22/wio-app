@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/camera/capture_camera.dart';
@@ -39,13 +40,22 @@ class FakeCamera implements CaptureCamera {
   }
 
   @override
-  Widget preview() => const AspectRatio(
+  Widget preview({Widget? overlay}) => AspectRatio(
     aspectRatio: 9 / 16,
-    child: ColoredBox(
-      key: ValueKey<String>('fake-preview'),
-      color: Color(0xFF6B7780),
+    child: Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        const ColoredBox(
+          key: ValueKey<String>('fake-preview'),
+          color: Color(0xFF6B7780),
+        ),
+        ?overlay,
+      ],
     ),
   );
+
+  /// The bytes of every shot taken, in order: the camera's own frames.
+  final List<Uint8List> shotBytes = <Uint8List>[];
 
   @override
   Future<String> takePicture() async {
@@ -54,9 +64,9 @@ class FakeCamera implements CaptureCamera {
     final target = folder;
     if (target == null) throw StateError('no folder for shots');
     final file = File('$target/shot-${shots++}.jpg');
-    file.writeAsBytesSync(
-      shotWithLocation(width: 320, height: 240, shade: shots * 50),
-    );
+    final bytes = shotWithLocation(width: 320, height: 240, shade: shots * 50);
+    shotBytes.add(bytes);
+    file.writeAsBytesSync(bytes);
     return file.path;
   }
 

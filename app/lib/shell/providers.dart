@@ -92,6 +92,20 @@ final customerPicturesProvider = StreamProvider.family<List<Picture>, String>(
   ),
 );
 
+/// Live after pictures of one picture of a customer (D-280).
+final afterPicturesProvider =
+    StreamProvider.family<
+      List<Picture>,
+      ({String customerId, String pictureId})
+    >(
+      retry: _noRetry,
+      (ref, key) => watchAfterPictures(
+        ref.watch(databaseProvider),
+        key.customerId,
+        key.pictureId,
+      ),
+    );
+
 /// One picture of a customer, optionally checked to be in a room; null
 /// when it does not exist (D-259).
 final pictureProvider =

@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -15,11 +16,13 @@ import 'package:wio_app/camera/picture_processor.dart';
 import 'package:wio_app/customers/customer_screen.dart';
 import 'package:wio_app/data/database.dart';
 import 'package:wio_app/media/media_store.dart';
+import 'package:wio_app/pictures/picture_screen.dart';
 import 'package:wio_app/rooms/room_screen.dart';
 import 'package:wio_app/sync/upload_queue.dart';
 
 import '../support/fake_camera.dart';
 import '../support/jpeg_metadata.dart';
+import '../support/media.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
 
@@ -60,6 +63,7 @@ void main() {
     WidgetTester tester, {
     String location = _kueche,
     PictureProcessor? prepare,
+    String? mediaFolder,
   }) => pumpWioApp(
     tester,
     db: db,
@@ -69,6 +73,7 @@ void main() {
     uploadStore: UploadStore(() async => '${folder.path}/support'),
     captureFiles: CaptureFiles(() async => '${folder.path}/temp'),
     preparePicture: prepare,
+    mediaFolder: mediaFolder,
   );
 
   Future<List<Picture>> newPictures(WidgetTester tester) async =>
@@ -362,5 +367,105 @@ void main() {
       mediaStore: _NoMediaStore(),
     );
     expect(find.widgetWithText(FilledButton, 'Fotos'), findsNothing);
+  });
+
+  /// The before picture's file in the app's own media folder, as if it
+  /// was taken on this device.
+  void keepBeforeFile() {
+    final media = Directory('${folder.path}/support/media')
+      ..createSync(recursive: true);
+    File('${DemoFiles.folder}/${DemoFiles.kuecheVorher}.jpg')
+        .copySync('${media.path}/${DemoFiles.kuecheVorher}');
+  }
+
+  testWidgets('Nachher aufnehmen: overlay, and every press an after picture '
+      'of the camera frame only (D-276, D-277)', (tester) async {
+    keepBeforeFile();
+    await pumpCamera(
+      tester,
+      location: '$_kueche/pictures/${TestIds.fotoVorher}',
+      mediaFolder: '${folder.path}/support/media',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Nachher aufnehmen'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CameraScreen), findsOneWidget);
+    expect(_shutter(), findsOneWidget, reason: 'opens directly, rule 5');
+    final overlay = tester.widget<Opacity>(
+      find.byKey(const ValueKey<String>('after-overlay')),
+    );
+    expect(overlay.opacity, afterOverlayOpacity);
+    expect(afterOverlayOpacity, 0.4);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('after-overlay')),
+        matching: find.byType(Image),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Nachher-Foto: Das Vorher-Foto liegt darüber.'), findsOne);
+    expect(find.byType(Slider), findsNothing, reason: 'UX rule 6');
+
+    await press(tester);
+    await press(tester);
+    await drain(tester);
+    expect(find.text('2 Fotos gespeichert'), findsOneWidget);
+
+    final pictures = await newPictures(tester);
+    expect(pictures, hasLength(2));
+    final frames = (await tester.runAsync(
+      () async => <String>{
+        for (final shot in camera.shotBytes)
+          sha256.convert(preparePictureBytes(shot).bytes).toString(),
+      },
+    ))!;
+    for (final picture in pictures) {
+      expect(picture.afterOf, TestIds.fotoVorher);
+      expect(picture.roomId, TestIds.kueche);
+      expect(picture.customerId, TestIds.familieBeispiel);
+      // The stored file is the camera's own frame, prepared; nothing of
+      // the overlay is in it.
+      expect(frames, contains(picture.fileSha256));
+      expect(picture.fileSha256, isNot(DemoFiles.kuecheVorher));
+    }
+
+    await tester.tap(find.widgetWithText(TextButton, 'Fertig'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PictureScreen), findsOneWidget);
+    expect(find.text('Nachher'), findsNWidgets(4), reason: 'row + 3 tiles');
+  });
+
+  testWidgets('a before picture not on this device: hint, camera still works', (
+    tester,
+  ) async {
+    await pumpCamera(
+      tester,
+      location: '$_kueche/pictures/${TestIds.fotoVorher}/nachher',
+      mediaFolder: '${folder.path}/support/media',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey<String>('after-overlay')), findsNothing);
+    expect(find.text('Vorher-Foto ist nicht auf diesem Gerät.'), findsOne);
+    await press(tester);
+    await drain(tester);
+    expect((await newPictures(tester)).single.afterOf, TestIds.fotoVorher);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Fertig'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PictureScreen), findsOneWidget, reason: 'D-276');
+  });
+
+  testWidgets('no Nachher aufnehmen where the app takes no pictures (web)', (
+    tester,
+  ) async {
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: '$_kueche/pictures/${TestIds.fotoVorher}',
+      mediaStore: _NoMediaStore(),
+    );
+    expect(find.text('Nachher aufnehmen'), findsNothing);
+    expect(find.widgetWithText(OutlinedButton, 'Löschen'), findsOneWidget);
   });
 }

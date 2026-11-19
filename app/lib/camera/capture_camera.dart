@@ -23,8 +23,10 @@ abstract class CaptureCamera {
   /// Throws [CameraDenied] or [CameraUnavailable].
   Future<void> open();
 
-  /// The live image, once [open] finished.
-  Widget preview();
+  /// The live image, once [open] finished, with [overlay] drawn over it
+  /// in exactly the same box (D-277). The overlay is a widget on the
+  /// screen only; [takePicture] never sees it.
+  Widget preview({Widget? overlay});
 
   /// Takes one shot and returns the path of its file.
   Future<String> takePicture();
@@ -76,12 +78,13 @@ class PluginCaptureCamera implements CaptureCamera {
   }
 
   @override
-  Widget preview() {
+  Widget preview({Widget? overlay}) {
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized) {
       return const SizedBox.shrink();
     }
-    return CameraPreview(controller);
+    // CameraPreview stacks its child inside its own aspect box.
+    return CameraPreview(controller, child: overlay);
   }
 
   @override

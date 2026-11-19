@@ -34,41 +34,48 @@ void main() {
   });
   tearDown(() => db.close());
 
-  testWidgets('shows the room, its site and its pictures oldest first', (
-    tester,
-  ) async {
-    await pumpWioApp(
-      tester,
-      db: db,
-      location: _kueche,
-      mediaFolder: demoMediaFolder(),
-    );
+  testWidgets(
+    'shows the room, its site and its pictures, after behind before',
+    (tester) async {
+      await pumpWioApp(
+        tester,
+        db: db,
+        location: _kueche,
+        mediaFolder: demoMediaFolder(),
+      );
 
-    expect(find.text('Küche'), findsOneWidget);
-    expect(find.text('Alte Wohnung'), findsOneWidget);
-    expect(find.text('Fotos'), findsNWidgets(2), reason: 'heading, button');
-    final times = <String>[
-      _time(8, 5),
-      _time(8, 7),
-      _time(9, 40),
-      _time(9, 45),
-    ];
-    for (final time in times) {
-      expect(find.text(time), findsOneWidget, reason: time);
-    }
-    final tops = <double>[
-      for (final time in times) tester.getTopLeft(find.text(time)).dy,
-    ];
-    final lefts = <double>[
-      for (final time in times) tester.getTopLeft(find.text(time)).dx,
-    ];
-    expect(tops[0], tops[1], reason: 'first row');
-    expect(lefts[0], lessThan(lefts[1]));
-    expect(tops[2], greaterThan(tops[0]), reason: 'second row');
-    expect(find.text(_time(8, 6)), findsNothing, reason: 'tombstoned picture');
-    expect(find.text('Nachher'), findsOneWidget, reason: 'after picture');
-    expect(find.byType(Image), findsNWidgets(3));
-  });
+      expect(find.text('Küche'), findsOneWidget);
+      expect(find.text('Alte Wohnung'), findsOneWidget);
+      expect(find.text('Fotos'), findsNWidgets(2), reason: 'heading, button');
+      // Oldest first, each after picture right behind its before picture
+      // (D-281): Vorher 8:05, its Nachher 9:40, then 8:07 and 9:45.
+      final times = <String>[
+        _time(8, 5),
+        _time(9, 40),
+        _time(8, 7),
+        _time(9, 45),
+      ];
+      for (final time in times) {
+        expect(find.text(time), findsOneWidget, reason: time);
+      }
+      final tops = <double>[
+        for (final time in times) tester.getTopLeft(find.text(time)).dy,
+      ];
+      final lefts = <double>[
+        for (final time in times) tester.getTopLeft(find.text(time)).dx,
+      ];
+      expect(tops[0], tops[1], reason: 'first row');
+      expect(lefts[0], lessThan(lefts[1]));
+      expect(tops[2], greaterThan(tops[0]), reason: 'second row');
+      expect(
+        find.text(_time(8, 6)),
+        findsNothing,
+        reason: 'tombstoned picture',
+      );
+      expect(find.text('Nachher'), findsOneWidget, reason: 'after picture');
+      expect(find.byType(Image), findsNWidgets(3));
+    },
+  );
 
   testWidgets('a picture whose file is not here has a hint, no Öffnen', (
     tester,

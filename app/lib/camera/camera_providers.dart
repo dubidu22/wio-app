@@ -32,21 +32,27 @@ final canTakePicturesProvider = Provider<bool>(
   (ref) => ref.watch(mediaStoreProvider).supported,
 );
 
-/// The one capture queue of the app (D-268). It lives as long as the app,
-/// so leaving the camera does not stop it.
-final captureQueueProvider = Provider<CaptureQueue>((ref) {
+/// Writes pictures and notes with their files (D-241); the capture queue
+/// and the picture screen's "Löschen" use it (D-278).
+final mediaWriterProvider = Provider<MediaWriter>((ref) {
   final db = ref.watch(databaseProvider);
   final clock = ref.watch(clockProvider);
-  return CaptureQueue(
-    db: db,
-    writer: MediaWriter(
-      db,
-      LocalWriter(db, clock: clock),
-      ref.watch(mediaStoreProvider),
-      ref.watch(uploadStoreProvider),
-      clock: clock,
-    ),
-    files: ref.watch(captureFilesProvider),
-    prepare: ref.watch(preparePictureProvider),
+  return MediaWriter(
+    db,
+    LocalWriter(db, clock: clock),
+    ref.watch(mediaStoreProvider),
+    ref.watch(uploadStoreProvider),
+    clock: clock,
   );
 });
+
+/// The one capture queue of the app (D-268). It lives as long as the app,
+/// so leaving the camera does not stop it.
+final captureQueueProvider = Provider<CaptureQueue>(
+  (ref) => CaptureQueue(
+    db: ref.watch(databaseProvider),
+    writer: ref.watch(mediaWriterProvider),
+    files: ref.watch(captureFilesProvider),
+    prepare: ref.watch(preparePictureProvider),
+  ),
+);

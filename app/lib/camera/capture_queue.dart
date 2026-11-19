@@ -8,8 +8,10 @@ import 'capture_files.dart';
 import 'picture_processor.dart';
 
 /// Where new pictures go: a room of a customer, or the customer itself
-/// when [roomId] is null (customer screen "Fotos", Q3).
-typedef CaptureTarget = ({String customerId, String? roomId});
+/// when [roomId] is null (customer screen "Fotos", Q3). With [afterOf],
+/// every picture is an after picture of that picture (D-276) and takes
+/// its room and customer.
+typedef CaptureTarget = ({String customerId, String? roomId, String? afterOf});
 
 /// What one opening of the camera has done so far; the camera screen
 /// shows it (D-268).
@@ -85,21 +87,29 @@ class CaptureQueue {
       shot = await moved;
       final picture = await _prepare(await _files.read(shot));
       prepared = await _files.write(picture.bytes);
-      final customer = await (_db.select(
-        _db.customers,
-      )..where((c) => c.id.equals(session.target.customerId))).getSingle();
-      await _writer.addPicture(
-        workspaceId: customer.workspaceId,
-        file: PreparedPicture(
-          path: prepared,
-          mime: 'image/jpeg',
-          widthPx: picture.widthPx,
-          heightPx: picture.heightPx,
-          takenAt: takenAt,
-        ),
-        roomId: session.target.roomId,
-        customerId: session.target.customerId,
+      final file = PreparedPicture(
+        path: prepared,
+        mime: 'image/jpeg',
+        widthPx: picture.widthPx,
+        heightPx: picture.heightPx,
+        takenAt: takenAt,
       );
+      final afterOf = session.target.afterOf;
+      if (afterOf != null) {
+        // Refused when the before picture was deleted meanwhile: counted
+        // as failed like any other shot (D-276).
+        await _writer.addAfterPicture(of: afterOf, file: file);
+      } else {
+        final customer = await (_db.select(
+          _db.customers,
+        )..where((c) => c.id.equals(session.target.customerId))).getSingle();
+        await _writer.addPicture(
+          workspaceId: customer.workspaceId,
+          file: file,
+          roomId: session.target.roomId,
+          customerId: session.target.customerId,
+        );
+      }
       ok = true;
     } on Object catch (error) {
       // Counted as failed on the camera screen; the log helps hand tests.

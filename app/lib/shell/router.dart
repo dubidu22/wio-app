@@ -65,6 +65,17 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                       roomId: state.pathParameters['roomId'],
                       pictureId: state.pathParameters['pictureId']!,
                     ),
+                    routes: <RouteBase>[
+                      // The after camera, part of the same task (D-276).
+                      GoRoute(
+                        path: 'nachher',
+                        builder: (context, state) => CameraScreen(
+                          customerId: state.pathParameters['customerId']!,
+                          roomId: state.pathParameters['roomId'],
+                          afterOf: state.pathParameters['pictureId'],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -74,6 +85,15 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                   customerId: state.pathParameters['customerId']!,
                   pictureId: state.pathParameters['pictureId']!,
                 ),
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: 'nachher',
+                    builder: (context, state) => CameraScreen(
+                      customerId: state.pathParameters['customerId']!,
+                      afterOf: state.pathParameters['pictureId'],
+                    ),
+                  ),
+                ],
               ),
               // Pictures without a room (Q3, D-271).
               GoRoute(

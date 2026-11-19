@@ -649,5 +649,33 @@
   "cameraTryAgain": "Noch einmal versuchen",
   "@cameraTryAgain": {
     "description": "Button that tries to open the camera again."
+  },
+  "cameraAfterOverlay": "Nachher-Foto: Das Vorher-Foto liegt darüber.",
+  "@cameraAfterOverlay": {
+    "description": "Status line of the after camera while the before picture shows faintly over the live image (D-277)."
+  },
+  "cameraAfterNoBefore": "Vorher-Foto ist nicht auf diesem Gerät.",
+  "@cameraAfterNoBefore": {
+    "description": "Status line of the after camera when the before picture's file is not on this device; pictures can still be taken (UX rule 7)."
+  },
+  "pictureTakeAfter": "Nachher aufnehmen",
+  "@pictureTakeAfter": {
+    "description": "Main button of the picture screen: opens the camera with this picture faintly over the live image (D-7, D-276)."
+  },
+  "pictureDelete": "Löschen",
+  "@pictureDelete": {
+    "description": "Button of the picture screen: deletes the picture at once, with Rückgängig (UX rule 9, D-278)."
+  },
+  "pictureDeleted": "Foto gelöscht.",
+  "@pictureDeleted": {
+    "description": "Note after Löschen on the picture screen, with Rückgängig for 8 seconds."
+  },
+  "pictureBefore": "Vorher",
+  "@pictureBefore": {
+    "description": "Heading above the before picture on an after picture's screen (D-280); a word, not a colour (D-5)."
+  },
+  "pictureAfterPictures": "Nachher",
+  "@pictureAfterPictures": {
+    "description": "Heading above a picture's after pictures on its screen (D-280)."
   }
 }

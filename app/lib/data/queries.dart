@@ -264,6 +264,57 @@ Stream<Picture?> watchPicture(
   return query.watchSingleOrNull().map((row) => row?.readTable(db.pictures));
 }
 
+/// Live after pictures of picture [pictureId] of customer [customerId],
+/// oldest first (D-275, D-280).
+Stream<List<Picture>> watchAfterPictures(
+  WioDatabase db,
+  String customerId,
+  String pictureId,
+) =>
+    (db.select(db.pictures)
+          ..where(
+            (p) =>
+                p.afterOf.equals(pictureId) &
+                p.customerId.equals(customerId) &
+                p.deletedAt.isNull(),
+          )
+          ..orderBy(_pictureOrder))
+        .watch();
+
+/// [pictures] (oldest first) with each after picture moved right behind
+/// its before picture, and its own after pictures behind it (D-281). An
+/// after picture whose before picture is not in the list keeps its place.
+List<Picture> withAfterPicturesBehind(List<Picture> pictures) {
+  final ids = <String>{for (final p in pictures) p.id};
+  final afterOf = <String, List<Picture>>{};
+  final roots = <Picture>[];
+  for (final picture in pictures) {
+    final before = picture.afterOf;
+    if (before != null && before != picture.id && ids.contains(before)) {
+      afterOf.putIfAbsent(before, () => <Picture>[]).add(picture);
+    } else {
+      roots.add(picture);
+    }
+  }
+  final ordered = <Picture>[];
+  final seen = <String>{};
+  void place(Picture picture) {
+    if (!seen.add(picture.id)) return;
+    ordered.add(picture);
+    for (final after in afterOf[picture.id] ?? const <Picture>[]) {
+      place(after);
+    }
+  }
+
+  roots.forEach(place);
+  // A cycle of after pictures (only from bad data) has no root: keep its
+  // pictures in time order rather than lose them.
+  for (final picture in pictures) {
+    place(picture);
+  }
+  return ordered;
+}
+
 /// Live pictures of room [roomId], oldest first (D-245).
 Stream<List<Picture>> watchPicturesOfRoom(WioDatabase db, String roomId) =>
     (db.select(db.pictures)

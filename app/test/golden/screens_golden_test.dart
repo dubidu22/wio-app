@@ -101,4 +101,35 @@ void main() {
       );
     });
   }
+
+  // An after picture with its before picture under "Vorher" (D-280), and
+  // the after camera with the before picture over the live image (D-277).
+  final extra = <String, String>{
+    'picture_screen_after':
+        '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}'
+        '/pictures/${TestIds.fotoNachher}',
+    'camera_screen_after':
+        '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}'
+        '/pictures/${TestIds.fotoVorher}/nachher',
+  };
+  for (final MapEntry(key: name, value: location) in extra.entries) {
+    for (final MapEntry(key: sizeName, value: size) in sizes.entries) {
+      testWidgets('$name at $sizeName size', skip: _notLinux, (tester) async {
+        final db = memoryDatabase();
+        addTearDown(db.close);
+        await seedWithPictures(db);
+        await pumpWioApp(
+          tester,
+          db: db,
+          location: location,
+          size: size,
+          mediaFolder: demoMediaFolder(),
+        );
+        await expectLater(
+          find.byType(WidgetsApp),
+          matchesGoldenFile('goldens/${name}_$sizeName.png'),
+        );
+      });
+    }
+  }
 }
