@@ -357,6 +357,7 @@ jobs:
           tools/ci/test/flutter-test.test.sh
           tools/ci/test/generated-code-fresh.test.sh
           tools/ci/test/android-permissions-check.test.sh
+          tools/ci/test/android-launch-check.test.sh
           tools/deploy/test/resolve.test.sh
           tools/deploy/test/web-deploy.test.sh
 
