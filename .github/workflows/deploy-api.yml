@@ -82,7 +82,9 @@ jobs:
         run: tools/deploy/resolve.sh
 
   deploy:
-    name: deploy (${{ needs.resolve.outputs.environment }})
+    # deploy-web reads the deployed commit from this name (plan 080 F1):
+    # keep the form "deploy (<environment>, <sha>)".
+    name: deploy (${{ needs.resolve.outputs.environment }}, ${{ needs.resolve.outputs.sha }})
     needs: resolve
     runs-on: ubuntu-latest
     timeout-minutes: 20

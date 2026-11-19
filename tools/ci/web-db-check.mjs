@@ -2,11 +2,13 @@
 // database opens in the browser (D-70, D-87): a database named `wio` must
 // appear in IndexedDB or in the origin-private file system (OPFS), and no page
 // error or console error may mention drift, sqlite, the worker or wasm.
-// Requests to other hosts are aborted, as in web-network-check.mjs.
+// Requests to other hosts are aborted, as in web-network-check.mjs, and
+// anything the hosting's Content-Security-Policy blocks fails (D-366).
 //
 // Usage: node tools/ci/web-db-check.mjs app/build/web [database name]
+//        node tools/ci/web-db-check.mjs --url https://app… (deployed app, D-368)
 import { fileURLToPath } from 'node:url';
-import { openLocalApp, waitForFlutter } from './lib/web-serve.mjs';
+import { openTarget, parseArgs, waitForFlutter } from './lib/web-serve.mjs';
 
 const DATABASE_ERROR = /drift|sqlite|worker|wasm/i;
 
@@ -34,14 +36,15 @@ async function findDatabase(name) {
 }
 
 /**
- * Serves `dir`, opens it in Chromium and reports where the database is.
+ * Opens `target` (a build folder or a URL) in Chromium and reports where the
+ * database is.
  * @returns {Promise<{ok: boolean, storage: string | null, errors: string[], error: string | null}>}
  */
 export async function checkWebDatabase(
-  dir,
-  { name = 'wio', startTimeoutMs = 60_000, databaseTimeoutMs = 30_000, settleMs = 2_000 } = {},
+  target,
+  { name = 'wio', startTimeoutMs = 60_000, databaseTimeoutMs = 30_000, settleMs = 2_000, headers = true } = {},
 ) {
-  const { context, origin, close } = await openLocalApp(dir);
+  const { context, url, violations, close } = await openTarget(target, { headers });
   const errors = [];
   let storage = null;
   let error = null;
@@ -53,7 +56,7 @@ export async function checkWebDatabase(
         errors.push(`console error: ${message.text()}`);
       }
     });
-    await page.goto(origin, { waitUntil: 'load' });
+    await page.goto(url, { waitUntil: 'load' });
     try {
       await waitForFlutter(page, startTimeoutMs);
     } catch (e) {
@@ -75,12 +78,14 @@ export async function checkWebDatabase(
   } finally {
     await close();
   }
+  errors.push(...violations);
 
   return { ok: error === null && errors.length === 0 && storage !== null, storage, errors, error };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const result = await checkWebDatabase(process.argv[2] ?? 'app/build/web', { name: process.argv[3] ?? 'wio' });
+  const { target, rest } = parseArgs(process.argv.slice(2), 'app/build/web');
+  const result = await checkWebDatabase(target, { name: rest[0] ?? 'wio' });
   for (const line of result.errors) console.error(line);
   if (result.error) console.error(result.error);
   if (!result.ok) process.exit(1);

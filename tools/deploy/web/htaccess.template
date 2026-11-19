@@ -1,0 +1,47 @@
+# Written by the web deploy from tools/deploy/web/htaccess.template (plan 080).
+# Do not edit on the host: the next deploy or rollback replaces it.
+# Live release: @SHA@
+#
+# Every request is mapped into r/<live release>/ (D-361). Switching releases
+# replaces this one file with a rename, so a switch counts from the next
+# request. The release folders themselves are not reachable directly.
+#
+# The Header lines are also what CI's local web server sends
+# (tools/ci/lib/web-serve.mjs, D-366) and what the smoke test expects
+# (web-smoke.sh W2, D-367): an unindented "Header always set" line applies to
+# every answer, an indented one inside <FilesMatch> to the matching files.
+# Keep each header on one line in that form.
+
+RewriteEngine On
+RewriteRule ^r(/|$) - [R=404,L]
+RewriteRule ^.+/$ - [R=404,L]
+RewriteRule ^$ r/@SHA@/index.html [END]
+RewriteRule ^(.+)$ r/@SHA@/$1 [END]
+
+# D-365: browsers compile wasm while downloading only with this type.
+AddType application/wasm .wasm
+AddType text/javascript .js .mjs
+AddType application/json .json
+AddDefaultCharset utf-8
+
+# D-363: revalidate everything (Flutter's file names are not hashed); never
+# keep the version the app reports (plans 033/038) or the release marker.
+Header always set Cache-Control "no-cache"
+<FilesMatch "^(version\.json|release\.txt)$">
+  Header always set Cache-Control "no-store"
+</FilesMatch>
+
+# D-364: only the own origin and the API; no framing, no plugins, no forms.
+Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self'@API_ORIGIN@; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
+Header always set X-Content-Type-Options "nosniff"
+Header always set Referrer-Policy "no-referrer"
+# No includeSubDomains, no preload: the business website and every other
+# subdomain of the domain stay unaffected.
+Header always set Strict-Transport-Security "max-age=31536000"
+# The web build takes no pictures and records nothing (D-274).
+Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+Header always set X-Robots-Tag "noindex, nofollow"
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/json application/wasm image/svg+xml
+</IfModule>

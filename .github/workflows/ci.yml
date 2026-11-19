@@ -104,10 +104,13 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
+      - name: The hosting headers are the template's (D-366)
+        working-directory: tools
+        run: npm run test:web-headers
       - name: The network check can fail (fixtures)
         working-directory: tools
         run: npm run test:web-check
-      - name: No request leaves the local server (D-40)
+      - name: No request leaves the local server, nothing is blocked by the hosting CSP (D-40, D-366)
         working-directory: tools
         run: npm run check:web
       - name: The fallback font check can fail (fixtures, D-86)
@@ -355,6 +358,7 @@ jobs:
           tools/ci/test/generated-code-fresh.test.sh
           tools/ci/test/android-permissions-check.test.sh
           tools/deploy/test/resolve.test.sh
+          tools/deploy/test/web-deploy.test.sh
 
   ci-passed:
     name: ci-passed
