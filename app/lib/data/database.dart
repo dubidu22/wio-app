@@ -60,6 +60,9 @@ class WioDatabase extends _$WioDatabase {
         // the server copies and unsent changes already on the device.
         await m.createTable(pictures);
         await m.createTable(notes);
+        // rebuildAll uses the current table definitions: a later step that
+        // changes these tables must keep this step working, for example by
+        // running its own changes after it (PR 64 review N1).
         await rebuildAll(this, const <String>{'pictures', 'notes'});
       }
     },

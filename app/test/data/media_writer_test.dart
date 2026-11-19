@@ -25,6 +25,18 @@ class NoMediaStore extends MediaStore {
   bool get supported => false;
 }
 
+/// A writer whose record write fails after the upload row was written.
+class FailingWriter extends LocalWriter {
+  FailingWriter(super.db);
+
+  @override
+  Future<String> write({
+    required String entity,
+    required String id,
+    required Map<String, Object?> fields,
+  }) => throw StateError('disk full');
+}
+
 void main() {
   late Directory folder;
   late WioDatabase db;
@@ -305,6 +317,77 @@ void main() {
       );
       await nothingWritten();
     });
+  });
+
+  test('an entry of another customer than the room is refused (S1)', () async {
+    await db
+        .into(db.serverRecords)
+        .insert(
+          ServerRecordsCompanion.insert(
+            entity: 'entries',
+            id: entryId,
+            revision: 3,
+            fields: jsonEncode(<String, Object?>{
+              'id': entryId,
+              'workspace_id': TestIds.workspace,
+              'customer_id': TestIds.herrProbe,
+            }),
+          ),
+        );
+    await expectLater(
+      writer.addPicture(
+        workspaceId: TestIds.workspace,
+        file: await picture('a'),
+        roomId: TestIds.keller,
+        entryId: entryId,
+      ),
+      throwsArgumentError,
+    );
+    await nothingWritten();
+  });
+
+  test('a failed record write leaves no upload, row or outbox (S2)', () async {
+    final failing = MediaWriter(
+      db,
+      FailingWriter(db),
+      media,
+      UploadStore(() async => folder.path),
+      clock: () => now,
+    );
+    await expectLater(
+      failing.addPicture(
+        workspaceId: TestIds.workspace,
+        file: await picture('a'),
+        roomId: TestIds.keller,
+      ),
+      throwsStateError,
+    );
+    await expectLater(
+      failing.addNote(
+        workspaceId: TestIds.workspace,
+        subjectType: 'room',
+        subjectId: TestIds.keller,
+        audio: PreparedAudio(path: await source('a', 'audio'), seconds: 1),
+      ),
+      throwsStateError,
+    );
+    await nothingWritten();
+  });
+
+  test('a mime with other than printable ASCII is refused (N2)', () async {
+    await expectLater(
+      writer.addPicture(
+        workspaceId: TestIds.workspace,
+        file: PreparedPicture(
+          path: await source('m', 'a'),
+          mime: 'image/jpég',
+          widthPx: 1,
+          heightPx: 1,
+        ),
+      ),
+      throwsArgumentError,
+    );
+    await nothingWritten();
   });
 
   group('addAfterPicture (T5)', () {

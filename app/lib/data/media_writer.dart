@@ -87,7 +87,18 @@ class MediaWriter {
         : entryId != null
         ? await _alive('entries', entryId)
         : null;
-    if (entryId != null && roomId != null) await _alive('entries', entryId);
+    if (entryId != null && roomId != null) {
+      // The server takes the room's customer; an entry of another customer
+      // then breaks fk_pictures_entry_customer (PR 64 review S1).
+      final entry = await _alive('entries', entryId);
+      if (entry.customerId != parent!.customerId) {
+        throw ArgumentError.value(
+          entryId,
+          'entryId',
+          'an entry of another customer than the room',
+        );
+      }
+    }
     if (customerId != null) {
       if (parent != null && parent.customerId != customerId) {
         throw ArgumentError.value(
@@ -274,8 +285,15 @@ class MediaWriter {
   };
 
   static void _checkPicture(PreparedPicture file) {
-    if (file.mime.isEmpty || file.mime.length > 100) {
-      throw ArgumentError.value(file.mime, 'mime', 'must be 1 to 100 chars');
+    if (file.mime.isEmpty ||
+        file.mime.length > 100 ||
+        file.mime.codeUnits.any((c) => c < 0x20 || c > 0x7e)) {
+      // The server column is ASCII (PR 64 review N2).
+      throw ArgumentError.value(
+        file.mime,
+        'mime',
+        'must be 1 to 100 printable ASCII chars',
+      );
     }
     if (file.widthPx < 0 || file.heightPx < 0) {
       throw ArgumentError('Width and height must not be below zero.');
