@@ -2,9 +2,6 @@
 <html lang="de">
 <head><meta charset="utf-8"><title>database opens, then the worker fails</title></head>
 <body><flutter-view></flutter-view>
-<script>
-indexedDB.open('wio', 1);
-setTimeout(() => console.error('drift worker failed: could not load sqlite3.wasm'), 300);
-</script>
+<script src="app.js"></script>
 </body>
 </html>

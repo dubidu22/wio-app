@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8"><title>starts only through an inline script</title></head>
+<body>
+<!-- The hosting's CSP (script-src 'self') blocks this script: under the
+     template's headers the check must fail with a CSP violation (D-366). -->
+<script>document.body.appendChild(document.createElement('flutter-view'));</script>
+</body>
+</html>

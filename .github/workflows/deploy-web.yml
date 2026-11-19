@@ -1,0 +1,173 @@
+# Deploys the web app to its own origin on the ALL-INKL hosting over SSH and
+# smoke tests it (plan 080, D-357 to D-371).
+#
+# - staging:    after every successful deploy-api run on main, so the API a
+#               web build needs is live first (D-358)
+# - production: on a tag app-v*, only with ci-passed on that commit on main
+#               and only if the tag equals the pubspec version (D-359, D-360)
+# - manual:     workflow_dispatch for a chosen environment, deploy or roll back
+#
+# The chain ci -> deploy-api -> deploy-web is GitHub's maximum depth for
+# workflow_run: nothing may be triggered by this workflow's completion.
+#
+# Secrets and variables live only in the GitHub environments staging and
+# production (plan 010 section 7, plan 080 section 4); the web deploy adds
+# the variables WIO_WEB_DEPLOY_PATH and uses WIO_WEB_ORIGIN, which the API
+# deploy also writes into its CORS allow-list (D-163, D-357). The deploy
+# logic is in tools/deploy/web-*.sh; SSH is the runner's own OpenSSH with the
+# host key pinned, no third-party action touches a credential (D-159).
+name: deploy-web
+
+on:
+  workflow_run:
+    workflows: [deploy-api]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ["app-v*"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+      mode:
+        description: deploy the selected ref, or roll back
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+      rollback_sha:
+        description: Release to roll back to (empty = the previous one)
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: resolve
+    # Only a successful automatic staging deploy of the API chains into a web
+    # deploy; a dispatched or failed API run does not.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'workflow_run')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      checks: read
+    outputs:
+      environment: ${{ steps.resolve.outputs.environment }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      mode: ${{ steps.resolve.outputs.mode }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Production only from a tag app-v* that equals the pubspec version;
+      # every web deploy needs ci-passed and the commit on main (MRG-01).
+      - name: Environment, commit and mode
+        id: resolve
+        env:
+          EVENT: ${{ github.event_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          REF_SHA: ${{ github.sha }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          INPUT_MODE: ${{ inputs.mode }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          WIO_TAG_PREFIX: app-v
+          WIO_ALWAYS_CHECK_CI: "true"
+          WIO_PUBSPEC: app/pubspec.yaml
+        run: tools/deploy/resolve.sh
+
+  deploy:
+    name: deploy web (${{ needs.resolve.outputs.environment }})
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ needs.resolve.outputs.environment }}
+      url: ${{ vars.WIO_WEB_ORIGIN }}
+    concurrency:
+      group: deploy-web-${{ needs.resolve.outputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      WIO_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+      WIO_SSH_HOST: ${{ vars.WIO_SSH_HOST }}
+      WIO_SSH_USER: ${{ vars.WIO_SSH_USER }}
+      WIO_WEB_DEPLOY_PATH: ${{ vars.WIO_WEB_DEPLOY_PATH }}
+      WIO_WEB_ORIGIN: ${{ vars.WIO_WEB_ORIGIN }}
+      WIO_API_URL: ${{ vars.WIO_API_URL }}
+      # D-368: the live browser checks run on staging only.
+      WIO_WEB_BROWSER_CHECKS: ${{ needs.resolve.outputs.environment == 'staging' && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          persist-credentials: false
+      - name: Settings of the environment
+        run: |
+          set -euo pipefail
+          for name in WIO_SSH_HOST WIO_SSH_USER WIO_WEB_DEPLOY_PATH WIO_WEB_ORIGIN WIO_API_URL; do
+            [[ -n "${!name}" ]] || { echo "::error::$name is not set in the environment $WIO_ENVIRONMENT (plan 080 section 4)"; exit 1; }
+          done
+          [[ "$WIO_WEB_ORIGIN" == https://* && "$WIO_API_URL" == https://* ]] || { echo "::error::WIO_WEB_ORIGIN and WIO_API_URL must be https"; exit 1; }
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        if: needs.resolve.outputs.mode == 'deploy'
+        with:
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.WIO_WEB_BROWSER_CHECKS == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+      - name: Install the browser checks
+        if: env.WIO_WEB_BROWSER_CHECKS == 'true'
+        working-directory: tools
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Build the web app for this environment (D-360)
+        if: needs.resolve.outputs.mode == 'deploy'
+        env:
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          flutter config --no-analytics && dart --disable-analytics
+          tools/deploy/web-deploy.sh build app "$SHA" "$RUNNER_TEMP/web.tar.gz"
+      - name: SSH key and pinned host key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.WIO_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ vars.WIO_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          for name in SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
+            [[ -n "${!name}" ]] || { echo "::error::$name is not set in the environment $WIO_ENVIRONMENT (plan 010 section 7)"; exit 1; }
+          done
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$RUNNER_TEMP/deploy-key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
+          {
+            echo "WIO_SSH_KEY_FILE=$RUNNER_TEMP/deploy-key"
+            echo "WIO_SSH_KNOWN_HOSTS_FILE=$RUNNER_TEMP/known_hosts"
+          } >> "$GITHUB_ENV"
+      - name: Deploy, switch and smoke test (D-361, D-367)
+        if: needs.resolve.outputs.mode == 'deploy'
+        env:
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: tools/deploy/web-deploy.sh deploy "$RUNNER_TEMP/web.tar.gz" "$SHA"
+      - name: Roll back and smoke test
+        if: needs.resolve.outputs.mode == 'rollback'
+        env:
+          ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+        run: tools/deploy/web-deploy.sh rollback "$ROLLBACK_SHA"
+      - name: Remove the SSH key
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/known_hosts"
