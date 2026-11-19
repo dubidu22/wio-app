@@ -163,7 +163,7 @@ Stream<List<LabelOn>> watchLabelsOf(WioDatabase db, Subject subject) {
               db.labels.deletedAt.isNull(),
         )
         ..orderBy(<OrderingTerm>[
-          OrderingTerm.asc(db.labels.name),
+          OrderingTerm.asc(db.labels.name.lower()),
           OrderingTerm.asc(db.labels.id),
         ]);
   return query.watch().map(
@@ -193,7 +193,7 @@ Stream<List<PropertyOn>> watchPropertiesOf(WioDatabase db, Subject subject) {
               db.propertyKeys.deletedAt.isNull(),
         )
         ..orderBy(<OrderingTerm>[
-          OrderingTerm.asc(db.propertyKeys.name),
+          OrderingTerm.asc(db.propertyKeys.name.lower()),
           OrderingTerm.asc(db.propertyKeys.id),
         ]);
   return query.watch().map(
@@ -207,12 +207,13 @@ Stream<List<PropertyOn>> watchPropertiesOf(WioDatabase db, Subject subject) {
   );
 }
 
-/// The workspace's live labels by name ("most recently used" is #104).
+/// The workspace's live labels by name, ignoring case (SQLite `lower`,
+/// ASCII letters; PR 109 review S1) ("most recently used" is #104).
 Stream<List<Label>> watchLabels(WioDatabase db) =>
     (db.select(db.labels)
           ..where((l) => l.deletedAt.isNull())
           ..orderBy(<OrderClauseGenerator<$LabelsTable>>[
-            (l) => OrderingTerm.asc(l.name),
+            (l) => OrderingTerm.asc(l.name.lower()),
             (l) => OrderingTerm.asc(l.id),
           ]))
         .watch();
@@ -222,7 +223,7 @@ Stream<List<PropertyKey>> watchPropertyKeys(WioDatabase db) =>
     (db.select(db.propertyKeys)
           ..where((k) => k.deletedAt.isNull())
           ..orderBy(<OrderClauseGenerator<$PropertyKeysTable>>[
-            (k) => OrderingTerm.asc(k.name),
+            (k) => OrderingTerm.asc(k.name.lower()),
             (k) => OrderingTerm.asc(k.id),
           ]))
         .watch();

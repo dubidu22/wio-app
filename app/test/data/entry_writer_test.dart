@@ -193,6 +193,7 @@ void main() {
         fixtureId: '01970000-0000-7000-8000-000000000fff',
         level: 0,
       ),
+      'floor point without room': const Place(floorXCm: 10, floorYCm: 20),
       'half a floor point': const Place(
         siteId: TestIds.alteWohnung,
         roomId: TestIds.kueche,
@@ -289,6 +290,11 @@ void main() {
       ),
       throwsArgumentError,
     );
+    await expectLater(
+      writer.setTarget(id, const Place(floorXCm: 10, floorYCm: 20)),
+      throwsArgumentError,
+    );
+    expect(await outbox(), hasLength(2));
   });
 
   group('codes (T7)', () {
@@ -533,6 +539,38 @@ void main() {
       );
       expect(decimalPattern.hasMatch('-12345678901234.123456'), isTrue);
     });
+  });
+
+  test('names sort without regard to case (PR 109 review S1)', () async {
+    final id = await entry();
+    final subject = (type: 'entry', id: id);
+    for (final name in <String>['Zange', 'apfel']) {
+      await writer.addLabel(
+        subject,
+        await writer.labelNamed(workspaceId: ws, name: name),
+      );
+      await writer.setProperty(
+        subject,
+        await writer.keyNamed(workspaceId: ws, name: name),
+        text: 'x',
+      );
+    }
+    expect((await watchLabels(db).first).map((l) => l.name), <String>[
+      'apfel',
+      'Zange',
+    ]);
+    expect((await watchPropertyKeys(db).first).map((k) => k.name), <String>[
+      'apfel',
+      'Zange',
+    ]);
+    expect(
+      (await watchLabelsOf(db, subject).first).map((l) => l.label.name),
+      <String>['apfel', 'Zange'],
+    );
+    expect(
+      (await watchPropertiesOf(db, subject).first).map((p) => p.key.name),
+      <String>['apfel', 'Zange'],
+    );
   });
 
   test('place_history cannot be written on the device (T16)', () async {

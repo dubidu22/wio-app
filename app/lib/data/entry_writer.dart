@@ -580,6 +580,10 @@ class EntryWriter {
     if ((place.floorXCm == null) != (place.floorYCm == null)) {
       throw ArgumentError.value(place, 'place', 'a floor point has x and y');
     }
+    if (place.floorXCm != null && place.roomId == null) {
+      // ck_entries_floor_or_fixture (PR 109 review M1).
+      throw ArgumentError.value(place, 'place', 'a floor point needs a room');
+    }
     if (place.floorXCm != null && place.fixtureId != null) {
       throw ArgumentError.value(place, 'place', 'floor or fixture, not both');
     }
