@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -454,6 +455,39 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'Fertig'));
     await tester.pumpAndSettle();
     expect(find.byType(PictureScreen), findsOneWidget, reason: 'D-276');
+  });
+
+  testWidgets('a deleted before picture: no line, shots not saved (S2)', (
+    tester,
+  ) async {
+    keepBeforeFile();
+    await tester.runAsync(
+      () =>
+          (db.update(
+            db.pictures,
+          )..where((p) => p.id.equals(TestIds.fotoVorher))).write(
+            const PicturesCompanion(
+              deletedAt: Value<String?>('2026-11-19T10:00:00.000Z'),
+            ),
+          ),
+    );
+    await pumpCamera(
+      tester,
+      location: '$_kueche/pictures/${TestIds.fotoVorher}/nachher',
+      mediaFolder: '${folder.path}/support/media',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey<String>('after-overlay')), findsNothing);
+    expect(find.text('Vorher-Foto ist nicht auf diesem Gerät.'), findsNothing);
+    expect(
+      find.text('Nachher-Foto: Das Vorher-Foto liegt darüber.'),
+      findsNothing,
+    );
+    await press(tester);
+    await drain(tester);
+    expect(find.text('1 Foto konnte nicht gespeichert werden'), findsOne);
+    expect(await newPictures(tester), isEmpty);
   });
 
   testWidgets('no Nachher aufnehmen where the app takes no pictures (web)', (

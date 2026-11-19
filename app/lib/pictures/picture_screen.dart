@@ -91,19 +91,37 @@ class PictureScreen extends ConsumerWidget {
 }
 
 /// "Löschen" and the main button "Nachher aufnehmen" (UX rule 3).
-class _PictureButtons extends ConsumerWidget {
+class _PictureButtons extends ConsumerStatefulWidget {
   const _PictureButtons({required this.picture, required this.base});
 
   final Picture picture;
   final String base;
 
-  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+  @override
+  ConsumerState<_PictureButtons> createState() => _PictureButtonsState();
+}
+
+class _PictureButtonsState extends ConsumerState<_PictureButtons> {
+  /// A second press while the first delete runs does nothing (PR 72 S1).
+  bool _deleting = false;
+
+  Picture get picture => widget.picture;
+  String get base => widget.base;
+
+  Future<void> _delete() async {
+    if (_deleting) return;
+    _deleting = true;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
     final writer = ref.read(mediaWriterProvider);
     final id = picture.id;
-    await writer.deletePicture(id);
+    try {
+      await writer.deletePicture(id);
+    } on Object {
+      if (mounted) _deleting = false;
+      rethrow;
+    }
     router.go(base);
     messenger.showSnackBar(
       SnackBar(
@@ -121,12 +139,12 @@ class _PictureButtons extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final canTake = ref.watch(canTakePicturesProvider);
     final delete = OutlinedButton(
       style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(64)),
-      onPressed: () => _delete(context, ref),
+      onPressed: _delete,
       child: FittedBox(fit: BoxFit.scaleDown, child: Text(l10n.pictureDelete)),
     );
     return SafeArea(

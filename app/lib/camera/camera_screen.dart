@@ -279,18 +279,32 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     );
   }
 
-  Picture? _before() {
+  Picture? _before() => _beforeRow()?.value;
+
+  AsyncValue<Picture?>? _beforeRow() {
     final id = widget.afterOf;
     if (id == null) return null;
-    return ref
-        .watch(
-          pictureProvider((
-            customerId: widget.customerId,
-            roomId: widget.roomId,
-            pictureId: id,
-          )),
-        )
-        .value;
+    return ref.watch(
+      pictureProvider((
+        customerId: widget.customerId,
+        roomId: widget.roomId,
+        pictureId: id,
+      )),
+    );
+  }
+
+  /// The after camera's line about the before picture: none while the
+  /// before row or the media folder is not known yet, and none when the
+  /// before picture no longer exists (its shots count as not saved,
+  /// D-276); otherwise the overlay line or the missing-file hint (rule 7).
+  String? _afterLine(AppLocalizations l10n) {
+    final row = _beforeRow();
+    if (row == null || !row.hasValue || row.value == null) return null;
+    final folder = ref.watch(mediaFolderProvider);
+    if (folder.isLoading && !folder.hasValue) return null;
+    return _beforeImage(context) == null
+        ? l10n.cameraAfterNoBefore
+        : l10n.cameraAfterOverlay;
   }
 
   /// The before picture, faint, over the live image (D-277). Only drawn on
@@ -334,16 +348,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     final empty =
         _session.stored == 0 && _session.pending == 0 && _session.failed == 0;
     if (empty && _state != _CameraState.ready) return const <String>[];
-    final folder = ref.watch(mediaFolderProvider);
     final after = <String>[
-      // No hint while the media folder is not known yet (rule 7).
-      if (widget.afterOf != null &&
-          _state == _CameraState.ready &&
-          (folder.hasValue || !folder.isLoading))
-        // A missing before file is a hint, not a block (UX rule 7).
-        _beforeImage(context) == null
-            ? l10n.cameraAfterNoBefore
-            : l10n.cameraAfterOverlay,
+      if (widget.afterOf != null && _state == _CameraState.ready)
+        ?_afterLine(l10n),
     ];
     return <String>[
       ...after,

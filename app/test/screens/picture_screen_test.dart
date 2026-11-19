@@ -106,6 +106,33 @@ void main() {
     expect(find.text(_time(8, 7)), findsOneWidget);
   });
 
+  testWidgets('a double tap on Löschen deletes once (PR 72 S1)', (
+    tester,
+  ) async {
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: '$_kueche/pictures/${TestIds.fotoRegal}',
+      mediaFolder: demoMediaFolder(),
+    );
+
+    final delete = find.widgetWithText(OutlinedButton, 'Löschen');
+    await tester.tap(delete);
+    await tester.tap(delete, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    final outbox = await tester.runAsync(
+      () => (db.select(
+        db.outbox,
+      )..where((o) => o.entityId.equals(TestIds.fotoRegal))).get(),
+    );
+    expect(outbox, hasLength(1));
+    expect(find.text('Foto gelöscht.'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 9));
+    await tester.pumpAndSettle();
+    expect(find.text('Foto gelöscht.'), findsNothing, reason: 'no second one');
+  });
+
   testWidgets('without Rückgängig the note goes after 8 s, still deleted', (
     tester,
   ) async {
