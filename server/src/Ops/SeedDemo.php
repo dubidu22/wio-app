@@ -96,7 +96,7 @@ final class SeedDemo
             $now = $this->clock->now();
             $shift = self::dayShift($demo, $now);
 
-            $ids = [$demoWorkspace['id'] => $target];
+            $ids = [Sql::text($demoWorkspace['id']) => $target];
             foreach ($tables as $rows) {
                 foreach ($rows as $row) {
                     $id = $row['id'] ?? null;
@@ -187,7 +187,10 @@ final class SeedDemo
                 }
                 $clean = [];
                 foreach ($row as $column => $value) {
-                    $clean[(string) $column] = $value;
+                    if (!\is_string($column)) {
+                        throw new InvalidArgumentException(sprintf('A row of %s has a column without a name.', $block['table']));
+                    }
+                    $clean[$column] = $value;
                 }
                 $rows[] = $clean;
             }
@@ -358,6 +361,7 @@ final class SeedDemo
      */
     private function revisions(string $workspaceId, array $tables): array
     {
+        /** @var list<array{revision: int, table: string, index: int}> $order */
         $order = [];
         foreach ($tables as $table => $rows) {
             foreach ($rows as $index => $row) {
@@ -365,14 +369,15 @@ final class SeedDemo
                 if (!\is_int($revision)) {
                     throw new InvalidArgumentException(sprintf('Row %d of %s has no revision.', $index, $table));
                 }
-                $order[] = [$revision, \count($order), $table, $index];
+                $order[] = ['revision' => $revision, 'table' => $table, 'index' => $index];
             }
         }
-        sort($order);
+        // usort is stable: rows with the same revision keep the file's order.
+        usort($order, static fn(array $a, array $b): int => $a['revision'] <=> $b['revision']);
         $counter = new RevisionCounter($this->sql->pdo);
         $revisions = [];
-        foreach ($order as [, , $table, $index]) {
-            $revisions[$table][$index] = $counter->next($workspaceId);
+        foreach ($order as $item) {
+            $revisions[$item['table']][$item['index']] = $counter->next($workspaceId);
         }
 
         return $revisions;

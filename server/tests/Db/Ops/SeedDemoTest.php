@@ -62,18 +62,34 @@ final class SeedDemoTest extends TestCase
 
     protected function tearDown(): void
     {
-        if (is_dir($this->filesDir)) {
-            $files = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($this->filesDir, \FilesystemIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::CHILD_FIRST,
-            );
-            foreach ($files as $file) {
-                $file instanceof \SplFileInfo && $file->isDir() ? rmdir($file->getPathname()) : unlink((string) $file);
+        self::remove($this->filesDir);
+    }
+
+    private static function remove(string $path): void
+    {
+        if (is_dir($path)) {
+            foreach (array_diff(self::list($path), ['.', '..']) as $name) {
+                self::remove($path . '/' . $name);
             }
-            rmdir($this->filesDir);
+            rmdir($path);
+        } elseif (is_file($path)) {
+            unlink($path);
         }
     }
 
+    /**
+     * @return list<string>
+     */
+    private static function list(string $dir): array
+    {
+        $names = scandir($dir);
+
+        return $names === false ? [] : $names;
+    }
+
+    /**
+     * @return array{workspace_id: string, owner_id: string, demo_workspace: string, counts: array<string, int>, job_dates: list<string>, last_revision: int}
+     */
     private function seed(?string $workspaceId, ?string $email = null, string $environment = 'staging', string $file = DemoWorkspace::FILE, ?Sql $sql = null): array
     {
         return (new SeedDemo($environment, $sql ?? $this->sql, $this->clock, new FileStore($this->filesDir, $this->clock), $file))
@@ -112,7 +128,7 @@ final class SeedDemoTest extends TestCase
     {
         $counts = [];
         foreach (self::TABLES as $table) {
-            $n = $this->sql->run("SELECT COUNT(*) FROM {$table} WHERE workspace_id = ?", [$workspaceId])->fetchColumn();
+            $n = $this->number("SELECT COUNT(*) FROM {$table} WHERE workspace_id = ?", [$workspaceId]);
             if ($n > 0) {
                 $counts[$table] = $n;
             }
@@ -123,7 +139,18 @@ final class SeedDemoTest extends TestCase
 
     private function counter(string $workspaceId): int
     {
-        return (int) $this->sql->run('SELECT last_revision FROM workspace_counters WHERE workspace_id = ?', [$workspaceId])->fetchColumn();
+        return $this->number('SELECT last_revision FROM workspace_counters WHERE workspace_id = ?', [$workspaceId]);
+    }
+
+    /**
+     * @param list<scalar|null> $values
+     */
+    private function number(string $query, array $values = []): int
+    {
+        $value = $this->sql->run($query, $values)->fetchColumn();
+        self::assertIsInt($value);
+
+        return $value;
     }
 
     /** T1 */
@@ -155,7 +182,7 @@ final class SeedDemoTest extends TestCase
         }
         foreach (['labels', 'property_keys'] as $table) {
             foreach ($this->sql->rows("SELECT name, name_key FROM {$table}") as $row) {
-                self::assertSame(NameKey::of((string) $row['name']), $row['name_key']);
+                self::assertSame(NameKey::of(Sql::text($row['name'])), $row['name_key']);
             }
         }
         // References were remapped consistently: every room's site is a seeded site.
@@ -251,9 +278,8 @@ final class SeedDemoTest extends TestCase
     /** T6 */
     public function testItRefusesEveryEnvironmentButStagingBeforeTouchingTheDatabase(): void
     {
-        $untouchable = new Sql(new class extends PDO {
-            public function __construct() {}
-        });
+        // A PDO that was never connected: any use of it throws.
+        $untouchable = new Sql((new \ReflectionClass(PDO::class))->newInstanceWithoutConstructor());
         foreach (['production', '', 'Staging', 'test'] as $environment) {
             try {
                 $this->seed('01990000-1111-7000-8000-000000000001', null, $environment, DemoWorkspace::FILE, $untouchable);
@@ -322,8 +348,8 @@ final class SeedDemoTest extends TestCase
     public function testABrokenFileLeavesNothingBehind(): void
     {
         $ids = $this->owner();
-        $data = json_decode((string) file_get_contents(DemoWorkspace::FILE), true, 64, JSON_THROW_ON_ERROR);
-        self::assertIsArray($data);
+        /** @var array{tables: list<array{table: string, rows: list<array<string, mixed>>}>} $data */
+        $data = json_decode(Sql::text(file_get_contents(DemoWorkspace::FILE)), true, 64, JSON_THROW_ON_ERROR);
         $last = \count($data['tables']) - 1;
         self::assertSame('pictures', $data['tables'][$last]['table']);
         // A demo id nobody defines: the remap refuses it.
@@ -332,8 +358,10 @@ final class SeedDemoTest extends TestCase
         mkdir($dir . '/media', 0o700, true);
         $file = $dir . '/demo-workspace.json';
         file_put_contents($file, json_encode($data, JSON_THROW_ON_ERROR));
-        foreach (glob(\dirname(DemoWorkspace::FILE) . '/media/*.jpg') ?: [] as $jpg) {
-            copy($jpg, $dir . '/media/' . basename($jpg));
+        foreach (self::list(\dirname(DemoWorkspace::FILE) . '/media') as $name) {
+            if (str_ends_with($name, '.jpg')) {
+                copy(\dirname(DemoWorkspace::FILE) . '/media/' . $name, $dir . '/media/' . $name);
+            }
         }
 
         try {
@@ -341,10 +369,7 @@ final class SeedDemoTest extends TestCase
             self::fail('loaded a broken file');
         } catch (\InvalidArgumentException) {
         } finally {
-            array_map('unlink', glob($dir . '/media/*') ?: []);
-            rmdir($dir . '/media');
-            unlink($file);
-            rmdir($dir);
+            self::remove($dir);
         }
         self::assertSame([], $this->tableCounts($ids['workspace_id']));
         self::assertSame(2, $this->counter($ids['workspace_id']));
@@ -360,7 +385,7 @@ final class SeedDemoTest extends TestCase
         $pictures = $this->sql->rows('SELECT file_sha256, file_bytes FROM pictures');
         self::assertCount(5, $pictures);
         foreach ($pictures as $picture) {
-            $sha = (string) $picture['file_sha256'];
+            $sha = Sql::text($picture['file_sha256']);
             $state = $store->state($ids['workspace_id'], $sha);
             self::assertTrue($state['complete'], $sha);
             self::assertSame($picture['file_bytes'], $state['size']);
@@ -370,7 +395,8 @@ final class SeedDemoTest extends TestCase
         $page = (new Pull($this->sql))->page(new AuthContext($ids['workspace_id'], $ids['user_id'], 'owner', null, 'device-1'), 0, Pull::MAX_LIMIT);
         $byEntity = [];
         foreach ($page['records'] as $record) {
-            $byEntity[$record['entity']] = ($byEntity[$record['entity']] ?? 0) + 1;
+            $entity = Sql::text($record['entity']);
+            $byEntity[$entity] = ($byEntity[$entity] ?? 0) + 1;
         }
         self::assertSame(1, $byEntity['customers'] ?? 0);
         self::assertSame(2, $byEntity['jobs'] ?? 0);
