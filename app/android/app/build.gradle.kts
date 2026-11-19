@@ -47,6 +47,13 @@ android {
         versionName = flutter.versionName
     }
 
+    // D-392: the lint check inside assembleRelease crashes in the AGP lint
+    // JavaDocParser (NoSuchMethodError) and no APK is produced. Dart analyze
+    // and the tests cover the code, so release lint stays off.
+    lint {
+        checkReleaseBuilds = false
+    }
+
     signingConfigs {
         if (hasReleaseKey) {
             create("handtest") {
@@ -61,6 +68,8 @@ android {
 
     buildTypes {
         release {
+            // Keep rules for what R8 would remove, see proguard-rules.pro.
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName(if (hasReleaseKey) "handtest" else "debug")
         }
     }
