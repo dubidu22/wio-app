@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The app syncs with the server, so every build needs the network
+         (D-247); until plan 056 only debug and profile builds had it. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="wio_app"
+        android:label="${appLabel}"
         android:name="${applicationName}"
         android:allowBackup="false"
         android:fullBackupContent="false"

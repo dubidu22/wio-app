@@ -1,4 +1,4 @@
-package com.example.wio_app
+package de.wiederinordnung.wio
 
 import io.flutter.embedding.android.FlutterActivity
 
