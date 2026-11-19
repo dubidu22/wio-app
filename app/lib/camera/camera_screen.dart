@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../data/database.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
+import '../media/local_picture.dart';
+import '../media/media_store.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -16,15 +19,31 @@ import 'capture_queue.dart';
 /// Size of the shutter button "Foto" (UX rules 3 and 10).
 const double shutterSize = 96;
 
+/// How strongly the before picture shows over the live image of the after
+/// camera: fixed, no slider (UX rule 6, D-277).
+const double afterOverlayOpacity = 0.4;
+
 /// The camera (UX rule 5, D-265..D-271): opens straight into the live
 /// image; every press of "Foto" is one picture, stored in the background
 /// (D-268), with no step to confirm it. "Fertig" top left returns (D-270).
 /// Part of the room or customer task, not a level of its own (D-271).
+///
+/// With [afterOf] it is the after camera (D-276): the before picture shows
+/// faintly over the live image (D-277), every press is an after picture of
+/// it, and "Fertig" returns to that picture.
 class CameraScreen extends ConsumerStatefulWidget {
-  const CameraScreen({required this.customerId, this.roomId, super.key});
+  const CameraScreen({
+    required this.customerId,
+    this.roomId,
+    this.afterOf,
+    super.key,
+  });
 
   final String customerId;
   final String? roomId;
+
+  /// The picture whose after pictures are taken, or null.
+  final String? afterOf;
 
   @override
   ConsumerState<CameraScreen> createState() => _CameraScreenState();
@@ -37,6 +56,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   late final CaptureSession _session = CaptureSession((
     customerId: widget.customerId,
     roomId: widget.roomId,
+    afterOf: widget.afterOf,
   ));
   CaptureCamera? _camera;
   _CameraState _state = _CameraState.opening;
@@ -160,11 +180,11 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
       context.pop();
     } else {
       final room = widget.roomId;
-      context.go(
-        room == null
-            ? '/customers/${widget.customerId}'
-            : '/customers/${widget.customerId}/rooms/$room',
-      );
+      final base = room == null
+          ? '/customers/${widget.customerId}'
+          : '/customers/${widget.customerId}/rooms/$room';
+      final before = widget.afterOf;
+      context.go(before == null ? base : '$base/pictures/$before');
     }
   }
 
@@ -182,6 +202,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
       body: switch (_state) {
         _CameraState.ready => _Preview(
           camera: _camera!,
+          overlay: _overlay(context),
           flash: _flash,
           onFlashEnd: () => setState(() => _flash = false),
         ),
@@ -245,6 +266,66 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     );
   }
 
+  /// The before picture's file, or null when there is none to show.
+  ImageProvider? _beforeImage(BuildContext context) {
+    final before = _before();
+    if (before == null) return null;
+    final folder = ref.watch(mediaFolderProvider).value;
+    final size = MediaQuery.sizeOf(context);
+    return localPicture(
+      folder,
+      before.fileSha256,
+      cacheWidth: (size.width * MediaQuery.devicePixelRatioOf(context)).round(),
+    );
+  }
+
+  Picture? _before() => _beforeRow()?.value;
+
+  AsyncValue<Picture?>? _beforeRow() {
+    final id = widget.afterOf;
+    if (id == null) return null;
+    return ref.watch(
+      pictureProvider((
+        customerId: widget.customerId,
+        roomId: widget.roomId,
+        pictureId: id,
+      )),
+    );
+  }
+
+  /// The after camera's line about the before picture: none while the
+  /// before row or the media folder is not known yet, and none when the
+  /// before picture no longer exists (its shots count as not saved,
+  /// D-276); otherwise the overlay line or the missing-file hint (rule 7).
+  String? _afterLine(AppLocalizations l10n) {
+    final row = _beforeRow();
+    if (row == null || !row.hasValue || row.value == null) return null;
+    final folder = ref.watch(mediaFolderProvider);
+    if (folder.isLoading && !folder.hasValue) return null;
+    return _beforeImage(context) == null
+        ? l10n.cameraAfterNoBefore
+        : l10n.cameraAfterOverlay;
+  }
+
+  /// The before picture, faint, over the live image (D-277). Only drawn on
+  /// the screen: the shot is the camera's own frame (D-276).
+  Widget? _overlay(BuildContext context) {
+    final image = _beforeImage(context);
+    if (image == null) return null;
+    return IgnorePointer(
+      child: Opacity(
+        key: const ValueKey<String>('after-overlay'),
+        opacity: afterOverlayOpacity,
+        child: Image(
+          image: image,
+          fit: BoxFit.contain,
+          gaplessPlayback: true,
+          errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+
   String _title(AppLocalizations l10n) {
     final room = widget.roomId;
     if (room != null) {
@@ -267,7 +348,12 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     final empty =
         _session.stored == 0 && _session.pending == 0 && _session.failed == 0;
     if (empty && _state != _CameraState.ready) return const <String>[];
+    final after = <String>[
+      if (widget.afterOf != null && _state == _CameraState.ready)
+        ?_afterLine(l10n),
+    ];
     return <String>[
+      ...after,
       if (_session.stored == 0 && _session.pending == 0)
         l10n.cameraNoneYet
       else if (_session.stored > 0)
@@ -281,11 +367,13 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
 class _Preview extends StatelessWidget {
   const _Preview({
     required this.camera,
+    required this.overlay,
     required this.flash,
     required this.onFlashEnd,
   });
 
   final CaptureCamera camera;
+  final Widget? overlay;
   final bool flash;
   final VoidCallback onFlashEnd;
 
@@ -296,7 +384,7 @@ class _Preview extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          Center(child: camera.preview()),
+          Center(child: camera.preview(overlay: overlay)),
           // A short white flash confirms each press; nothing to dismiss.
           IgnorePointer(
             child: AnimatedOpacity(

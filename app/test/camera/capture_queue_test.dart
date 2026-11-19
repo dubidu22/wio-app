@@ -42,10 +42,14 @@ void main() {
 
   /// A shot as the camera plugin leaves it in its own cache folder.
   var shots = 0;
-  String shot({int width = 640, int height = 480}) {
+  String shot({int width = 640, int height = 480, int? shade}) {
     final file = File('${pluginCache.path}/CAP${shots++}.jpg')
       ..writeAsBytesSync(
-        shotWithLocation(width: width, height: height, shade: shots * 40),
+        shotWithLocation(
+          width: width,
+          height: height,
+          shade: shade ?? shots * 40,
+        ),
       );
     return file.path;
   }
@@ -55,7 +59,11 @@ void main() {
     return work.existsSync() ? work.listSync() : <FileSystemEntity>[];
   }
 
-  const room = (customerId: TestIds.familieBeispiel, roomId: TestIds.kueche);
+  const room = (
+    customerId: TestIds.familieBeispiel,
+    roomId: TestIds.kueche,
+    afterOf: null,
+  );
 
   setUp(() async {
     folder = await Directory.systemTemp.createTemp('capture_queue_test');
@@ -127,6 +135,7 @@ void main() {
     final session = CaptureSession((
       customerId: TestIds.familieBeispiel,
       roomId: null,
+      afterOf: null,
     ));
     queue.add(session, shot(), now);
     await queue.idle;
@@ -134,6 +143,67 @@ void main() {
     final picture = (await db.select(db.pictures).get()).single;
     expect(picture.roomId, isNull);
     expect(picture.customerId, TestIds.familieBeispiel);
+  });
+
+  test(
+    'an after target links after_of to the before picture (D-276)',
+    () async {
+      final queue = queueWith();
+      queue.add(CaptureSession(room), shot(shade: 10), now);
+      await queue.idle;
+      final before = (await db.select(db.pictures).get()).single;
+
+      // The after camera of a room picture is opened with only the customer
+      // known; room and customer come from the before picture.
+      final session = CaptureSession((
+        customerId: TestIds.familieBeispiel,
+        roomId: null,
+        afterOf: before.id,
+      ));
+      queue.add(session, shot(shade: 90), now);
+      queue.add(session, shot(shade: 170), now);
+      await queue.idle;
+
+      expect((session.stored, session.failed), (2, 0));
+      final after = await (db.select(
+        db.pictures,
+      )..where((p) => p.id.isNotValue(before.id))).get();
+      expect(after, hasLength(2));
+      for (final picture in after) {
+        expect(picture.afterOf, before.id);
+        expect(picture.roomId, TestIds.kueche);
+        expect(picture.customerId, TestIds.familieBeispiel);
+        expect(picture.fileSha256, isNot(before.fileSha256));
+      }
+      expect(await db.select(db.uploads).get(), hasLength(3));
+    },
+  );
+
+  test('an after shot of a deleted picture counts as failed', () async {
+    final queue = queueWith();
+    queue.add(CaptureSession(room), shot(), now);
+    await queue.idle;
+    final before = (await db.select(db.pictures).get()).single;
+    await MediaWriter(
+      db,
+      LocalWriter(db, clock: () => now),
+      media,
+      UploadStore(() async => '${folder.path}/support'),
+      clock: () => now,
+    ).deletePicture(before.id);
+
+    final session = CaptureSession((
+      customerId: TestIds.familieBeispiel,
+      roomId: TestIds.kueche,
+      afterOf: before.id,
+    ));
+    queue.add(session, shot(), now);
+    await queue.idle;
+
+    expect((session.stored, session.failed), (0, 1));
+    expect(await db.select(db.pictures).get(), hasLength(1));
+    expect(await db.select(db.uploads).get(), hasLength(1));
+    expect(workFiles(), isEmpty);
   });
 
   test('a shot that cannot be prepared leaves no row and no upload', () async {

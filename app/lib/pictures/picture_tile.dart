@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../data/database.dart';
+import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
 import '../media/local_picture.dart';
 import '../media/media_store.dart';
@@ -22,7 +23,8 @@ String pictureTime(AppLocalizations l10n, Picture picture) {
       : l10n.pictureTakenAt(time.toLocal());
 }
 
-/// Pictures as a grid of tiles, oldest first (D-259). [locationOf] is the
+/// Pictures as a grid of tiles, oldest first, each after picture right
+/// behind its before picture (D-259, D-281). [locationOf] is the
 /// address of the picture screen for one picture.
 class PictureGrid extends StatelessWidget {
   const PictureGrid({
@@ -46,7 +48,7 @@ class PictureGrid extends StatelessWidget {
           spacing: _gap,
           runSpacing: _gap,
           children: <Widget>[
-            for (final picture in pictures)
+            for (final picture in withAfterPicturesBehind(pictures))
               SizedBox(
                 width: width,
                 child: PictureTile(
