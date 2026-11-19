@@ -95,7 +95,13 @@ final class ContractSubsetTest extends TestCase
     public function testTheRefusedRangeDeclaresTheFileSize(): void
     {
         $responses = Contract::map(Contract::map(Contract::map(Contract::map(Contract::document()['paths'] ?? null)['/files/{sha256}'] ?? null)['get'] ?? null)['responses'] ?? null);
-        $refused = Contract::map($responses['416'] ?? null);
+        $refused = null;
+        foreach ($responses as $status => $response) {
+            if ("{$status}" === '416') {
+                $refused = Contract::map($response);
+            }
+        }
+        self::assertNotNull($refused, 'getFile must list 416');
         $header = Contract::map(Contract::map($refused['headers'] ?? null)['Content-Range'] ?? null);
         $schema = Contract::map($header['schema'] ?? null);
 
