@@ -83,6 +83,7 @@ export 'src/response/auth_sign_out_post503_response.dart';
 export 'src/response/files_sha256_get200_response.dart';
 export 'src/response/files_sha256_get206_response.dart';
 export 'src/response/files_sha256_get304_response.dart';
+export 'src/response/files_sha256_get416_response.dart';
 export 'src/response/files_sha256_get503_response.dart';
 export 'src/response/files_sha256_put503_response.dart';
 export 'src/response/files_sha256_state_get503_response.dart';

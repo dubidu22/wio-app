@@ -12,7 +12,8 @@ import 'package:wio_api/src/operation/http_operation.dart' as _i1;
 import 'package:wio_api/src/response/files_sha256_get200_response.dart' as _i6;
 import 'package:wio_api/src/response/files_sha256_get206_response.dart' as _i8;
 import 'package:wio_api/src/response/files_sha256_get304_response.dart' as _i9;
-import 'package:wio_api/src/response/maintenance.dart' as _i11;
+import 'package:wio_api/src/response/files_sha256_get416_response.dart' as _i11;
+import 'package:wio_api/src/response/maintenance.dart' as _i12;
 import 'package:wio_api/src/response_wrapper/get_file_response.dart' as _i2;
 
 final class GetFile extends _i1.HttpOperation<_i2.GetFileResponse> {
@@ -391,7 +392,13 @@ final class GetFile extends _i1.HttpOperation<_i2.GetFileResponse> {
       case (416, r'application/problem+json'):
         final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
         final _$body = _i10.Problem.fromJson(_$json);
-        return _i2.GetFileResponse416(body: _$body);
+        return _i2.GetFileResponse416(
+          body: _i11.FilesSha256Get416Response(
+            body: _$body,
+            contentRange: (response.headers[r'content-range'])
+                .decodeSimpleNullableString(context: r'Content-Range'),
+          ),
+        );
       case (416, _):
         final _$content = response.headers['content-type'] ?? 'not specified';
         final _$matched = _$mediaType ?? 'none';
@@ -414,7 +421,7 @@ final class GetFile extends _i1.HttpOperation<_i2.GetFileResponse> {
         final _$json = _i4.decodeResponseJson<_i3.Object?>(response.bodyBytes);
         final _$body = _i10.Problem.fromJson(_$json);
         return _i2.GetFileResponse503(
-          body: _i11.Maintenance(
+          body: _i12.Maintenance(
             body: _$body,
             retryAfter: (response.headers[r'retry-after'])
                 .decodeSimpleNullableInt(context: r'Retry-After'),

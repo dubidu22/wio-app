@@ -244,6 +244,29 @@ final class DownloadTest extends DatabaseTestCase
         self::assertProblem($this->send($this->get($sha, $customer)->withHeader('Range', 'bytes=10-')), 404, 'not_found');
     }
 
+    /**
+     * Plan 079 T1 and T2 (D-355): a resume past the end, with a matching
+     * If-Range, still gets the file size, and a web origin may read it.
+     */
+    public function testA416ToAResumeCarriesTheSizeAndTheWebMayReadIt(): void
+    {
+        $this->corsOrigins = 'https://app.example.org';
+        $sha = $this->stored($this->workspace, '0123456789');
+        $this->picture($this->workspace, null, $sha);
+
+        $response = $this->send(
+            $this->get($sha, $this->owner)
+                ->withHeader('Range', 'bytes=10-4194313')
+                ->withHeader('If-Range', '"' . $sha . '"')
+                ->withHeader('Origin', 'https://app.example.org'),
+        );
+
+        self::assertProblem($response, 416, 'range_not_satisfiable');
+        self::assertSame('bytes */10', $response->getHeaderLine('Content-Range'));
+        self::assertSame('https://app.example.org', $response->getHeaderLine('Access-Control-Allow-Origin'));
+        self::assertContains('Content-Range', array_map('trim', explode(',', $response->getHeaderLine('Access-Control-Expose-Headers'))));
+    }
+
     public function testIfRangeSendsTheRangeOnlyForTheSameFile(): void
     {
         $sha = $this->stored($this->workspace, '0123456789');

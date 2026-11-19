@@ -449,6 +449,16 @@ paths:
           $ref: '#/components/responses/NotFound'
         '416':
           description: The range starts at or after the end of the file (`range_not_satisfiable`); `Content-Range` is `bytes */<total>`.
+          headers:
+            Content-Range:
+              description: >-
+                `bytes */<total>`: the size of the whole file. The server always
+                sends it; optional so a client still reads the 416 when a proxy
+                drops it.
+              required: false
+              schema:
+                type: string
+                pattern: '^bytes \*/[0-9]{1,15}$'
           content:
             application/problem+json:
               schema:

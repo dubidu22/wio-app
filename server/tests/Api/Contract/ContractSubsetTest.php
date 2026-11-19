@@ -88,6 +88,29 @@ final class ContractSubsetTest extends TestCase
         }
     }
 
+    /**
+     * Plan 079 T3 (D-352, D-355): the 416 of getFile keeps declaring the size
+     * header the server sends (review note 055 N1).
+     */
+    public function testTheRefusedRangeDeclaresTheFileSize(): void
+    {
+        $responses = Contract::map(Contract::map(Contract::map(Contract::map(Contract::document()['paths'] ?? null)['/files/{sha256}'] ?? null)['get'] ?? null)['responses'] ?? null);
+        $refused = null;
+        foreach ($responses as $status => $response) {
+            if ("{$status}" === '416') {
+                $refused = Contract::map($response);
+            }
+        }
+        self::assertNotNull($refused, 'getFile must list 416');
+        $header = Contract::map(Contract::map($refused['headers'] ?? null)['Content-Range'] ?? null);
+        $schema = Contract::map($header['schema'] ?? null);
+
+        self::assertSame('string', $schema['type'] ?? null, 'getFile 416 must declare Content-Range');
+        $pattern = '^bytes \\*/[0-9]{1,15}$';
+        self::assertSame($pattern, $schema['pattern'] ?? null);
+        self::assertSame(1, preg_match('~' . $pattern . '~', 'bytes */10'));
+    }
+
     public function testEveryOperationTakesTheAppVersionHeaderAndLists426(): void
     {
         foreach (Contract::map(Contract::document()['paths'] ?? null) as $path => $item) {
