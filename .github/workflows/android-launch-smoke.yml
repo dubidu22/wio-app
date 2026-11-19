@@ -106,7 +106,10 @@ jobs:
             echo "::error::the app is not running 20 s after launch"
             failed=1
           fi
-          if grep -E 'FATAL EXCEPTION|Fatal signal|Process: '"$PACKAGE"'.*PID|has died' "$RUNNER_TEMP/logcat.txt" > "$RUNNER_TEMP/crash.txt"; then
+          # Only lines that name this app: other processes on the emulator may
+          # die or print "Fatal signal" without being our crash. A native crash
+          # shows as the tombstone header (">>> package <<<") and as a dead pid.
+          if grep -E "Process: ${PACKAGE}, PID|Process ${PACKAGE} \(pid [0-9]+\) has died|>>> ${PACKAGE} <<<" "$RUNNER_TEMP/logcat.txt" > "$RUNNER_TEMP/crash.txt"; then
             echo "::error::crash markers in logcat, see the log artifact"
             failed=1
           fi
