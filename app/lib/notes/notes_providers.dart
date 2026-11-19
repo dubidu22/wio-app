@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database.dart';
 import '../data/queries.dart';
+import '../media/media_presence.dart';
 import '../media/media_store.dart';
 import '../shell/providers.dart';
 import 'note_audio.dart';
 import 'note_player.dart';
+import 'note_player_platform.dart';
 
 /// What notes are about on a screen: subject type and id (D-298).
 typedef NoteSubject = ({String type, String id});
@@ -36,20 +38,30 @@ final noteProvider = StreamProvider.family<Note?, String>(
   (ref, id) => watchNote(ref.watch(databaseProvider), id),
 );
 
-/// The local path of a recording, or null when it is not on the device
-/// (D-305). #62 invalidates it after a download.
-final noteAudioProvider = Provider.family<String?, String>(
-  (ref, sha256) => localNoteAudio(ref.watch(mediaFolderProvider).value, sha256),
+/// Where the player finds a recording, or null when it is not on the
+/// device (D-305). Follows the file's state, so a card shows Abspielen as
+/// soon as a download lands (D-332).
+final noteAudioProvider = Provider.autoDispose.family<String?, String>((
+  ref,
+  sha256,
+) {
+  if (ref.watch(mediaFileProvider(sha256)) != MediaFileState.present) {
+    return null;
+  }
+  return localNoteAudio(ref.watch(mediaFolderProvider).value, sha256);
+});
+
+/// The player of this build (D-300, D-335). Tests override it with a fake.
+final notePlayerProvider = Provider<NotePlayer>(
+  (ref) => platformNotePlayer(ref.watch(mediaStoreProvider)),
 );
 
-/// The phone's player (D-300). Tests override it with a fake.
-final notePlayerProvider = Provider<NotePlayer>((ref) => ChannelNotePlayer());
-
-/// Whether this build plays recordings (D-300): Android only, where the
-/// media store keeps files. The web gets its player with #62, iOS with #63.
+/// Whether this build plays recordings (D-300, D-335): Android, where the
+/// media store keeps files, and the web from memory. iOS gets its player
+/// with #63.
 final canPlayNotesProvider = Provider<bool>(
   (ref) =>
-      !kIsWeb &&
-      defaultTargetPlatform == TargetPlatform.android &&
-      ref.watch(mediaStoreProvider).supported,
+      kIsWeb ||
+      (defaultTargetPlatform == TargetPlatform.android &&
+          ref.watch(mediaStoreProvider).supported),
 );

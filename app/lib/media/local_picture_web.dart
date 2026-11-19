@@ -1,6 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
-/// The web keeps no picture files in M2 (D-246); #62 decides where
-/// downloaded files live there.
-ImageProvider? localPicture(String folder, String sha256, {int? cacheWidth}) =>
-    null;
+import 'media_store.dart';
+
+/// See `local_picture.dart`: the web shows files kept in memory (D-334).
+ImageProvider? localPicture(MediaStore store, String? folder, String sha256) {
+  final bytes = store.bytesOf(sha256);
+  return bytes == null ? null : MemoryImage(bytes);
+}

@@ -5,8 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wio_api/wio_api.dart';
 
 import '../auth/session_provider.dart';
+import '../media/media_presence.dart';
+import '../media/media_store.dart';
 import '../shell/providers.dart';
 import '../update/app_too_old.dart';
+import 'download_queue.dart';
 import 'sync_engine.dart';
 import 'upload_queue.dart';
 
@@ -15,6 +18,7 @@ class SyncTiming {
   const SyncTiming({
     this.afterWrite = const Duration(seconds: 3),
     this.every = const Duration(minutes: 5),
+    this.afterWant = const Duration(seconds: 1),
     this.backOff = const <Duration>[
       Duration(seconds: 30),
       Duration(minutes: 1),
@@ -30,6 +34,10 @@ class SyncTiming {
 
   /// Runs while the app is open.
   final Duration every;
+
+  /// Wait after a screen showed a missing file before a run fetches it
+  /// (D-328).
+  final Duration afterWant;
 
   /// Waits after failed runs, in order; the last one repeats.
   final List<Duration> backOff;
@@ -62,6 +70,7 @@ class SyncNotifier extends Notifier<SyncActivity> {
   Timer? _afterWrite;
   Timer? _retry;
   Timer? _every;
+  Timer? _afterWant;
   StreamSubscription<Set<TableUpdate>>? _writes;
   int _failures = 0;
   bool _running = false;
@@ -84,12 +93,17 @@ class SyncNotifier extends Notifier<SyncActivity> {
             ),
           )
           .listen((_) => _scheduleAfterWrite(timing.afterWrite));
+      // A screen shows a file that is not here: fetch it soon (D-328).
+      final wants = ref.read(mediaWantsProvider);
+      wants.onWanted = (_) => _scheduleAfterWant(timing.afterWant);
+      ref.onDispose(() => wants.onWanted = null);
     }
     return SyncActivity.idle;
   }
 
   void _stop() {
     _afterWrite?.cancel();
+    _afterWant?.cancel();
     _retry?.cancel();
     _every?.cancel();
     unawaited(_writes?.cancel());
@@ -98,6 +112,19 @@ class SyncNotifier extends Notifier<SyncActivity> {
   void _scheduleAfterWrite(Duration wait) {
     _afterWrite?.cancel();
     _afterWrite = Timer(wait, trigger);
+  }
+
+  void _scheduleAfterWant(Duration wait) {
+    if (_afterWant?.isActive ?? false) return;
+    _afterWant = Timer(wait, () {
+      if (!ref.mounted || state != SyncActivity.idle) return;
+      final presence = ref.read(mediaPresenceProvider);
+      final missing = ref
+          .read(mediaWantsProvider)
+          .all
+          .any((sha) => presence.of(sha) == MediaFileState.missing);
+      if (missing) trigger();
+    });
   }
 
   /// Starts a run when sync may start by itself.
@@ -138,6 +165,7 @@ class SyncNotifier extends Notifier<SyncActivity> {
           store: ref.read(uploadStoreProvider),
           tooOld: tooOld,
         ),
+        downloads: _downloads(server, tooOld),
       ).run();
     } on Object {
       if (ref.mounted) _failed(null);
@@ -165,6 +193,39 @@ class SyncNotifier extends Notifier<SyncActivity> {
       _again = false;
       trigger();
     }
+  }
+
+  DownloadWorker _downloads(Server server, bool Function() tooOld) {
+    final store = ref.read(mediaStoreProvider);
+    final presence = ref.read(mediaPresenceProvider.notifier);
+    final wants = ref.read(mediaWantsProvider);
+    return DownloadWorker(
+      db: ref.read(databaseProvider),
+      api: FilesApi(server),
+      store: store,
+      memory: ref.read(downloadMemoryProvider),
+      present: () {
+        if (!ref.mounted) return null;
+        final presence = ref.read(mediaPresenceProvider);
+        // Not listed yet, or a phone without a media folder: nothing to
+        // compare with, so nothing is fetched now.
+        if (!presence.listed) return null;
+        if (store.supported && ref.read(mediaFolderProvider).value == null) {
+          return null;
+        }
+        return presence.present;
+      },
+      markPresent: (sha) {
+        if (ref.mounted) presence.markPresent(sha);
+      },
+      setLoading: (loading) {
+        if (ref.mounted) presence.setLoading(loading);
+      },
+      wanted: () => wants.all,
+      tooOld: tooOld,
+      // The web fetches only what a screen shows (D-334).
+      onlyWanted: !store.supported,
+    );
   }
 
   void _failed(Duration? retryAfter) {

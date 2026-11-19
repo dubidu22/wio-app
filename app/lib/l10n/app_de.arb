@@ -469,6 +469,15 @@
       }
     }
   },
+  "syncDownloads": "{count, plural, =1{1 Datei wird geladen.} other{{count} Dateien werden geladen.}}",
+  "@syncDownloads": {
+    "description": "Sync status line while pictures or recordings from other devices come in (D-333).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "uploadTitle": "Datei ({size})",
   "@uploadTitle": {
     "description": "A file that was not uploaded, with its size such as 1,2 MB (D-214).",
@@ -571,6 +580,10 @@
   "@pictureNotOnDevice": {
     "description": "Tile and picture screen text when the picture's file is not on this device yet (D-260)."
   },
+  "pictureLoading": "Foto wird geladen.",
+  "@pictureLoading": {
+    "description": "Tile and picture screen text while the picture's file comes in from the server (D-333)."
+  },
   "pictureTitle": "Foto",
   "@pictureTitle": {
     "description": "Title of the full-screen picture."
@@ -657,6 +670,10 @@
   "cameraAfterNoBefore": "Vorher-Foto ist nicht auf diesem Gerät.",
   "@cameraAfterNoBefore": {
     "description": "Status line of the after camera when the before picture's file is not on this device; pictures can still be taken (UX rule 7)."
+  },
+  "cameraAfterLoading": "Vorher-Foto wird geladen.",
+  "@cameraAfterLoading": {
+    "description": "Status line of the after camera while the before picture's file comes in from the server (D-333)."
   },
   "pictureTakeAfter": "Nachher aufnehmen",
   "@pictureTakeAfter": {
@@ -845,6 +862,10 @@
   "noteNotOnDevice": "Aufnahme ist noch nicht auf diesem Gerät.",
   "@noteNotOnDevice": {
     "description": "Hint on a voice note whose recording is not on this device (D-305)."
+  },
+  "noteLoading": "Aufnahme wird geladen.",
+  "@noteLoading": {
+    "description": "Note card and note screen hint while the recording comes in from the server (D-333)."
   },
   "noteCannotPlay": "Auf diesem Gerät lässt sich die Aufnahme noch nicht abspielen.",
   "@noteCannotPlay": {

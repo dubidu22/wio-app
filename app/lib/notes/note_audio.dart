@@ -2,10 +2,8 @@ import 'note_audio_native.dart'
     if (dart.library.js_interop) 'note_audio_web.dart'
     as platform;
 
-/// The path of the recording with [sha256] in the media [folder], or null
-/// when it is not on this device (D-305). The web keeps no files before
-/// #62 (D-246).
-String? localNoteAudio(String? folder, String sha256) {
-  if (folder == null) return null;
-  return platform.localNoteAudio(folder, sha256);
-}
+/// Where the player finds the recording with [sha256], for a file whose
+/// state is present (D-332): a path in the media [folder] on phones, a
+/// memory key on the web (D-334, D-335). Null when there is none.
+String? localNoteAudio(String? folder, String sha256) =>
+    platform.localNoteAudio(folder, sha256);

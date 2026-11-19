@@ -8,6 +8,7 @@ import '../data/database.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
 import '../media/local_picture.dart';
+import '../media/media_presence.dart';
 import '../media/media_store.dart';
 import '../notes/notes_section.dart';
 import '../shell/back_button.dart';
@@ -273,10 +274,14 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   ImageProvider? _beforeImage(BuildContext context) {
     final before = _before();
     if (before == null) return null;
-    final folder = ref.watch(mediaFolderProvider).value;
+    if (ref.watch(mediaFileProvider(before.fileSha256)) !=
+        MediaFileState.present) {
+      return null;
+    }
     final size = MediaQuery.sizeOf(context);
     return localPicture(
-      folder,
+      ref.watch(mediaStoreProvider),
+      ref.watch(mediaFolderProvider).value,
       before.fileSha256,
       cacheWidth: (size.width * MediaQuery.devicePixelRatioOf(context)).round(),
     );
@@ -303,11 +308,13 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   String? _afterLine(AppLocalizations l10n) {
     final row = _beforeRow();
     if (row == null || !row.hasValue || row.value == null) return null;
-    final folder = ref.watch(mediaFolderProvider);
-    if (folder.isLoading && !folder.hasValue) return null;
-    return _beforeImage(context) == null
-        ? l10n.cameraAfterNoBefore
-        : l10n.cameraAfterOverlay;
+    return switch (ref.watch(mediaFileProvider(row.value!.fileSha256))) {
+      MediaFileState.unknown => null,
+      MediaFileState.loading => l10n.cameraAfterLoading,
+      MediaFileState.present when _beforeImage(context) != null =>
+        l10n.cameraAfterOverlay,
+      _ => l10n.cameraAfterNoBefore,
+    };
   }
 
   /// The before picture, faint, over the live image (D-277). Only drawn on

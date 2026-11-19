@@ -7,6 +7,7 @@ import 'package:tonik_util/tonik_util.dart';
 import 'package:wio_api/wio_api.dart';
 
 import '../data/database.dart';
+import 'download_queue.dart';
 import 'local_tables.dart';
 import 'rebuild.dart';
 import 'upload_queue.dart';
@@ -69,6 +70,7 @@ class SyncEngine {
     required this.workspaceId,
     required this.tooOld,
     this.uploads,
+    this.downloads,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
 
@@ -84,13 +86,19 @@ class SyncEngine {
   /// record loop.
   final UploadWorker? uploads;
 
-  /// Push, then pull, then uploads (D-201, D-208).
+  /// Fetches missing files last (D-326); none in tests of the record loop.
+  final DownloadWorker? downloads;
+
+  /// Push, then pull, then uploads, then downloads (D-201, D-208, D-326).
   Future<SyncResult> run() async {
     final pushed = await push();
     if (pushed.stop != SyncStop.done) return pushed;
     final pulled = await pull();
     if (pulled.stop != SyncStop.done) return pulled;
-    return await uploads?.run() ?? SyncResult.done;
+    final sent = await uploads?.run() ?? SyncResult.done;
+    // New changes wait: the next run pushes them before any download.
+    if (sent.stop != SyncStop.done || sent.more) return sent;
+    return await downloads?.run() ?? SyncResult.done;
   }
 
   // ---------------------------------------------------------------- push
