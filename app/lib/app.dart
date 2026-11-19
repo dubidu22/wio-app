@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'auth/session_provider.dart';
+import 'camera/camera_providers.dart';
 import 'l10n/app_localizations.dart';
 import 'shell/providers.dart';
 import 'shell/router.dart';
@@ -97,6 +98,13 @@ class _WioAppState extends ConsumerState<WioApp> {
   }
 
   Future<void> _start() async {
+    // Camera shots left by an earlier run go at start, never uploaded
+    // (D-268).
+    if (ref.read(canTakePicturesProvider)) {
+      unawaited(
+        ref.read(captureQueueProvider).sweep().catchError((Object _) {}),
+      );
+    }
     // Copies of discarded uploads go at start (D-215).
     unawaited(
       sweepUploads(

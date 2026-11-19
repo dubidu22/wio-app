@@ -533,7 +533,7 @@
   },
   "roomPicturesEmpty": "Noch keine Fotos in diesem Raum.",
   "@roomPicturesEmpty": {
-    "description": "Hint on the room screen when the room has no pictures (D-75; the Fotos button comes with the camera, D-258)."
+    "description": "Hint on the room screen when the room has no pictures (D-75); the Fotos button below takes them (D-258)."
   },
   "roomMissing": "Diesen Raum gibt es nicht mehr.",
   "@roomMissing": {
@@ -582,5 +582,72 @@
   "pictureNoTime": "Ohne Zeit",
   "@pictureNoTime": {
     "description": "Shown instead of the time when a picture has none."
+  },
+  "takePictures": "Fotos",
+  "@takePictures": {
+    "description": "Main button of the room and customer screens: opens the camera at once (UX rule 5, D-258)."
+  },
+  "cameraDone": "Fertig",
+  "@cameraDone": {
+    "description": "Top-left button of the camera, in the place of Zurück: every picture is already saved (D-270)."
+  },
+  "cameraShutter": "Foto",
+  "@cameraShutter": {
+    "description": "Word on the camera's big shutter button; every press is one picture (UX rule 5)."
+  },
+  "cameraShutterLabel": "Foto aufnehmen",
+  "@cameraShutterLabel": {
+    "description": "Screen reader label of the shutter button."
+  },
+  "cameraNoneYet": "Noch kein Foto",
+  "@cameraNoneYet": {
+    "description": "Camera status line before the first picture."
+  },
+  "cameraStored": "{count, plural, =1{1 Foto gespeichert} other{{count} Fotos gespeichert}}",
+  "@cameraStored": {
+    "description": "Camera status line: pictures saved since the camera opened.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cameraSaving": "{count, plural, =1{1 Foto wird gespeichert} other{{count} Fotos werden gespeichert}}",
+  "@cameraSaving": {
+    "description": "Camera status line: pictures still being prepared (D-268).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cameraFailed": "{count, plural, =1{1 Foto konnte nicht gespeichert werden} other{{count} Fotos konnten nicht gespeichert werden}}",
+  "@cameraFailed": {
+    "description": "Camera status line: pictures that could not be saved.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cameraDenied": "Wio darf die Kamera nicht benutzen.",
+  "@cameraDenied": {
+    "description": "Hint when the camera permission was refused (D-269)."
+  },
+  "cameraDeniedHelp": "Wenn nichts passiert: In den Einstellungen des Telefons bei Wio die Kamera erlauben.",
+  "@cameraDeniedHelp": {
+    "description": "Second line of the refused-permission hint: where to allow it in the phone's own settings (D-269)."
+  },
+  "cameraAskAgain": "Noch einmal fragen",
+  "@cameraAskAgain": {
+    "description": "Button that asks for the camera permission again (D-269)."
+  },
+  "cameraUnavailable": "Die Kamera lässt sich gerade nicht öffnen.",
+  "@cameraUnavailable": {
+    "description": "Hint when there is no camera or it failed to start."
+  },
+  "cameraTryAgain": "Noch einmal versuchen",
+  "@cameraTryAgain": {
+    "description": "Button that tries to open the camera again."
   }
 }

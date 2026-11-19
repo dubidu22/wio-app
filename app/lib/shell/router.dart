@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../auth/sign_in_screen.dart';
+import '../camera/camera_screen.dart';
 import '../customers/customer_screen.dart';
 import '../jobs/job_list_screen.dart';
 import '../pictures/picture_screen.dart';
@@ -48,6 +49,14 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                   roomId: state.pathParameters['roomId']!,
                 ),
                 routes: <RouteBase>[
+                  // Part of the room task, not a fourth level (D-271).
+                  GoRoute(
+                    path: 'kamera',
+                    builder: (context, state) => CameraScreen(
+                      customerId: state.pathParameters['customerId']!,
+                      roomId: state.pathParameters['roomId'],
+                    ),
+                  ),
                   // Part of the room task, not a fourth level (D-261).
                   GoRoute(
                     path: 'pictures/:pictureId',
@@ -64,6 +73,13 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                 builder: (context, state) => PictureScreen(
                   customerId: state.pathParameters['customerId']!,
                   pictureId: state.pathParameters['pictureId']!,
+                ),
+              ),
+              // Pictures without a room (Q3, D-271).
+              GoRoute(
+                path: 'kamera',
+                builder: (context, state) => CameraScreen(
+                  customerId: state.pathParameters['customerId']!,
                 ),
               ),
             ],

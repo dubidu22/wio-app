@@ -46,7 +46,7 @@ void main() {
 
     expect(find.text('Küche'), findsOneWidget);
     expect(find.text('Alte Wohnung'), findsOneWidget);
-    expect(find.text('Fotos'), findsOneWidget);
+    expect(find.text('Fotos'), findsNWidgets(2), reason: 'heading, button');
     final times = <String>[
       _time(8, 5),
       _time(8, 7),
@@ -128,7 +128,7 @@ void main() {
     expect(find.byType(Image), findsNothing);
   });
 
-  testWidgets('no Fotos button before the camera exists (D-258)', (
+  testWidgets('buttons: Zurück, Öffnen and the main button Fotos (D-258)', (
     tester,
   ) async {
     await pumpWioApp(
@@ -140,10 +140,11 @@ void main() {
 
     expect(
       find.byWidgetPredicate((w) => w is ButtonStyleButton),
-      findsNWidgets(4),
-      reason: 'Zurück and three Öffnen',
+      findsNWidgets(5),
+      reason: 'Zurück, three Öffnen, Fotos',
     );
     expect(find.widgetWithText(TextButton, 'Zurück'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Fotos'), findsOneWidget);
   });
 
   testWidgets('a room without pictures shows a plain hint', (tester) async {
