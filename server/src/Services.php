@@ -14,6 +14,7 @@ use Wio\Auth\SignIn;
 use Wio\Auth\SignInLimiter;
 use Wio\Database\Connection;
 use Wio\Database\Sql;
+use Wio\Files\FileAccess;
 use Wio\Files\FileStore;
 use Wio\Http\Cors;
 use Wio\Support\SystemClock;
@@ -114,5 +115,10 @@ final class Services
     public function files(): FileStore
     {
         return new FileStore($this->filesDir, $this->clock);
+    }
+
+    public function fileAccess(): FileAccess
+    {
+        return new FileAccess($this->sql());
     }
 }

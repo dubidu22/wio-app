@@ -24,6 +24,7 @@ use Wio\Tests\Api\Operation;
 #[Operation('syncPull')]
 #[Operation('getFileState')]
 #[Operation('putFileChunk')]
+#[Operation('getFile')]
 final class AuthCoverageTest extends DatabaseTestCase
 {
     /**

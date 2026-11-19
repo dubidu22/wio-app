@@ -322,6 +322,143 @@ paths:
         default:
           $ref: '#/components/responses/Problem'
   /files/{sha256}:
+    get:
+      operationId: getFile
+      summary: Download a complete file that a readable picture or note points at
+      description: >-
+        Served only when a non-deleted picture (`file_sha256`) or note
+        (`audio_sha256`) that the caller may read (the pull scope) points at
+        the hash and the file is complete; every other hash answers the same
+        404, so callers cannot probe which files exist (D-221, D-224). One
+        byte range is supported for resuming (D-230); several or malformed
+        ranges get the whole file. The ETag is the quoted hash; answers must
+        be revalidated (`Cache-Control: private, no-cache`, D-229). Check the
+        SHA-256 of what arrived.
+      tags:
+        - files
+      parameters:
+        - $ref: '#/components/parameters/Sha256'
+        - name: Range
+          in: header
+          required: false
+          description: 'One range, for example `bytes=0-4194303`, `bytes=4194304-` or `bytes=-500`.'
+          schema:
+            type: string
+            maxLength: 200
+        - name: If-None-Match
+          in: header
+          required: false
+          description: 'The ETag the caller holds; a match answers 304.'
+          schema:
+            type: string
+            maxLength: 200
+        - name: If-Range
+          in: header
+          required: false
+          description: 'The ETag the caller holds; the range is sent only when it matches, otherwise the whole file.'
+          schema:
+            type: string
+            maxLength: 200
+        - $ref: '#/components/parameters/WioAppVersion'
+      responses:
+        '200':
+          description: The whole file.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Accept-Ranges:
+              $ref: '#/components/headers/AcceptRanges'
+            Content-Length:
+              $ref: '#/components/headers/ContentLength'
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/heic:
+              schema:
+                type: string
+                format: binary
+            audio/mp4:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: The requested range of the file.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Accept-Ranges:
+              $ref: '#/components/headers/AcceptRanges'
+            Content-Length:
+              $ref: '#/components/headers/ContentLength'
+            Content-Range:
+              description: '`bytes <first>-<last>/<total>`.'
+              required: true
+              schema:
+                type: string
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/heic:
+              schema:
+                type: string
+                format: binary
+            audio/mp4:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '304':
+          description: The file matches the ETag in `If-None-Match`; no body.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '416':
+          description: The range starts at or after the end of the file (`range_not_satisfiable`); `Content-Range` is `bytes */<total>`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '426':
+          $ref: '#/components/responses/UpgradeRequired'
+        '503':
+          $ref: '#/components/responses/Maintenance'
+        default:
+          $ref: '#/components/responses/Problem'
     put:
       operationId: putFileChunk
       summary: Upload one chunk of a file, resumable and idempotent
@@ -417,6 +554,27 @@ components:
         type: string
         pattern: '^[0-9a-f]{64}$'
   headers:
+    ETag:
+      description: The quoted SHA-256 of the file, a strong validator.
+      required: true
+      schema:
+        type: string
+        pattern: '^"[0-9a-f]{64}"$'
+    AcceptRanges:
+      description: Always `bytes`.
+      required: true
+      schema:
+        type: string
+        enum:
+          - bytes
+    ContentLength:
+      description: Bytes in this answer's body.
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 9007199254740991
     RetryAfter:
       description: Seconds to wait before trying again.
       schema:
@@ -512,7 +670,7 @@ components:
         RFC 9457 problem details (D-98). `code` is an open string; documented
         values: invalid_request, token_invalid, invalid_credentials,
         forbidden, workspace_choice_required, too_many_attempts, too_many_changes,
-        payload_too_large, offset_mismatch, hash_mismatch, maintenance,
+        payload_too_large, offset_mismatch, hash_mismatch, range_not_satisfiable, maintenance,
         not_found, method_not_allowed, resync_required (410 on pull: drop
         pulled records, keep the outbox, pull from 0), upgrade_required (426:
         update the app; local data stays), internal. Apps treat an unknown

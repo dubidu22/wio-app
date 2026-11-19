@@ -7,9 +7,11 @@ namespace Wio\Tests\Api\Permission;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Http\Message\ServerRequestInterface;
 use Wio\App;
+use Wio\Database\Sql;
 use Wio\Tests\Api\Contract;
 use Wio\Tests\Api\DatabaseTestCase;
 use Wio\Tests\Api\Operation;
+use Wio\Tests\Db\Schema\Rows;
 use Wio\Tests\Support\AuthFixtures;
 
 /**
@@ -25,6 +27,7 @@ use Wio\Tests\Support\AuthFixtures;
 #[Operation('syncPull')]
 #[Operation('getFileState')]
 #[Operation('putFileChunk')]
+#[Operation('getFile')]
 final class PermissionMatrixTest extends DatabaseTestCase
 {
     /**
@@ -60,6 +63,8 @@ final class PermissionMatrixTest extends DatabaseTestCase
         ];
         $device = null;
         $target = null;
+        $user = null;
+        $first = $workspace;
         if ($caller === 'other_workspace') {
             $target = $this->fixtures->token($workspace, $this->fixtures->user($workspace));
             $workspace = $this->fixtures->workspace('Anderer Betrieb');
@@ -74,6 +79,9 @@ final class PermissionMatrixTest extends DatabaseTestCase
             $expires = $caller === 'expired_helper' ? '2026-11-18 09:00:00.000' : null;
             $user = $this->fixtures->user($workspace, $role, $emails[$caller], expiresAt: $expires);
             $device = $this->fixtures->token($workspace, $user);
+        }
+        if ($operation === 'getFile') {
+            $this->downloadable($first, $caller === 'customer' && $user !== null ? $this->customerOf($user) : null);
         }
 
         $result = str_ends_with($operation, ' result');
@@ -147,8 +155,26 @@ final class PermissionMatrixTest extends DatabaseTestCase
             'syncPull' => $this->call('GET', '/sync/pull?since=0', token: $token),
             'getFileState' => $this->call('GET', '/files/' . hash('sha256', 'Kiste') . '/state', token: $token),
             'putFileChunk' => $this->chunk(hash('sha256', 'Kiste'), 'Kiste', 0, 5, $token),
+            'getFile' => $this->call('GET', '/files/' . hash('sha256', 'Bild'), token: $token),
             default => self::fail("No request for {$operation}: add it here and a row to matrix.php"),
         };
+    }
+
+    /**
+     * A stored picture file "Bild" in the first workspace, of the caller's
+     * customer for the customer cell (D-235).
+     */
+    private function downloadable(string $workspace, ?string $customer): void
+    {
+        $sha = hash('sha256', 'Bild');
+        (new Rows($this->sql->pdo))->picture($workspace, $customer, ['file_sha256' => $sha]);
+        mkdir($this->filesDir . '/' . $workspace, 0o700, true);
+        file_put_contents($this->filesDir . '/' . $workspace . '/' . $sha, 'Bild');
+    }
+
+    private function customerOf(string $userId): string
+    {
+        return Sql::text($this->sql->row('SELECT customer_id FROM users WHERE id = ?', [$userId])['customer_id'] ?? null);
     }
 
     private function isSecured(string $operation): bool

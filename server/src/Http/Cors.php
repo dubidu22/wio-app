@@ -15,11 +15,11 @@ final readonly class Cors
     /** The contract's methods (D-169); a test keeps them equal. */
     public const array METHODS = ['GET', 'POST', 'PUT', 'DELETE'];
 
-    /** Request headers the app sends that are not CORS-safelisted (D-165). */
-    public const array HEADERS = ['Authorization', 'Content-Type', 'Content-Range', 'Wio-App-Version'];
+    /** Request headers the app sends that are not CORS-safelisted (D-165, D-234). */
+    public const array HEADERS = ['Authorization', 'Content-Type', 'Content-Range', 'Wio-App-Version', 'Range', 'If-None-Match', 'If-Range'];
 
-    /** Response headers the web app must read (D-166): the 429 wait. */
-    public const array EXPOSE = ['Retry-After'];
+    /** Response headers the web app must read (D-166, D-234): the 429 wait and the download's range and validator. */
+    public const array EXPOSE = ['Retry-After', 'Content-Range', 'ETag', 'Accept-Ranges', 'Content-Disposition'];
 
     public const int MAX_AGE = 600;
 

@@ -16,6 +16,7 @@ use Wio\Http\Auth\SignInAction;
 use Wio\Http\Auth\SignOutAction;
 use Wio\Http\CorsMiddleware;
 use Wio\Http\Files\FileStateAction;
+use Wio\Http\Files\GetFileAction;
 use Wio\Http\Files\PutFileChunkAction;
 use Wio\Http\HealthAction;
 use Wio\Http\ProblemErrorHandler;
@@ -61,6 +62,7 @@ final class App
         $app->post('/sync/push', new PushAction($services->push(...)))->add($auth);
         $app->get('/sync/pull', new PullAction($services->pull(...)))->add($auth);
         $app->get('/files/{sha256}/state', new FileStateAction($services->files(...)))->add($auth);
+        $app->get('/files/{sha256}', new GetFileAction($services->fileAccess(...), $services->files(...)))->add($auth);
         $app->put('/files/{sha256}', new PutFileChunkAction($services->files(...)))->add($auth);
 
         return $app;
