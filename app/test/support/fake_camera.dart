@@ -17,6 +17,13 @@ class FakeCamera implements CaptureCamera {
   /// Thrown by [open], for example [CameraDenied].
   Exception? openError;
 
+  /// When set, [open] waits for it, as the real camera waits for the
+  /// permission prompt.
+  Completer<void>? openGate;
+
+  /// Thrown by [takePicture].
+  Exception? shotError;
+
   int opened = 0;
   int closed = 0;
   int shots = 0;
@@ -25,6 +32,8 @@ class FakeCamera implements CaptureCamera {
   @override
   Future<void> open() async {
     opened++;
+    final gate = openGate;
+    if (gate != null) await gate.future;
     final error = openError;
     if (error != null) throw error;
   }
@@ -40,6 +49,8 @@ class FakeCamera implements CaptureCamera {
 
   @override
   Future<String> takePicture() async {
+    final error = shotError;
+    if (error != null) throw error;
     final target = folder;
     if (target == null) throw StateError('no folder for shots');
     final file = File('$target/shot-${shots++}.jpg');

@@ -14,8 +14,9 @@ import '../shell/providers.dart';
 /// Level 2: one customer (KB workflows.md). Sites come from the local
 /// database; each room is a button to its room screen (D-259). "Fotos" lists
 /// the customer's pictures without a room; the main button "Fotos" takes
-/// such pictures (Q3, D-258, D-271). Entries are a plain hint until they exist (D-75). The main
-/// "Tag abschließen" comes in M5 and then takes the main place.
+/// such pictures (Q3, D-258, D-271). Entries are a plain hint until they
+/// exist (D-75). "Tag abschließen" comes in M5 and then takes the main
+/// place.
 class CustomerScreen extends ConsumerWidget {
   const CustomerScreen({required this.customerId, super.key});
 

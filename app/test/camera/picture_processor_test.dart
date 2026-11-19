@@ -41,6 +41,15 @@ void main() {
         // Orientation 6 = turned 90 degrees: the portrait picture is upright.
         expect((prepared.widthPx, prepared.heightPx), (1440, 2560));
         expect((decoded.width, decoded.height), (1440, 2560));
+        // Turned clockwise, not the other way (PR 69 N1): the source's
+        // bottom-left corner (no red, full green) is now top left, and its
+        // top-left corner (no red, no green) is now top right.
+        final topLeft = decoded.getPixel(2, 2);
+        final topRight = decoded.getPixel(decoded.width - 3, 2);
+        expect(topLeft.r, lessThan(30));
+        expect(topLeft.g, greaterThan(225));
+        expect(topRight.r, lessThan(30));
+        expect(topRight.g, lessThan(30));
       },
     );
 

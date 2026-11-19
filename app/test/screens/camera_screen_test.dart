@@ -1,4 +1,6 @@
-// The camera screen (plan 058 tests T2b, T3, T4; D-265..D-274).
+// The camera screen (plan 058 tests T2b, T3, T4; D-265..D-274; PR 69
+// round 1).
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -244,6 +246,83 @@ void main() {
     await tester.pumpAndSettle();
     expect(camera.isOpen, isTrue);
     expect(_shutter(), findsOneWidget);
+  });
+
+  testWidgets('the permission prompt does not open the camera twice', (
+    tester,
+  ) async {
+    // The prompt makes the app inactive while the camera opens (PR 69 B1).
+    final gate = Completer<void>();
+    camera.openGate = gate;
+    await pumpCamera(tester, location: '$_kueche/kamera');
+    expect(_shutter(), findsNothing);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(camera.opened, 1);
+    expect(camera.closed, 0);
+    expect(camera.isOpen, isTrue);
+    expect(_shutter(), findsOneWidget);
+  });
+
+  testWidgets('after a refusal, coming back does not ask again by itself', (
+    tester,
+  ) async {
+    camera.openError = const CameraDenied();
+    await pumpCamera(tester, location: '$_kueche/kamera');
+    expect(find.text('Wio darf die Kamera nicht benutzen.'), findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(camera.opened, 1);
+    expect(find.text('Wio darf die Kamera nicht benutzen.'), findsOneWidget);
+  });
+
+  testWidgets('a failed shot lets the camera go before trying again', (
+    tester,
+  ) async {
+    await pumpCamera(tester, location: '$_kueche/kamera');
+    camera.shotError = const CameraUnavailable('broken');
+    await press(tester);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Die Kamera lässt sich gerade nicht öffnen.'),
+      findsOneWidget,
+    );
+    expect(camera.closed, camera.opened, reason: 'no camera left open');
+
+    camera.shotError = null;
+    await tester.tap(
+      find.widgetWithText(OutlinedButton, 'Noch einmal versuchen'),
+    );
+    await tester.pumpAndSettle();
+    expect(camera.opened - camera.closed, 1, reason: 'exactly one open');
+    await press(tester);
+    await drain(tester);
+    expect(await newPictures(tester), hasLength(1));
+  });
+
+  testWidgets('a press while a shot is being taken is a picture too', (
+    tester,
+  ) async {
+    await pumpCamera(tester, location: '$_kueche/kamera');
+    // Two taps without waiting in between (UX rule 5, PR 69 S1).
+    await tester.runAsync(() async {
+      await tester.tap(_shutter());
+      await tester.tap(_shutter());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    });
+    await drain(tester);
+    expect(camera.shots, 2);
+    expect(await newPictures(tester), hasLength(2));
+    expect(find.text('2 Fotos gespeichert'), findsOneWidget);
   });
 
   testWidgets('Fotos on the customer screen takes pictures without a room', (

@@ -41,6 +41,11 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   CaptureCamera? _camera;
   _CameraState _state = _CameraState.opening;
   bool _taking = false;
+  bool _released = false;
+
+  /// Presses that came while a shot was being taken; each is one more
+  /// picture right after it (UX rule 5, PR 69 S1).
+  int _extraPresses = 0;
   bool _flash = false;
   int _opening = 0;
 
@@ -69,17 +74,26 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // The camera must be let go while the app is in the background.
+    // A ready camera must be let go while the app is in the background and
+    // taken again on return. While the camera opens (the permission prompt
+    // itself makes the app inactive), or after it was refused or failed,
+    // the lifecycle is ignored: the hint's button retries (PR 69 B1).
     switch (state) {
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
-        _opening++;
         final camera = _camera;
+        if (camera == null) return;
         _camera = null;
-        unawaited(camera?.close());
+        _released = true;
+        _extraPresses = 0;
+        setState(() => _state = _CameraState.opening);
+        unawaited(camera.close());
       case AppLifecycleState.resumed:
-        if (_camera == null) unawaited(_open());
+        if (_released) {
+          _released = false;
+          unawaited(_open());
+        }
       case AppLifecycleState.detached:
         break;
     }
@@ -111,15 +125,30 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   }
 
   Future<void> _takePicture() async {
-    final camera = _camera;
-    if (camera == null || _taking) return;
+    if (_camera == null) return;
+    if (_taking) {
+      _extraPresses++;
+      return;
+    }
     _taking = true;
     try {
-      final path = await camera.takePicture();
-      final takenAt = ref.read(clockProvider)();
-      ref.read(captureQueueProvider).add(_session, path, takenAt);
-      if (mounted) setState(() => _flash = true);
+      while (true) {
+        final camera = _camera;
+        if (camera == null || !mounted) break;
+        final path = await camera.takePicture();
+        final takenAt = ref.read(clockProvider)();
+        ref.read(captureQueueProvider).add(_session, path, takenAt);
+        if (mounted) setState(() => _flash = true);
+        if (_extraPresses == 0) break;
+        _extraPresses--;
+      }
     } on Object {
+      // Let the camera go before the hint, so "Noch einmal versuchen"
+      // opens the only one (PR 69 B2).
+      _extraPresses = 0;
+      final camera = _camera;
+      _camera = null;
+      await camera?.close();
       if (mounted) setState(() => _state = _CameraState.unavailable);
     } finally {
       _taking = false;
