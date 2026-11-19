@@ -192,7 +192,10 @@ case "$command" in
       keepers+=("$(cat "$root/previous")")
     fi
     count=0
+    # No process substitution: the hosting's SSH shell has no /dev/fd.
+    listing="$(ls -1dt "$root"/releases/*/ 2> /dev/null || true)"
     while IFS= read -r dir; do
+      [[ -n "$dir" ]] || continue
       name="$(basename "$dir")"
       count=$((count + 1))
       skip=false
@@ -203,7 +206,7 @@ case "$command" in
         rm -rf -- "${root:?}/releases/${name:?}"
         echo "pruned $name"
       fi
-    done < <(ls -1dt "$root"/releases/*/ 2> /dev/null)
+    done <<< "$listing"
     ;;
 
   smoke-owner)
