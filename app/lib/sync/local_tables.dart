@@ -16,7 +16,7 @@ class LocalTable {
   final Set<String> requiredColumns;
 }
 
-/// The four typed tables of schema v2.
+/// The typed tables: four of schema v2, pictures and notes of v3 (D-238).
 const Map<String, LocalTable> localTables = <String, LocalTable>{
   'customers': LocalTable(
     jsonColumns: <String>{'contact'},
@@ -33,6 +33,21 @@ const Map<String, LocalTable> localTables = <String, LocalTable>{
   'jobs': LocalTable(
     jsonColumns: <String>{},
     requiredColumns: <String>{'workspace_id', 'customer_id', 'date'},
+  ),
+  'pictures': LocalTable(
+    jsonColumns: <String>{},
+    requiredColumns: <String>{
+      'workspace_id',
+      'file_sha256',
+      'file_bytes',
+      'file_mime',
+      'width_px',
+      'height_px',
+    },
+  ),
+  'notes': LocalTable(
+    jsonColumns: <String>{},
+    requiredColumns: <String>{'workspace_id', 'subject_type', 'subject_id'},
   ),
 };
 

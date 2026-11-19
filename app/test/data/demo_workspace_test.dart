@@ -29,8 +29,9 @@ void main() {
     await demo.load(db);
     final synced = db.allTables
         .map((t) => t.actualTableName)
-        .where((t) => !DemoWorkspace.localOnlyTables.contains(t));
-    expect(synced, hasLength(4));
+        .where((t) => !DemoWorkspace.localOnlyTables.contains(t))
+        .where((t) => !DemoWorkspace.notInFileYet.contains(t));
+    expect(synced, hasLength(5));
     for (final table in synced) {
       expect(await count(table), demo.tables[table]!.length, reason: table);
     }
@@ -38,6 +39,8 @@ void main() {
     expect(await count('sites'), 3);
     expect(await count('rooms'), 4);
     expect(await count('jobs'), 2);
+    expect(await count('notes'), 2);
+    expect(await count('pictures'), 0);
     expect(await count('outbox'), 0);
   });
 
@@ -71,6 +74,10 @@ void main() {
   test('the file covers every local synced table and column', () {
     for (final table in db.allTables) {
       final name = table.actualTableName;
+      if (DemoWorkspace.notInFileYet.contains(name)) {
+        expect(demo.tables, isNot(contains(name)), reason: name);
+        continue;
+      }
       if (DemoWorkspace.localOnlyTables.contains(name)) {
         expect(demo.tables, isNot(contains(name)), reason: name);
         continue;

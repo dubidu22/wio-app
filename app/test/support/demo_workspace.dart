@@ -55,6 +55,11 @@ class DemoWorkspace {
     'uploads',
   };
 
+  /// Synced local tables the file does not hold yet. Demo pictures need
+  /// demo image files the app can show; they come with the room screen and
+  /// the downloads of M2 (plan 054).
+  static const Set<String> notInFileYet = <String>{'pictures'};
+
   /// Local columns the server does not have, per table. Empty today; a
   /// device-only column added by a local migration is listed here.
   static const Map<String, Set<String>> deviceOnlyColumns =

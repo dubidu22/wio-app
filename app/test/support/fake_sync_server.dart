@@ -373,6 +373,14 @@ class FakeSyncServer {
     'rooms': <String>['site_id'],
     'jobs': <String>['customer_id', 'date'],
     'labels': <String>['name'],
+    'pictures': <String>[
+      'file_sha256',
+      'file_bytes',
+      'file_mime',
+      'width_px',
+      'height_px',
+    ],
+    'notes': <String>['subject_type', 'subject_id'],
   };
 
   static const Set<String> _readOnly = <String>{

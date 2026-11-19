@@ -2837,6 +2837,2014 @@ class JobsCompanion extends UpdateCompanion<Job> {
   }
 }
 
+class $PicturesTable extends Pictures with TableInfo<$PicturesTable, Picture> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PicturesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+    'created_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _revisionMeta = const VerificationMeta(
+    'revision',
+  );
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+    'revision',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<String> deletedAt = GeneratedColumn<String>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _customerIdMeta = const VerificationMeta(
+    'customerId',
+  );
+  @override
+  late final GeneratedColumn<String> customerId = GeneratedColumn<String>(
+    'customer_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fileSha256Meta = const VerificationMeta(
+    'fileSha256',
+  );
+  @override
+  late final GeneratedColumn<String> fileSha256 = GeneratedColumn<String>(
+    'file_sha256',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileBytesMeta = const VerificationMeta(
+    'fileBytes',
+  );
+  @override
+  late final GeneratedColumn<int> fileBytes = GeneratedColumn<int>(
+    'file_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileMimeMeta = const VerificationMeta(
+    'fileMime',
+  );
+  @override
+  late final GeneratedColumn<String> fileMime = GeneratedColumn<String>(
+    'file_mime',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _widthPxMeta = const VerificationMeta(
+    'widthPx',
+  );
+  @override
+  late final GeneratedColumn<int> widthPx = GeneratedColumn<int>(
+    'width_px',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _heightPxMeta = const VerificationMeta(
+    'heightPx',
+  );
+  @override
+  late final GeneratedColumn<int> heightPx = GeneratedColumn<int>(
+    'height_px',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _takenAtMeta = const VerificationMeta(
+    'takenAt',
+  );
+  @override
+  late final GeneratedColumn<String> takenAt = GeneratedColumn<String>(
+    'taken_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
+  @override
+  late final GeneratedColumn<String> roomId = GeneratedColumn<String>(
+    'room_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _entryIdMeta = const VerificationMeta(
+    'entryId',
+  );
+  @override
+  late final GeneratedColumn<String> entryId = GeneratedColumn<String>(
+    'entry_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _afterOfMeta = const VerificationMeta(
+    'afterOf',
+  );
+  @override
+  late final GeneratedColumn<String> afterOf = GeneratedColumn<String>(
+    'after_of',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    createdAt,
+    createdBy,
+    updatedAt,
+    updatedBy,
+    revision,
+    deletedAt,
+    customerId,
+    fileSha256,
+    fileBytes,
+    fileMime,
+    widthPx,
+    heightPx,
+    takenAt,
+    roomId,
+    entryId,
+    afterOf,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pictures';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Picture> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    }
+    if (data.containsKey('revision')) {
+      context.handle(
+        _revisionMeta,
+        revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('customer_id')) {
+      context.handle(
+        _customerIdMeta,
+        customerId.isAcceptableOrUnknown(data['customer_id']!, _customerIdMeta),
+      );
+    }
+    if (data.containsKey('file_sha256')) {
+      context.handle(
+        _fileSha256Meta,
+        fileSha256.isAcceptableOrUnknown(data['file_sha256']!, _fileSha256Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileSha256Meta);
+    }
+    if (data.containsKey('file_bytes')) {
+      context.handle(
+        _fileBytesMeta,
+        fileBytes.isAcceptableOrUnknown(data['file_bytes']!, _fileBytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileBytesMeta);
+    }
+    if (data.containsKey('file_mime')) {
+      context.handle(
+        _fileMimeMeta,
+        fileMime.isAcceptableOrUnknown(data['file_mime']!, _fileMimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileMimeMeta);
+    }
+    if (data.containsKey('width_px')) {
+      context.handle(
+        _widthPxMeta,
+        widthPx.isAcceptableOrUnknown(data['width_px']!, _widthPxMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_widthPxMeta);
+    }
+    if (data.containsKey('height_px')) {
+      context.handle(
+        _heightPxMeta,
+        heightPx.isAcceptableOrUnknown(data['height_px']!, _heightPxMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_heightPxMeta);
+    }
+    if (data.containsKey('taken_at')) {
+      context.handle(
+        _takenAtMeta,
+        takenAt.isAcceptableOrUnknown(data['taken_at']!, _takenAtMeta),
+      );
+    }
+    if (data.containsKey('room_id')) {
+      context.handle(
+        _roomIdMeta,
+        roomId.isAcceptableOrUnknown(data['room_id']!, _roomIdMeta),
+      );
+    }
+    if (data.containsKey('entry_id')) {
+      context.handle(
+        _entryIdMeta,
+        entryId.isAcceptableOrUnknown(data['entry_id']!, _entryIdMeta),
+      );
+    }
+    if (data.containsKey('after_of')) {
+      context.handle(
+        _afterOfMeta,
+        afterOf.isAcceptableOrUnknown(data['after_of']!, _afterOfMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Picture map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Picture(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      ),
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      ),
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      customerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}customer_id'],
+      ),
+      fileSha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_sha256'],
+      )!,
+      fileBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}file_bytes'],
+      )!,
+      fileMime: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_mime'],
+      )!,
+      widthPx: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}width_px'],
+      )!,
+      heightPx: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}height_px'],
+      )!,
+      takenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}taken_at'],
+      ),
+      roomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}room_id'],
+      ),
+      entryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entry_id'],
+      ),
+      afterOf: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}after_of'],
+      ),
+    );
+  }
+
+  @override
+  $PicturesTable createAlias(String alias) {
+    return $PicturesTable(attachedDatabase, alias);
+  }
+}
+
+class Picture extends DataClass implements Insertable<Picture> {
+  final String id;
+  final String workspaceId;
+  final String? createdAt;
+  final String? createdBy;
+  final String? updatedAt;
+  final String? updatedBy;
+  final int? revision;
+  final String? deletedAt;
+  final String? customerId;
+  final String fileSha256;
+  final int fileBytes;
+  final String fileMime;
+  final int widthPx;
+  final int heightPx;
+
+  /// Device time, information only.
+  final String? takenAt;
+  final String? roomId;
+  final String? entryId;
+
+  /// The picture this one is the after picture of (D-7).
+  final String? afterOf;
+  const Picture({
+    required this.id,
+    required this.workspaceId,
+    this.createdAt,
+    this.createdBy,
+    this.updatedAt,
+    this.updatedBy,
+    this.revision,
+    this.deletedAt,
+    this.customerId,
+    required this.fileSha256,
+    required this.fileBytes,
+    required this.fileMime,
+    required this.widthPx,
+    required this.heightPx,
+    this.takenAt,
+    this.roomId,
+    this.entryId,
+    this.afterOf,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<String>(createdAt);
+    }
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    if (!nullToAbsent || updatedBy != null) {
+      map['updated_by'] = Variable<String>(updatedBy);
+    }
+    if (!nullToAbsent || revision != null) {
+      map['revision'] = Variable<int>(revision);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<String>(deletedAt);
+    }
+    if (!nullToAbsent || customerId != null) {
+      map['customer_id'] = Variable<String>(customerId);
+    }
+    map['file_sha256'] = Variable<String>(fileSha256);
+    map['file_bytes'] = Variable<int>(fileBytes);
+    map['file_mime'] = Variable<String>(fileMime);
+    map['width_px'] = Variable<int>(widthPx);
+    map['height_px'] = Variable<int>(heightPx);
+    if (!nullToAbsent || takenAt != null) {
+      map['taken_at'] = Variable<String>(takenAt);
+    }
+    if (!nullToAbsent || roomId != null) {
+      map['room_id'] = Variable<String>(roomId);
+    }
+    if (!nullToAbsent || entryId != null) {
+      map['entry_id'] = Variable<String>(entryId);
+    }
+    if (!nullToAbsent || afterOf != null) {
+      map['after_of'] = Variable<String>(afterOf);
+    }
+    return map;
+  }
+
+  PicturesCompanion toCompanion(bool nullToAbsent) {
+    return PicturesCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      updatedBy: updatedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedBy),
+      revision: revision == null && nullToAbsent
+          ? const Value.absent()
+          : Value(revision),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      customerId: customerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customerId),
+      fileSha256: Value(fileSha256),
+      fileBytes: Value(fileBytes),
+      fileMime: Value(fileMime),
+      widthPx: Value(widthPx),
+      heightPx: Value(heightPx),
+      takenAt: takenAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(takenAt),
+      roomId: roomId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(roomId),
+      entryId: entryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entryId),
+      afterOf: afterOf == null && nullToAbsent
+          ? const Value.absent()
+          : Value(afterOf),
+    );
+  }
+
+  factory Picture.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Picture(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      createdAt: serializer.fromJson<String?>(json['createdAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+      updatedBy: serializer.fromJson<String?>(json['updatedBy']),
+      revision: serializer.fromJson<int?>(json['revision']),
+      deletedAt: serializer.fromJson<String?>(json['deletedAt']),
+      customerId: serializer.fromJson<String?>(json['customerId']),
+      fileSha256: serializer.fromJson<String>(json['fileSha256']),
+      fileBytes: serializer.fromJson<int>(json['fileBytes']),
+      fileMime: serializer.fromJson<String>(json['fileMime']),
+      widthPx: serializer.fromJson<int>(json['widthPx']),
+      heightPx: serializer.fromJson<int>(json['heightPx']),
+      takenAt: serializer.fromJson<String?>(json['takenAt']),
+      roomId: serializer.fromJson<String?>(json['roomId']),
+      entryId: serializer.fromJson<String?>(json['entryId']),
+      afterOf: serializer.fromJson<String?>(json['afterOf']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'createdAt': serializer.toJson<String?>(createdAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+      'updatedBy': serializer.toJson<String?>(updatedBy),
+      'revision': serializer.toJson<int?>(revision),
+      'deletedAt': serializer.toJson<String?>(deletedAt),
+      'customerId': serializer.toJson<String?>(customerId),
+      'fileSha256': serializer.toJson<String>(fileSha256),
+      'fileBytes': serializer.toJson<int>(fileBytes),
+      'fileMime': serializer.toJson<String>(fileMime),
+      'widthPx': serializer.toJson<int>(widthPx),
+      'heightPx': serializer.toJson<int>(heightPx),
+      'takenAt': serializer.toJson<String?>(takenAt),
+      'roomId': serializer.toJson<String?>(roomId),
+      'entryId': serializer.toJson<String?>(entryId),
+      'afterOf': serializer.toJson<String?>(afterOf),
+    };
+  }
+
+  Picture copyWith({
+    String? id,
+    String? workspaceId,
+    Value<String?> createdAt = const Value.absent(),
+    Value<String?> createdBy = const Value.absent(),
+    Value<String?> updatedAt = const Value.absent(),
+    Value<String?> updatedBy = const Value.absent(),
+    Value<int?> revision = const Value.absent(),
+    Value<String?> deletedAt = const Value.absent(),
+    Value<String?> customerId = const Value.absent(),
+    String? fileSha256,
+    int? fileBytes,
+    String? fileMime,
+    int? widthPx,
+    int? heightPx,
+    Value<String?> takenAt = const Value.absent(),
+    Value<String?> roomId = const Value.absent(),
+    Value<String?> entryId = const Value.absent(),
+    Value<String?> afterOf = const Value.absent(),
+  }) => Picture(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    createdAt: createdAt.present ? createdAt.value : this.createdAt,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    updatedBy: updatedBy.present ? updatedBy.value : this.updatedBy,
+    revision: revision.present ? revision.value : this.revision,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    customerId: customerId.present ? customerId.value : this.customerId,
+    fileSha256: fileSha256 ?? this.fileSha256,
+    fileBytes: fileBytes ?? this.fileBytes,
+    fileMime: fileMime ?? this.fileMime,
+    widthPx: widthPx ?? this.widthPx,
+    heightPx: heightPx ?? this.heightPx,
+    takenAt: takenAt.present ? takenAt.value : this.takenAt,
+    roomId: roomId.present ? roomId.value : this.roomId,
+    entryId: entryId.present ? entryId.value : this.entryId,
+    afterOf: afterOf.present ? afterOf.value : this.afterOf,
+  );
+  Picture copyWithCompanion(PicturesCompanion data) {
+    return Picture(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      customerId: data.customerId.present
+          ? data.customerId.value
+          : this.customerId,
+      fileSha256: data.fileSha256.present
+          ? data.fileSha256.value
+          : this.fileSha256,
+      fileBytes: data.fileBytes.present ? data.fileBytes.value : this.fileBytes,
+      fileMime: data.fileMime.present ? data.fileMime.value : this.fileMime,
+      widthPx: data.widthPx.present ? data.widthPx.value : this.widthPx,
+      heightPx: data.heightPx.present ? data.heightPx.value : this.heightPx,
+      takenAt: data.takenAt.present ? data.takenAt.value : this.takenAt,
+      roomId: data.roomId.present ? data.roomId.value : this.roomId,
+      entryId: data.entryId.present ? data.entryId.value : this.entryId,
+      afterOf: data.afterOf.present ? data.afterOf.value : this.afterOf,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Picture(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('customerId: $customerId, ')
+          ..write('fileSha256: $fileSha256, ')
+          ..write('fileBytes: $fileBytes, ')
+          ..write('fileMime: $fileMime, ')
+          ..write('widthPx: $widthPx, ')
+          ..write('heightPx: $heightPx, ')
+          ..write('takenAt: $takenAt, ')
+          ..write('roomId: $roomId, ')
+          ..write('entryId: $entryId, ')
+          ..write('afterOf: $afterOf')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    createdAt,
+    createdBy,
+    updatedAt,
+    updatedBy,
+    revision,
+    deletedAt,
+    customerId,
+    fileSha256,
+    fileBytes,
+    fileMime,
+    widthPx,
+    heightPx,
+    takenAt,
+    roomId,
+    entryId,
+    afterOf,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Picture &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedAt == this.updatedAt &&
+          other.updatedBy == this.updatedBy &&
+          other.revision == this.revision &&
+          other.deletedAt == this.deletedAt &&
+          other.customerId == this.customerId &&
+          other.fileSha256 == this.fileSha256 &&
+          other.fileBytes == this.fileBytes &&
+          other.fileMime == this.fileMime &&
+          other.widthPx == this.widthPx &&
+          other.heightPx == this.heightPx &&
+          other.takenAt == this.takenAt &&
+          other.roomId == this.roomId &&
+          other.entryId == this.entryId &&
+          other.afterOf == this.afterOf);
+}
+
+class PicturesCompanion extends UpdateCompanion<Picture> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String?> createdAt;
+  final Value<String?> createdBy;
+  final Value<String?> updatedAt;
+  final Value<String?> updatedBy;
+  final Value<int?> revision;
+  final Value<String?> deletedAt;
+  final Value<String?> customerId;
+  final Value<String> fileSha256;
+  final Value<int> fileBytes;
+  final Value<String> fileMime;
+  final Value<int> widthPx;
+  final Value<int> heightPx;
+  final Value<String?> takenAt;
+  final Value<String?> roomId;
+  final Value<String?> entryId;
+  final Value<String?> afterOf;
+  final Value<int> rowid;
+  const PicturesCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.customerId = const Value.absent(),
+    this.fileSha256 = const Value.absent(),
+    this.fileBytes = const Value.absent(),
+    this.fileMime = const Value.absent(),
+    this.widthPx = const Value.absent(),
+    this.heightPx = const Value.absent(),
+    this.takenAt = const Value.absent(),
+    this.roomId = const Value.absent(),
+    this.entryId = const Value.absent(),
+    this.afterOf = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PicturesCompanion.insert({
+    required String id,
+    required String workspaceId,
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.customerId = const Value.absent(),
+    required String fileSha256,
+    required int fileBytes,
+    required String fileMime,
+    required int widthPx,
+    required int heightPx,
+    this.takenAt = const Value.absent(),
+    this.roomId = const Value.absent(),
+    this.entryId = const Value.absent(),
+    this.afterOf = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       fileSha256 = Value(fileSha256),
+       fileBytes = Value(fileBytes),
+       fileMime = Value(fileMime),
+       widthPx = Value(widthPx),
+       heightPx = Value(heightPx);
+  static Insertable<Picture> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedAt,
+    Expression<String>? updatedBy,
+    Expression<int>? revision,
+    Expression<String>? deletedAt,
+    Expression<String>? customerId,
+    Expression<String>? fileSha256,
+    Expression<int>? fileBytes,
+    Expression<String>? fileMime,
+    Expression<int>? widthPx,
+    Expression<int>? heightPx,
+    Expression<String>? takenAt,
+    Expression<String>? roomId,
+    Expression<String>? entryId,
+    Expression<String>? afterOf,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (revision != null) 'revision': revision,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (customerId != null) 'customer_id': customerId,
+      if (fileSha256 != null) 'file_sha256': fileSha256,
+      if (fileBytes != null) 'file_bytes': fileBytes,
+      if (fileMime != null) 'file_mime': fileMime,
+      if (widthPx != null) 'width_px': widthPx,
+      if (heightPx != null) 'height_px': heightPx,
+      if (takenAt != null) 'taken_at': takenAt,
+      if (roomId != null) 'room_id': roomId,
+      if (entryId != null) 'entry_id': entryId,
+      if (afterOf != null) 'after_of': afterOf,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PicturesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String?>? createdAt,
+    Value<String?>? createdBy,
+    Value<String?>? updatedAt,
+    Value<String?>? updatedBy,
+    Value<int?>? revision,
+    Value<String?>? deletedAt,
+    Value<String?>? customerId,
+    Value<String>? fileSha256,
+    Value<int>? fileBytes,
+    Value<String>? fileMime,
+    Value<int>? widthPx,
+    Value<int>? heightPx,
+    Value<String?>? takenAt,
+    Value<String?>? roomId,
+    Value<String?>? entryId,
+    Value<String?>? afterOf,
+    Value<int>? rowid,
+  }) {
+    return PicturesCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      updatedBy: updatedBy ?? this.updatedBy,
+      revision: revision ?? this.revision,
+      deletedAt: deletedAt ?? this.deletedAt,
+      customerId: customerId ?? this.customerId,
+      fileSha256: fileSha256 ?? this.fileSha256,
+      fileBytes: fileBytes ?? this.fileBytes,
+      fileMime: fileMime ?? this.fileMime,
+      widthPx: widthPx ?? this.widthPx,
+      heightPx: heightPx ?? this.heightPx,
+      takenAt: takenAt ?? this.takenAt,
+      roomId: roomId ?? this.roomId,
+      entryId: entryId ?? this.entryId,
+      afterOf: afterOf ?? this.afterOf,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<String>(deletedAt.value);
+    }
+    if (customerId.present) {
+      map['customer_id'] = Variable<String>(customerId.value);
+    }
+    if (fileSha256.present) {
+      map['file_sha256'] = Variable<String>(fileSha256.value);
+    }
+    if (fileBytes.present) {
+      map['file_bytes'] = Variable<int>(fileBytes.value);
+    }
+    if (fileMime.present) {
+      map['file_mime'] = Variable<String>(fileMime.value);
+    }
+    if (widthPx.present) {
+      map['width_px'] = Variable<int>(widthPx.value);
+    }
+    if (heightPx.present) {
+      map['height_px'] = Variable<int>(heightPx.value);
+    }
+    if (takenAt.present) {
+      map['taken_at'] = Variable<String>(takenAt.value);
+    }
+    if (roomId.present) {
+      map['room_id'] = Variable<String>(roomId.value);
+    }
+    if (entryId.present) {
+      map['entry_id'] = Variable<String>(entryId.value);
+    }
+    if (afterOf.present) {
+      map['after_of'] = Variable<String>(afterOf.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PicturesCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('customerId: $customerId, ')
+          ..write('fileSha256: $fileSha256, ')
+          ..write('fileBytes: $fileBytes, ')
+          ..write('fileMime: $fileMime, ')
+          ..write('widthPx: $widthPx, ')
+          ..write('heightPx: $heightPx, ')
+          ..write('takenAt: $takenAt, ')
+          ..write('roomId: $roomId, ')
+          ..write('entryId: $entryId, ')
+          ..write('afterOf: $afterOf, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+    'created_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedByMeta = const VerificationMeta(
+    'updatedBy',
+  );
+  @override
+  late final GeneratedColumn<String> updatedBy = GeneratedColumn<String>(
+    'updated_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _revisionMeta = const VerificationMeta(
+    'revision',
+  );
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+    'revision',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<String> deletedAt = GeneratedColumn<String>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _customerIdMeta = const VerificationMeta(
+    'customerId',
+  );
+  @override
+  late final GeneratedColumn<String> customerId = GeneratedColumn<String>(
+    'customer_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _subjectTypeMeta = const VerificationMeta(
+    'subjectType',
+  );
+  @override
+  late final GeneratedColumn<String> subjectType = GeneratedColumn<String>(
+    'subject_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteTextMeta = const VerificationMeta(
+    'noteText',
+  );
+  @override
+  late final GeneratedColumn<String> noteText = GeneratedColumn<String>(
+    'text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _audioSha256Meta = const VerificationMeta(
+    'audioSha256',
+  );
+  @override
+  late final GeneratedColumn<String> audioSha256 = GeneratedColumn<String>(
+    'audio_sha256',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _audioBytesMeta = const VerificationMeta(
+    'audioBytes',
+  );
+  @override
+  late final GeneratedColumn<int> audioBytes = GeneratedColumn<int>(
+    'audio_bytes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _audioSecondsMeta = const VerificationMeta(
+    'audioSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> audioSeconds = GeneratedColumn<int>(
+    'audio_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _transcriptMeta = const VerificationMeta(
+    'transcript',
+  );
+  @override
+  late final GeneratedColumn<String> transcript = GeneratedColumn<String>(
+    'transcript',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _transcriptSourceMeta = const VerificationMeta(
+    'transcriptSource',
+  );
+  @override
+  late final GeneratedColumn<String> transcriptSource = GeneratedColumn<String>(
+    'transcript_source',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    createdAt,
+    createdBy,
+    updatedAt,
+    updatedBy,
+    revision,
+    deletedAt,
+    customerId,
+    subjectType,
+    subjectId,
+    noteText,
+    audioSha256,
+    audioBytes,
+    audioSeconds,
+    transcript,
+    transcriptSource,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Note> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('updated_by')) {
+      context.handle(
+        _updatedByMeta,
+        updatedBy.isAcceptableOrUnknown(data['updated_by']!, _updatedByMeta),
+      );
+    }
+    if (data.containsKey('revision')) {
+      context.handle(
+        _revisionMeta,
+        revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('customer_id')) {
+      context.handle(
+        _customerIdMeta,
+        customerId.isAcceptableOrUnknown(data['customer_id']!, _customerIdMeta),
+      );
+    }
+    if (data.containsKey('subject_type')) {
+      context.handle(
+        _subjectTypeMeta,
+        subjectType.isAcceptableOrUnknown(
+          data['subject_type']!,
+          _subjectTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectTypeMeta);
+    }
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('text')) {
+      context.handle(
+        _noteTextMeta,
+        noteText.isAcceptableOrUnknown(data['text']!, _noteTextMeta),
+      );
+    }
+    if (data.containsKey('audio_sha256')) {
+      context.handle(
+        _audioSha256Meta,
+        audioSha256.isAcceptableOrUnknown(
+          data['audio_sha256']!,
+          _audioSha256Meta,
+        ),
+      );
+    }
+    if (data.containsKey('audio_bytes')) {
+      context.handle(
+        _audioBytesMeta,
+        audioBytes.isAcceptableOrUnknown(data['audio_bytes']!, _audioBytesMeta),
+      );
+    }
+    if (data.containsKey('audio_seconds')) {
+      context.handle(
+        _audioSecondsMeta,
+        audioSeconds.isAcceptableOrUnknown(
+          data['audio_seconds']!,
+          _audioSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('transcript')) {
+      context.handle(
+        _transcriptMeta,
+        transcript.isAcceptableOrUnknown(data['transcript']!, _transcriptMeta),
+      );
+    }
+    if (data.containsKey('transcript_source')) {
+      context.handle(
+        _transcriptSourceMeta,
+        transcriptSource.isAcceptableOrUnknown(
+          data['transcript_source']!,
+          _transcriptSourceMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Note map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Note(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      ),
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      ),
+      updatedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_by'],
+      ),
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      customerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}customer_id'],
+      ),
+      subjectType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_type'],
+      )!,
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      noteText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}text'],
+      ),
+      audioSha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}audio_sha256'],
+      ),
+      audioBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}audio_bytes'],
+      ),
+      audioSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}audio_seconds'],
+      ),
+      transcript: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transcript'],
+      ),
+      transcriptSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transcript_source'],
+      ),
+    );
+  }
+
+  @override
+  $NotesTable createAlias(String alias) {
+    return $NotesTable(attachedDatabase, alias);
+  }
+}
+
+class Note extends DataClass implements Insertable<Note> {
+  final String id;
+  final String workspaceId;
+  final String? createdAt;
+  final String? createdBy;
+  final String? updatedAt;
+  final String? updatedBy;
+  final int? revision;
+  final String? deletedAt;
+  final String? customerId;
+
+  /// `entry`, `room`, `picture`, `job` or `customer`.
+  final String subjectType;
+  final String subjectId;
+
+  /// The column `text`; the getter cannot be called `text` in drift.
+  final String? noteText;
+  final String? audioSha256;
+  final int? audioBytes;
+  final int? audioSeconds;
+  final String? transcript;
+
+  /// `device` or `manual`; set exactly when there is a transcript.
+  final String? transcriptSource;
+  const Note({
+    required this.id,
+    required this.workspaceId,
+    this.createdAt,
+    this.createdBy,
+    this.updatedAt,
+    this.updatedBy,
+    this.revision,
+    this.deletedAt,
+    this.customerId,
+    required this.subjectType,
+    required this.subjectId,
+    this.noteText,
+    this.audioSha256,
+    this.audioBytes,
+    this.audioSeconds,
+    this.transcript,
+    this.transcriptSource,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<String>(createdAt);
+    }
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<String>(updatedAt);
+    }
+    if (!nullToAbsent || updatedBy != null) {
+      map['updated_by'] = Variable<String>(updatedBy);
+    }
+    if (!nullToAbsent || revision != null) {
+      map['revision'] = Variable<int>(revision);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<String>(deletedAt);
+    }
+    if (!nullToAbsent || customerId != null) {
+      map['customer_id'] = Variable<String>(customerId);
+    }
+    map['subject_type'] = Variable<String>(subjectType);
+    map['subject_id'] = Variable<String>(subjectId);
+    if (!nullToAbsent || noteText != null) {
+      map['text'] = Variable<String>(noteText);
+    }
+    if (!nullToAbsent || audioSha256 != null) {
+      map['audio_sha256'] = Variable<String>(audioSha256);
+    }
+    if (!nullToAbsent || audioBytes != null) {
+      map['audio_bytes'] = Variable<int>(audioBytes);
+    }
+    if (!nullToAbsent || audioSeconds != null) {
+      map['audio_seconds'] = Variable<int>(audioSeconds);
+    }
+    if (!nullToAbsent || transcript != null) {
+      map['transcript'] = Variable<String>(transcript);
+    }
+    if (!nullToAbsent || transcriptSource != null) {
+      map['transcript_source'] = Variable<String>(transcriptSource);
+    }
+    return map;
+  }
+
+  NotesCompanion toCompanion(bool nullToAbsent) {
+    return NotesCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      updatedBy: updatedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedBy),
+      revision: revision == null && nullToAbsent
+          ? const Value.absent()
+          : Value(revision),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      customerId: customerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customerId),
+      subjectType: Value(subjectType),
+      subjectId: Value(subjectId),
+      noteText: noteText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(noteText),
+      audioSha256: audioSha256 == null && nullToAbsent
+          ? const Value.absent()
+          : Value(audioSha256),
+      audioBytes: audioBytes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(audioBytes),
+      audioSeconds: audioSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(audioSeconds),
+      transcript: transcript == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transcript),
+      transcriptSource: transcriptSource == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transcriptSource),
+    );
+  }
+
+  factory Note.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Note(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      createdAt: serializer.fromJson<String?>(json['createdAt']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      updatedAt: serializer.fromJson<String?>(json['updatedAt']),
+      updatedBy: serializer.fromJson<String?>(json['updatedBy']),
+      revision: serializer.fromJson<int?>(json['revision']),
+      deletedAt: serializer.fromJson<String?>(json['deletedAt']),
+      customerId: serializer.fromJson<String?>(json['customerId']),
+      subjectType: serializer.fromJson<String>(json['subjectType']),
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      noteText: serializer.fromJson<String?>(json['noteText']),
+      audioSha256: serializer.fromJson<String?>(json['audioSha256']),
+      audioBytes: serializer.fromJson<int?>(json['audioBytes']),
+      audioSeconds: serializer.fromJson<int?>(json['audioSeconds']),
+      transcript: serializer.fromJson<String?>(json['transcript']),
+      transcriptSource: serializer.fromJson<String?>(json['transcriptSource']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'createdAt': serializer.toJson<String?>(createdAt),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'updatedAt': serializer.toJson<String?>(updatedAt),
+      'updatedBy': serializer.toJson<String?>(updatedBy),
+      'revision': serializer.toJson<int?>(revision),
+      'deletedAt': serializer.toJson<String?>(deletedAt),
+      'customerId': serializer.toJson<String?>(customerId),
+      'subjectType': serializer.toJson<String>(subjectType),
+      'subjectId': serializer.toJson<String>(subjectId),
+      'noteText': serializer.toJson<String?>(noteText),
+      'audioSha256': serializer.toJson<String?>(audioSha256),
+      'audioBytes': serializer.toJson<int?>(audioBytes),
+      'audioSeconds': serializer.toJson<int?>(audioSeconds),
+      'transcript': serializer.toJson<String?>(transcript),
+      'transcriptSource': serializer.toJson<String?>(transcriptSource),
+    };
+  }
+
+  Note copyWith({
+    String? id,
+    String? workspaceId,
+    Value<String?> createdAt = const Value.absent(),
+    Value<String?> createdBy = const Value.absent(),
+    Value<String?> updatedAt = const Value.absent(),
+    Value<String?> updatedBy = const Value.absent(),
+    Value<int?> revision = const Value.absent(),
+    Value<String?> deletedAt = const Value.absent(),
+    Value<String?> customerId = const Value.absent(),
+    String? subjectType,
+    String? subjectId,
+    Value<String?> noteText = const Value.absent(),
+    Value<String?> audioSha256 = const Value.absent(),
+    Value<int?> audioBytes = const Value.absent(),
+    Value<int?> audioSeconds = const Value.absent(),
+    Value<String?> transcript = const Value.absent(),
+    Value<String?> transcriptSource = const Value.absent(),
+  }) => Note(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    createdAt: createdAt.present ? createdAt.value : this.createdAt,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    updatedBy: updatedBy.present ? updatedBy.value : this.updatedBy,
+    revision: revision.present ? revision.value : this.revision,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    customerId: customerId.present ? customerId.value : this.customerId,
+    subjectType: subjectType ?? this.subjectType,
+    subjectId: subjectId ?? this.subjectId,
+    noteText: noteText.present ? noteText.value : this.noteText,
+    audioSha256: audioSha256.present ? audioSha256.value : this.audioSha256,
+    audioBytes: audioBytes.present ? audioBytes.value : this.audioBytes,
+    audioSeconds: audioSeconds.present ? audioSeconds.value : this.audioSeconds,
+    transcript: transcript.present ? transcript.value : this.transcript,
+    transcriptSource: transcriptSource.present
+        ? transcriptSource.value
+        : this.transcriptSource,
+  );
+  Note copyWithCompanion(NotesCompanion data) {
+    return Note(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      updatedBy: data.updatedBy.present ? data.updatedBy.value : this.updatedBy,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      customerId: data.customerId.present
+          ? data.customerId.value
+          : this.customerId,
+      subjectType: data.subjectType.present
+          ? data.subjectType.value
+          : this.subjectType,
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      noteText: data.noteText.present ? data.noteText.value : this.noteText,
+      audioSha256: data.audioSha256.present
+          ? data.audioSha256.value
+          : this.audioSha256,
+      audioBytes: data.audioBytes.present
+          ? data.audioBytes.value
+          : this.audioBytes,
+      audioSeconds: data.audioSeconds.present
+          ? data.audioSeconds.value
+          : this.audioSeconds,
+      transcript: data.transcript.present
+          ? data.transcript.value
+          : this.transcript,
+      transcriptSource: data.transcriptSource.present
+          ? data.transcriptSource.value
+          : this.transcriptSource,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Note(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('customerId: $customerId, ')
+          ..write('subjectType: $subjectType, ')
+          ..write('subjectId: $subjectId, ')
+          ..write('noteText: $noteText, ')
+          ..write('audioSha256: $audioSha256, ')
+          ..write('audioBytes: $audioBytes, ')
+          ..write('audioSeconds: $audioSeconds, ')
+          ..write('transcript: $transcript, ')
+          ..write('transcriptSource: $transcriptSource')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    createdAt,
+    createdBy,
+    updatedAt,
+    updatedBy,
+    revision,
+    deletedAt,
+    customerId,
+    subjectType,
+    subjectId,
+    noteText,
+    audioSha256,
+    audioBytes,
+    audioSeconds,
+    transcript,
+    transcriptSource,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Note &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.createdAt == this.createdAt &&
+          other.createdBy == this.createdBy &&
+          other.updatedAt == this.updatedAt &&
+          other.updatedBy == this.updatedBy &&
+          other.revision == this.revision &&
+          other.deletedAt == this.deletedAt &&
+          other.customerId == this.customerId &&
+          other.subjectType == this.subjectType &&
+          other.subjectId == this.subjectId &&
+          other.noteText == this.noteText &&
+          other.audioSha256 == this.audioSha256 &&
+          other.audioBytes == this.audioBytes &&
+          other.audioSeconds == this.audioSeconds &&
+          other.transcript == this.transcript &&
+          other.transcriptSource == this.transcriptSource);
+}
+
+class NotesCompanion extends UpdateCompanion<Note> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String?> createdAt;
+  final Value<String?> createdBy;
+  final Value<String?> updatedAt;
+  final Value<String?> updatedBy;
+  final Value<int?> revision;
+  final Value<String?> deletedAt;
+  final Value<String?> customerId;
+  final Value<String> subjectType;
+  final Value<String> subjectId;
+  final Value<String?> noteText;
+  final Value<String?> audioSha256;
+  final Value<int?> audioBytes;
+  final Value<int?> audioSeconds;
+  final Value<String?> transcript;
+  final Value<String?> transcriptSource;
+  final Value<int> rowid;
+  const NotesCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.customerId = const Value.absent(),
+    this.subjectType = const Value.absent(),
+    this.subjectId = const Value.absent(),
+    this.noteText = const Value.absent(),
+    this.audioSha256 = const Value.absent(),
+    this.audioBytes = const Value.absent(),
+    this.audioSeconds = const Value.absent(),
+    this.transcript = const Value.absent(),
+    this.transcriptSource = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotesCompanion.insert({
+    required String id,
+    required String workspaceId,
+    this.createdAt = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.updatedBy = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.customerId = const Value.absent(),
+    required String subjectType,
+    required String subjectId,
+    this.noteText = const Value.absent(),
+    this.audioSha256 = const Value.absent(),
+    this.audioBytes = const Value.absent(),
+    this.audioSeconds = const Value.absent(),
+    this.transcript = const Value.absent(),
+    this.transcriptSource = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       subjectType = Value(subjectType),
+       subjectId = Value(subjectId);
+  static Insertable<Note> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? createdAt,
+    Expression<String>? createdBy,
+    Expression<String>? updatedAt,
+    Expression<String>? updatedBy,
+    Expression<int>? revision,
+    Expression<String>? deletedAt,
+    Expression<String>? customerId,
+    Expression<String>? subjectType,
+    Expression<String>? subjectId,
+    Expression<String>? noteText,
+    Expression<String>? audioSha256,
+    Expression<int>? audioBytes,
+    Expression<int>? audioSeconds,
+    Expression<String>? transcript,
+    Expression<String>? transcriptSource,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (createdBy != null) 'created_by': createdBy,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (updatedBy != null) 'updated_by': updatedBy,
+      if (revision != null) 'revision': revision,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (customerId != null) 'customer_id': customerId,
+      if (subjectType != null) 'subject_type': subjectType,
+      if (subjectId != null) 'subject_id': subjectId,
+      if (noteText != null) 'text': noteText,
+      if (audioSha256 != null) 'audio_sha256': audioSha256,
+      if (audioBytes != null) 'audio_bytes': audioBytes,
+      if (audioSeconds != null) 'audio_seconds': audioSeconds,
+      if (transcript != null) 'transcript': transcript,
+      if (transcriptSource != null) 'transcript_source': transcriptSource,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String?>? createdAt,
+    Value<String?>? createdBy,
+    Value<String?>? updatedAt,
+    Value<String?>? updatedBy,
+    Value<int?>? revision,
+    Value<String?>? deletedAt,
+    Value<String?>? customerId,
+    Value<String>? subjectType,
+    Value<String>? subjectId,
+    Value<String?>? noteText,
+    Value<String?>? audioSha256,
+    Value<int?>? audioBytes,
+    Value<int?>? audioSeconds,
+    Value<String?>? transcript,
+    Value<String?>? transcriptSource,
+    Value<int>? rowid,
+  }) {
+    return NotesCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      updatedBy: updatedBy ?? this.updatedBy,
+      revision: revision ?? this.revision,
+      deletedAt: deletedAt ?? this.deletedAt,
+      customerId: customerId ?? this.customerId,
+      subjectType: subjectType ?? this.subjectType,
+      subjectId: subjectId ?? this.subjectId,
+      noteText: noteText ?? this.noteText,
+      audioSha256: audioSha256 ?? this.audioSha256,
+      audioBytes: audioBytes ?? this.audioBytes,
+      audioSeconds: audioSeconds ?? this.audioSeconds,
+      transcript: transcript ?? this.transcript,
+      transcriptSource: transcriptSource ?? this.transcriptSource,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (updatedBy.present) {
+      map['updated_by'] = Variable<String>(updatedBy.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<String>(deletedAt.value);
+    }
+    if (customerId.present) {
+      map['customer_id'] = Variable<String>(customerId.value);
+    }
+    if (subjectType.present) {
+      map['subject_type'] = Variable<String>(subjectType.value);
+    }
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (noteText.present) {
+      map['text'] = Variable<String>(noteText.value);
+    }
+    if (audioSha256.present) {
+      map['audio_sha256'] = Variable<String>(audioSha256.value);
+    }
+    if (audioBytes.present) {
+      map['audio_bytes'] = Variable<int>(audioBytes.value);
+    }
+    if (audioSeconds.present) {
+      map['audio_seconds'] = Variable<int>(audioSeconds.value);
+    }
+    if (transcript.present) {
+      map['transcript'] = Variable<String>(transcript.value);
+    }
+    if (transcriptSource.present) {
+      map['transcript_source'] = Variable<String>(transcriptSource.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotesCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('updatedBy: $updatedBy, ')
+          ..write('revision: $revision, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('customerId: $customerId, ')
+          ..write('subjectType: $subjectType, ')
+          ..write('subjectId: $subjectId, ')
+          ..write('noteText: $noteText, ')
+          ..write('audioSha256: $audioSha256, ')
+          ..write('audioBytes: $audioBytes, ')
+          ..write('audioSeconds: $audioSeconds, ')
+          ..write('transcript: $transcript, ')
+          ..write('transcriptSource: $transcriptSource, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxData> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -4879,6 +6887,8 @@ abstract class _$WioDatabase extends GeneratedDatabase {
   late final $SitesTable sites = $SitesTable(this);
   late final $RoomsTable rooms = $RoomsTable(this);
   late final $JobsTable jobs = $JobsTable(this);
+  late final $PicturesTable pictures = $PicturesTable(this);
+  late final $NotesTable notes = $NotesTable(this);
   late final $OutboxTable outbox = $OutboxTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
   late final $ServerRecordsTable serverRecords = $ServerRecordsTable(this);
@@ -4895,6 +6905,8 @@ abstract class _$WioDatabase extends GeneratedDatabase {
     sites,
     rooms,
     jobs,
+    pictures,
+    notes,
     outbox,
     syncState,
     serverRecords,
@@ -6235,6 +8247,904 @@ typedef $$JobsTableProcessedTableManager =
       Job,
       PrefetchHooks Function()
     >;
+typedef $$PicturesTableCreateCompanionBuilder = PicturesCompanion Function({
+  required String id,
+  required String workspaceId,
+  Value<String?> createdAt,
+  Value<String?> createdBy,
+  Value<String?> updatedAt,
+  Value<String?> updatedBy,
+  Value<int?> revision,
+  Value<String?> deletedAt,
+  Value<String?> customerId,
+  required String fileSha256,
+  required int fileBytes,
+  required String fileMime,
+  required int widthPx,
+  required int heightPx,
+  Value<String?> takenAt,
+  Value<String?> roomId,
+  Value<String?> entryId,
+  Value<String?> afterOf,
+  Value<int> rowid,
+});
+typedef $$PicturesTableUpdateCompanionBuilder = PicturesCompanion Function({
+  Value<String> id,
+  Value<String> workspaceId,
+  Value<String?> createdAt,
+  Value<String?> createdBy,
+  Value<String?> updatedAt,
+  Value<String?> updatedBy,
+  Value<int?> revision,
+  Value<String?> deletedAt,
+  Value<String?> customerId,
+  Value<String> fileSha256,
+  Value<int> fileBytes,
+  Value<String> fileMime,
+  Value<int> widthPx,
+  Value<int> heightPx,
+  Value<String?> takenAt,
+  Value<String?> roomId,
+  Value<String?> entryId,
+  Value<String?> afterOf,
+  Value<int> rowid,
+});
+
+class $$PicturesTableFilterComposer
+    extends Composer<_$WioDatabase, $PicturesTable> {
+  $$PicturesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customerId => $composableBuilder(
+    column: $table.customerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileSha256 => $composableBuilder(
+    column: $table.fileSha256,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fileBytes => $composableBuilder(
+    column: $table.fileBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileMime => $composableBuilder(
+    column: $table.fileMime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get widthPx => $composableBuilder(
+    column: $table.widthPx,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get heightPx => $composableBuilder(
+    column: $table.heightPx,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get takenAt => $composableBuilder(
+    column: $table.takenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get roomId => $composableBuilder(
+    column: $table.roomId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entryId => $composableBuilder(
+    column: $table.entryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get afterOf => $composableBuilder(
+    column: $table.afterOf,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PicturesTableOrderingComposer
+    extends Composer<_$WioDatabase, $PicturesTable> {
+  $$PicturesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customerId => $composableBuilder(
+    column: $table.customerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileSha256 => $composableBuilder(
+    column: $table.fileSha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fileBytes => $composableBuilder(
+    column: $table.fileBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileMime => $composableBuilder(
+    column: $table.fileMime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get widthPx => $composableBuilder(
+    column: $table.widthPx,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get heightPx => $composableBuilder(
+    column: $table.heightPx,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get takenAt => $composableBuilder(
+    column: $table.takenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get roomId => $composableBuilder(
+    column: $table.roomId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entryId => $composableBuilder(
+    column: $table.entryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get afterOf => $composableBuilder(
+    column: $table.afterOf,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PicturesTableAnnotationComposer
+    extends Composer<_$WioDatabase, $PicturesTable> {
+  $$PicturesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+
+  GeneratedColumn<String> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get customerId => $composableBuilder(
+    column: $table.customerId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fileSha256 => $composableBuilder(
+    column: $table.fileSha256,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fileBytes =>
+      $composableBuilder(column: $table.fileBytes, builder: (column) => column);
+
+  GeneratedColumn<String> get fileMime =>
+      $composableBuilder(column: $table.fileMime, builder: (column) => column);
+
+  GeneratedColumn<int> get widthPx =>
+      $composableBuilder(column: $table.widthPx, builder: (column) => column);
+
+  GeneratedColumn<int> get heightPx =>
+      $composableBuilder(column: $table.heightPx, builder: (column) => column);
+
+  GeneratedColumn<String> get takenAt =>
+      $composableBuilder(column: $table.takenAt, builder: (column) => column);
+
+  GeneratedColumn<String> get roomId =>
+      $composableBuilder(column: $table.roomId, builder: (column) => column);
+
+  GeneratedColumn<String> get entryId =>
+      $composableBuilder(column: $table.entryId, builder: (column) => column);
+
+  GeneratedColumn<String> get afterOf =>
+      $composableBuilder(column: $table.afterOf, builder: (column) => column);
+}
+
+class $$PicturesTableTableManager
+    extends
+        RootTableManager<
+          _$WioDatabase,
+          $PicturesTable,
+          Picture,
+          $$PicturesTableFilterComposer,
+          $$PicturesTableOrderingComposer,
+          $$PicturesTableAnnotationComposer,
+          $$PicturesTableCreateCompanionBuilder,
+          $$PicturesTableUpdateCompanionBuilder,
+          (Picture, BaseReferences<_$WioDatabase, $PicturesTable, Picture>),
+          Picture,
+          PrefetchHooks Function()
+        > {
+  $$PicturesTableTableManager(_$WioDatabase db, $PicturesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PicturesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PicturesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PicturesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String?> createdAt = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<String?> updatedBy = const Value.absent(),
+                Value<int?> revision = const Value.absent(),
+                Value<String?> deletedAt = const Value.absent(),
+                Value<String?> customerId = const Value.absent(),
+                Value<String> fileSha256 = const Value.absent(),
+                Value<int> fileBytes = const Value.absent(),
+                Value<String> fileMime = const Value.absent(),
+                Value<int> widthPx = const Value.absent(),
+                Value<int> heightPx = const Value.absent(),
+                Value<String?> takenAt = const Value.absent(),
+                Value<String?> roomId = const Value.absent(),
+                Value<String?> entryId = const Value.absent(),
+                Value<String?> afterOf = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PicturesCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                updatedBy: updatedBy,
+                revision: revision,
+                deletedAt: deletedAt,
+                customerId: customerId,
+                fileSha256: fileSha256,
+                fileBytes: fileBytes,
+                fileMime: fileMime,
+                widthPx: widthPx,
+                heightPx: heightPx,
+                takenAt: takenAt,
+                roomId: roomId,
+                entryId: entryId,
+                afterOf: afterOf,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                Value<String?> createdAt = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<String?> updatedBy = const Value.absent(),
+                Value<int?> revision = const Value.absent(),
+                Value<String?> deletedAt = const Value.absent(),
+                Value<String?> customerId = const Value.absent(),
+                required String fileSha256,
+                required int fileBytes,
+                required String fileMime,
+                required int widthPx,
+                required int heightPx,
+                Value<String?> takenAt = const Value.absent(),
+                Value<String?> roomId = const Value.absent(),
+                Value<String?> entryId = const Value.absent(),
+                Value<String?> afterOf = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PicturesCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                updatedBy: updatedBy,
+                revision: revision,
+                deletedAt: deletedAt,
+                customerId: customerId,
+                fileSha256: fileSha256,
+                fileBytes: fileBytes,
+                fileMime: fileMime,
+                widthPx: widthPx,
+                heightPx: heightPx,
+                takenAt: takenAt,
+                roomId: roomId,
+                entryId: entryId,
+                afterOf: afterOf,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PicturesTable, Picture>(table),
+                  BaseReferences<_$WioDatabase, $PicturesTable, Picture>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PicturesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WioDatabase,
+      $PicturesTable,
+      Picture,
+      $$PicturesTableFilterComposer,
+      $$PicturesTableOrderingComposer,
+      $$PicturesTableAnnotationComposer,
+      $$PicturesTableCreateCompanionBuilder,
+      $$PicturesTableUpdateCompanionBuilder,
+      (Picture, BaseReferences<_$WioDatabase, $PicturesTable, Picture>),
+      Picture,
+      PrefetchHooks Function()
+    >;
+typedef $$NotesTableCreateCompanionBuilder = NotesCompanion Function({
+  required String id,
+  required String workspaceId,
+  Value<String?> createdAt,
+  Value<String?> createdBy,
+  Value<String?> updatedAt,
+  Value<String?> updatedBy,
+  Value<int?> revision,
+  Value<String?> deletedAt,
+  Value<String?> customerId,
+  required String subjectType,
+  required String subjectId,
+  Value<String?> noteText,
+  Value<String?> audioSha256,
+  Value<int?> audioBytes,
+  Value<int?> audioSeconds,
+  Value<String?> transcript,
+  Value<String?> transcriptSource,
+  Value<int> rowid,
+});
+typedef $$NotesTableUpdateCompanionBuilder = NotesCompanion Function({
+  Value<String> id,
+  Value<String> workspaceId,
+  Value<String?> createdAt,
+  Value<String?> createdBy,
+  Value<String?> updatedAt,
+  Value<String?> updatedBy,
+  Value<int?> revision,
+  Value<String?> deletedAt,
+  Value<String?> customerId,
+  Value<String> subjectType,
+  Value<String> subjectId,
+  Value<String?> noteText,
+  Value<String?> audioSha256,
+  Value<int?> audioBytes,
+  Value<int?> audioSeconds,
+  Value<String?> transcript,
+  Value<String?> transcriptSource,
+  Value<int> rowid,
+});
+
+class $$NotesTableFilterComposer extends Composer<_$WioDatabase, $NotesTable> {
+  $$NotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customerId => $composableBuilder(
+    column: $table.customerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subjectType => $composableBuilder(
+    column: $table.subjectType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get noteText => $composableBuilder(
+    column: $table.noteText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get audioSha256 => $composableBuilder(
+    column: $table.audioSha256,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get audioBytes => $composableBuilder(
+    column: $table.audioBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get audioSeconds => $composableBuilder(
+    column: $table.audioSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get transcript => $composableBuilder(
+    column: $table.transcript,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get transcriptSource => $composableBuilder(
+    column: $table.transcriptSource,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotesTableOrderingComposer
+    extends Composer<_$WioDatabase, $NotesTable> {
+  $$NotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedBy => $composableBuilder(
+    column: $table.updatedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customerId => $composableBuilder(
+    column: $table.customerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get subjectType => $composableBuilder(
+    column: $table.subjectType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get noteText => $composableBuilder(
+    column: $table.noteText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get audioSha256 => $composableBuilder(
+    column: $table.audioSha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get audioBytes => $composableBuilder(
+    column: $table.audioBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get audioSeconds => $composableBuilder(
+    column: $table.audioSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get transcript => $composableBuilder(
+    column: $table.transcript,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get transcriptSource => $composableBuilder(
+    column: $table.transcriptSource,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotesTableAnnotationComposer
+    extends Composer<_$WioDatabase, $NotesTable> {
+  $$NotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedBy =>
+      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+
+  GeneratedColumn<String> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get customerId => $composableBuilder(
+    column: $table.customerId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get subjectType => $composableBuilder(
+    column: $table.subjectType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get noteText =>
+      $composableBuilder(column: $table.noteText, builder: (column) => column);
+
+  GeneratedColumn<String> get audioSha256 => $composableBuilder(
+    column: $table.audioSha256,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get audioBytes => $composableBuilder(
+    column: $table.audioBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get audioSeconds => $composableBuilder(
+    column: $table.audioSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get transcript => $composableBuilder(
+    column: $table.transcript,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get transcriptSource => $composableBuilder(
+    column: $table.transcriptSource,
+    builder: (column) => column,
+  );
+}
+
+class $$NotesTableTableManager
+    extends
+        RootTableManager<
+          _$WioDatabase,
+          $NotesTable,
+          Note,
+          $$NotesTableFilterComposer,
+          $$NotesTableOrderingComposer,
+          $$NotesTableAnnotationComposer,
+          $$NotesTableCreateCompanionBuilder,
+          $$NotesTableUpdateCompanionBuilder,
+          (Note, BaseReferences<_$WioDatabase, $NotesTable, Note>),
+          Note,
+          PrefetchHooks Function()
+        > {
+  $$NotesTableTableManager(_$WioDatabase db, $NotesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String?> createdAt = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<String?> updatedBy = const Value.absent(),
+                Value<int?> revision = const Value.absent(),
+                Value<String?> deletedAt = const Value.absent(),
+                Value<String?> customerId = const Value.absent(),
+                Value<String> subjectType = const Value.absent(),
+                Value<String> subjectId = const Value.absent(),
+                Value<String?> noteText = const Value.absent(),
+                Value<String?> audioSha256 = const Value.absent(),
+                Value<int?> audioBytes = const Value.absent(),
+                Value<int?> audioSeconds = const Value.absent(),
+                Value<String?> transcript = const Value.absent(),
+                Value<String?> transcriptSource = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotesCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                updatedBy: updatedBy,
+                revision: revision,
+                deletedAt: deletedAt,
+                customerId: customerId,
+                subjectType: subjectType,
+                subjectId: subjectId,
+                noteText: noteText,
+                audioSha256: audioSha256,
+                audioBytes: audioBytes,
+                audioSeconds: audioSeconds,
+                transcript: transcript,
+                transcriptSource: transcriptSource,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                Value<String?> createdAt = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> updatedAt = const Value.absent(),
+                Value<String?> updatedBy = const Value.absent(),
+                Value<int?> revision = const Value.absent(),
+                Value<String?> deletedAt = const Value.absent(),
+                Value<String?> customerId = const Value.absent(),
+                required String subjectType,
+                required String subjectId,
+                Value<String?> noteText = const Value.absent(),
+                Value<String?> audioSha256 = const Value.absent(),
+                Value<int?> audioBytes = const Value.absent(),
+                Value<int?> audioSeconds = const Value.absent(),
+                Value<String?> transcript = const Value.absent(),
+                Value<String?> transcriptSource = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotesCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                createdAt: createdAt,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                updatedBy: updatedBy,
+                revision: revision,
+                deletedAt: deletedAt,
+                customerId: customerId,
+                subjectType: subjectType,
+                subjectId: subjectId,
+                noteText: noteText,
+                audioSha256: audioSha256,
+                audioBytes: audioBytes,
+                audioSeconds: audioSeconds,
+                transcript: transcript,
+                transcriptSource: transcriptSource,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$NotesTable, Note>(table),
+                  BaseReferences<_$WioDatabase, $NotesTable, Note>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WioDatabase,
+      $NotesTable,
+      Note,
+      $$NotesTableFilterComposer,
+      $$NotesTableOrderingComposer,
+      $$NotesTableAnnotationComposer,
+      $$NotesTableCreateCompanionBuilder,
+      $$NotesTableUpdateCompanionBuilder,
+      (Note, BaseReferences<_$WioDatabase, $NotesTable, Note>),
+      Note,
+      PrefetchHooks Function()
+    >;
 typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   Value<int> seq,
   required String changeId,
@@ -7365,6 +10275,10 @@ class $WioDatabaseManager {
   $$RoomsTableTableManager get rooms =>
       $$RoomsTableTableManager(_db, _db.rooms);
   $$JobsTableTableManager get jobs => $$JobsTableTableManager(_db, _db.jobs);
+  $$PicturesTableTableManager get pictures =>
+      $$PicturesTableTableManager(_db, _db.pictures);
+  $$NotesTableTableManager get notes =>
+      $$NotesTableTableManager(_db, _db.notes);
   $$OutboxTableTableManager get outbox =>
       $$OutboxTableTableManager(_db, _db.outbox);
   $$SyncStateTableTableManager get syncState =>
