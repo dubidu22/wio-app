@@ -101,6 +101,9 @@ class FakeSyncServer {
   /// Files served with their first byte changed this many more times.
   final Map<String, int> serveWrongBytes = <String, int>{};
 
+  /// Files answered with the whole file (200) whatever the Range says.
+  final Set<String> ignoreRange = <String>{};
+
   /// Files answered with 416 this many more times.
   final Map<String, int> refuseRange = <String, int>{};
 
@@ -512,7 +515,9 @@ class FakeSyncServer {
       return _json(416, problemBody(416, 'range_not_satisfiable'));
     }
     final match = RegExp(r'^bytes=(\d+)-(\d*)$').firstMatch(range ?? '');
-    if (match == null || (ifRange != null && ifRange != '"$sha256"')) {
+    if (match == null ||
+        ignoreRange.contains(sha256) ||
+        (ifRange != null && ifRange != '"$sha256"')) {
       return http.Response.bytes(
         bytes,
         200,

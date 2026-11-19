@@ -26,16 +26,28 @@ const String room = '01970000-0000-7000-8000-0000000000b1';
 Uint8List fileBytes(int size, int seed) =>
     Uint8List.fromList(List<int>.generate(size, (i) => (i * 31 + seed) & 0xff));
 
+/// A media store whose writes fail, as on a full disk (D-336).
+class FullStore extends MediaStore {
+  FullStore(String base) : super(() async => base);
+
+  @override
+  Future<void> writePart(
+    String sha256,
+    List<int> bytes, {
+    bool restart = false,
+  }) async => throw const FileSystemException('No space left on device');
+}
+
 /// The second phone: pulls rows, then fetches their files.
 class Phone {
-  Phone(this.server, this.folder) : db = memoryDatabase() {
+  Phone(this.server, this.folder, {MediaStore? store}) : db = memoryDatabase() {
     final api = buildApiServer(
       fakeApiBase,
       server.clientFor('b'),
       exampleSession,
       ApiHooks(tooOld: () => null, reportTooOld: (_) {}),
     );
-    media = MediaStore(() async => folder.path);
+    media = store ?? MediaStore(() async => folder.path);
     worker = DownloadWorker(
       db: db,
       api: FilesApi(api),
@@ -338,4 +350,51 @@ void main() {
     await phone.engine.run();
     expect(server.downloads, isEmpty);
   });
+
+  test('a 200 answer to a range request replaces the part (D-331)', () async {
+    final bytes = fileBytes(3000, 18);
+    final sha = picture(bytes);
+    await phone.engine.pull();
+    Directory('${folder.path}/media').createSync(recursive: true);
+    phone.part(sha).writeAsBytesSync(fileBytes(1000, 99));
+    server.ignoreRange.add(sha);
+    expect((await phone.worker.run()).stop, SyncStop.done);
+    expect(server.downloads.single.range, 'bytes=1000-4195303');
+    expect(phone.file(sha).readAsBytesSync(), bytes);
+    expect(phone.part(sha).existsSync(), isFalse);
+  });
+
+  test('a row deleted while its file comes in: stop, the part stays '
+      '(D-336)', () async {
+    final sha = picture(fileBytes(6 * 1024 * 1024, 19));
+    await phone.engine.pull();
+    server.afterRequest = (key) {
+      if (key.startsWith('GET /files/')) {
+        // Deleted on this phone without an outbox row, as a pulled tombstone.
+        phone.db.customStatement(
+          "UPDATE pictures SET deleted_at = '2026-11-19T12:00:00.000Z'",
+        );
+      }
+    };
+    expect((await phone.worker.run()).stop, SyncStop.done);
+    expect(server.downloads, hasLength(1));
+    expect(phone.part(sha).lengthSync(), 4 * 1024 * 1024);
+    expect(phone.file(sha).existsSync(), isFalse);
+  });
+
+  test(
+    'a failed write backs off and leaves the part as it was (D-336)',
+    () async {
+      final full = Phone(server, folder, store: FullStore(folder.path));
+      final bytes = fileBytes(3000, 20);
+      final sha = picture(bytes);
+      await full.engine.pull();
+      Directory('${folder.path}/media').createSync(recursive: true);
+      full.part(sha).writeAsBytesSync(bytes.sublist(0, 1000));
+      expect((await full.worker.run()).stop, SyncStop.failed);
+      expect(full.part(sha).readAsBytesSync(), bytes.sublist(0, 1000));
+      expect(full.file(sha).existsSync(), isFalse);
+      expect(full.memory.skipped, isEmpty);
+    },
+  );
 }
