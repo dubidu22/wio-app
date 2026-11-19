@@ -75,7 +75,7 @@ void main() {
         .map((t) => t.actualTableName)
         .where((t) => !DemoWorkspace.localOnlyTables.contains(t))
         .where((t) => !DemoWorkspace.notInFileYet.contains(t));
-    expect(synced, hasLength(6));
+    expect(synced, hasLength(12));
     for (final table in synced) {
       expect(await count(table), demo.tables[table]!.length, reason: table);
     }

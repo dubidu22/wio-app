@@ -16,7 +16,8 @@ class LocalTable {
   final Set<String> requiredColumns;
 }
 
-/// The typed tables: four of schema v2, pictures and notes of v3 (D-238).
+/// The typed tables: four of schema v2, pictures and notes of v3 (D-238),
+/// entries, place history, vocabulary and links of v4 (D-434).
 const Map<String, LocalTable> localTables = <String, LocalTable>{
   'customers': LocalTable(
     jsonColumns: <String>{'contact'},
@@ -48,6 +49,40 @@ const Map<String, LocalTable> localTables = <String, LocalTable>{
   'notes': LocalTable(
     jsonColumns: <String>{},
     requiredColumns: <String>{'workspace_id', 'subject_type', 'subject_id'},
+  ),
+  'entries': LocalTable(
+    jsonColumns: <String>{},
+    requiredColumns: <String>{'workspace_id'},
+  ),
+  'place_history': LocalTable(
+    jsonColumns: <String>{},
+    requiredColumns: <String>{'workspace_id', 'entry_id', 'moved_at'},
+  ),
+  'labels': LocalTable(
+    jsonColumns: <String>{},
+    requiredColumns: <String>{'workspace_id', 'name'},
+  ),
+  'property_keys': LocalTable(
+    jsonColumns: <String>{},
+    requiredColumns: <String>{'workspace_id', 'name'},
+  ),
+  'entity_labels': LocalTable(
+    jsonColumns: <String>{},
+    requiredColumns: <String>{
+      'workspace_id',
+      'entity_type',
+      'entity_id',
+      'label_id',
+    },
+  ),
+  'entity_properties': LocalTable(
+    jsonColumns: <String>{},
+    requiredColumns: <String>{
+      'workspace_id',
+      'entity_type',
+      'entity_id',
+      'key_id',
+    },
   ),
 };
 

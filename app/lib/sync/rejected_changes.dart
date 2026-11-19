@@ -50,24 +50,64 @@ final rejectedListProvider = StreamProvider<List<RejectedEntry>>((ref) {
 
 Future<String?> _nameOf(WioDatabase db, RejectedChange row) async {
   final fields = jsonDecode(row.fields) as Map<String, Object?>;
+  if (row.entity == 'entries') return _entryName(db, row, fields);
   if (fields['name'] case final String name) return name;
-  final table = typedTableOf(db, row.entity);
+  return _recordName(db, row.entity, row.entityId);
+}
+
+/// The `name` of record [id] of [entity] on the device or in its server
+/// copy.
+Future<String?> _recordName(WioDatabase db, String entity, String id) async {
+  final table = typedTableOf(db, entity);
   if (table != null && table.columnsByName.containsKey('name')) {
     final local = await db
         .customSelect(
-          'SELECT name FROM "${row.entity}" WHERE id = ?',
-          variables: <Variable<Object>>[Variable<String>(row.entityId)],
+          'SELECT name FROM "$entity" WHERE id = ?',
+          variables: <Variable<Object>>[Variable<String>(id)],
         )
         .getSingleOrNull();
     if (local?.read<String?>('name') case final String name) return name;
   }
-  final copy =
-      await (db.select(db.serverRecords)..where(
-            (r) => r.entity.equals(row.entity) & r.id.equals(row.entityId),
-          ))
-          .getSingleOrNull();
+  final copy = await _copyOf(db, entity, id);
   if (copy == null) return null;
-  return (jsonDecode(copy.fields) as Map<String, Object?>)['name'] as String?;
+  return copy['name'] as String?;
+}
+
+Future<Map<String, Object?>?> _copyOf(
+  WioDatabase db,
+  String entity,
+  String id,
+) async {
+  final copy = await (db.select(
+    db.serverRecords,
+  )..where((r) => r.entity.equals(entity) & r.id.equals(id))).getSingleOrNull();
+  return copy == null ? null : jsonDecode(copy.fields) as Map<String, Object?>;
+}
+
+/// An entry's name is its title, else its code. A create answered
+/// `duplicate` names the entry it was joined to (D-198, D-444); other
+/// changes name their own entry, from the device, its server copy or the
+/// change.
+Future<String?> _entryName(
+  WioDatabase db,
+  RejectedChange row,
+  Map<String, Object?> fields,
+) async {
+  String? nameIn(Map<String, Object?>? values) =>
+      (values?['title'] as String?) ?? (values?['code'] as String?);
+  Future<String?> nameOfEntry(String id) async {
+    final local = await (db.select(
+      db.entries,
+    )..where((e) => e.id.equals(id))).getSingleOrNull();
+    return local?.title ??
+        local?.code ??
+        nameIn(await _copyOf(db, 'entries', id));
+  }
+
+  if (row.existingId case final String existing) {
+    if (await nameOfEntry(existing) case final String name) return name;
+  }
+  return nameIn(fields) ?? await nameOfEntry(row.entityId);
 }
 
 /// "Noch einmal senden" (D-197): the same fields as a new change with a new

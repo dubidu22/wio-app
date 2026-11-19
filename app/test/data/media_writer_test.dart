@@ -98,6 +98,19 @@ void main() {
     expect(await db.select(db.uploads).get(), isEmpty);
   }
 
+  /// Entry [entryId] of Herr Probe in the typed table (D-445); a null
+  /// [revision] is an entry the server has not seen yet.
+  Future<void> insertEntry({int? revision = 3}) => db
+      .into(db.entries)
+      .insert(
+        EntriesCompanion.insert(
+          id: entryId,
+          workspaceId: TestIds.workspace,
+          customerId: const Value<String?>(TestIds.herrProbe),
+          revision: Value<int?>(revision),
+        ),
+      );
+
   setUp(() async {
     folder = await Directory.systemTemp.createTemp('media_writer_test');
     db = memoryDatabase();
@@ -197,22 +210,9 @@ void main() {
     });
 
     test(
-      'a picture of an entry takes the customer of its server copy',
+      'a picture of an entry not yet sent takes its customer (D-445)',
       () async {
-        await db
-            .into(db.serverRecords)
-            .insert(
-              ServerRecordsCompanion.insert(
-                entity: 'entries',
-                id: entryId,
-                revision: 3,
-                fields: jsonEncode(<String, Object?>{
-                  'id': entryId,
-                  'workspace_id': TestIds.workspace,
-                  'customer_id': TestIds.herrProbe,
-                }),
-              ),
-            );
+        await insertEntry(revision: null);
         final id = await writer.addPicture(
           workspaceId: TestIds.workspace,
           file: await picture('a'),
@@ -320,20 +320,7 @@ void main() {
   });
 
   test('an entry of another customer than the room is refused (S1)', () async {
-    await db
-        .into(db.serverRecords)
-        .insert(
-          ServerRecordsCompanion.insert(
-            entity: 'entries',
-            id: entryId,
-            revision: 3,
-            fields: jsonEncode(<String, Object?>{
-              'id': entryId,
-              'workspace_id': TestIds.workspace,
-              'customer_id': TestIds.herrProbe,
-            }),
-          ),
-        );
+    await insertEntry();
     await expectLater(
       writer.addPicture(
         workspaceId: TestIds.workspace,

@@ -67,9 +67,26 @@ class LocalWriter {
           _db.jobs,
           _db.pictures,
           _db.notes,
+          _db.entries,
+          _db.labels,
+          _db.propertyKeys,
+          _db.entityLabels,
+          _db.entityProperties,
         ])
           table.actualTableName: table,
       };
+
+  /// An entry's place: changed only by [moveEntry] (D-176). `place_history`
+  /// is not writable at all: only the server writes it (D-54).
+  static const List<String> placeFields = <String>[
+    'site_id',
+    'room_id',
+    'fixture_id',
+    'level',
+    'compartment',
+    'floor_x_cm',
+    'floor_y_cm',
+  ];
 
   /// Creates or updates record [id] of [entity] (a table name such as
   /// `rooms`) with [fields] (column names) and queues the change.
@@ -80,6 +97,44 @@ class LocalWriter {
     required String entity,
     required String id,
     required Map<String, Object?> fields,
+  }) {
+    if (entity == 'entries' && fields.keys.any(placeFields.contains)) {
+      throw ArgumentError.value(fields, 'fields', 'a place needs moveEntry');
+    }
+    return _write(entity: entity, id: id, fields: fields, op: 'upsert');
+  }
+
+  /// Moves existing entry [id] to [place], which must carry all seven place
+  /// fields (nulls included), and queues one `move_entry` (D-176, D-437).
+  /// Returns the change id.
+  Future<String> moveEntry({
+    required String id,
+    required Map<String, Object?> place,
+  }) {
+    if (place.length != placeFields.length ||
+        !placeFields.every(place.containsKey)) {
+      throw ArgumentError.value(place, 'place', 'needs all seven fields');
+    }
+    return _db.transaction(() async {
+      final exists = await _db
+          .customSelect(
+            'SELECT 1 FROM entries WHERE id = ?',
+            variables: <Variable<Object>>[Variable<String>(id)],
+            readsFrom: <TableInfo<Table, Object?>>{_db.entries},
+          )
+          .getSingleOrNull();
+      if (exists == null) {
+        throw ArgumentError.value(id, 'id', 'no such entry');
+      }
+      return _write(entity: 'entries', id: id, fields: place, op: 'move_entry');
+    });
+  }
+
+  Future<String> _write({
+    required String entity,
+    required String id,
+    required Map<String, Object?> fields,
+    required String op,
   }) {
     final table = _tables[entity];
     if (table == null) {
@@ -144,6 +199,7 @@ class LocalWriter {
               changeId: changeId,
               entity: entity,
               entityId: id,
+              op: Value<String>(op),
               fields: jsonEncode(fields),
               baseRevision: Value<int?>(current?.read<int?>('revision')),
               deviceTime: _clock().toUtc().toIso8601String(),

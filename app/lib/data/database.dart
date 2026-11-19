@@ -15,6 +15,12 @@ part 'database.g.dart';
     Jobs,
     Pictures,
     Notes,
+    Entries,
+    PlaceHistory,
+    Labels,
+    PropertyKeys,
+    EntityLabels,
+    EntityProperties,
     Outbox,
     SyncState,
     ServerRecords,
@@ -31,7 +37,7 @@ class WioDatabase extends _$WioDatabase {
   final Future<void> Function()? onFirstCreate;
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -43,7 +49,7 @@ class WioDatabase extends _$WioDatabase {
     // recreated: the outbox may hold changes the server has never seen, so
     // the database fails to open and the screens show the error (D-65).
     onUpgrade: (m, from, to) async {
-      if (from < 1 || from >= to || to > 3) {
+      if (from < 1 || from >= to || to > 4) {
         throw StateError('No migration from local schema $from to $to.');
       }
       if (from < 2) {
@@ -64,6 +70,24 @@ class WioDatabase extends _$WioDatabase {
         // changes these tables must keep this step working, for example by
         // running its own changes after it (PR 64 review N1).
         await rebuildAll(this, const <String>{'pictures', 'notes'});
+      }
+      if (from < 4 && to >= 4) {
+        // v4 (D-434, D-435): entries, place history, labels, property keys
+        // and their links, rebuilt at once like v3.
+        await m.createTable(entries);
+        await m.createTable(placeHistory);
+        await m.createTable(labels);
+        await m.createTable(propertyKeys);
+        await m.createTable(entityLabels);
+        await m.createTable(entityProperties);
+        await rebuildAll(this, const <String>{
+          'entries',
+          'place_history',
+          'labels',
+          'property_keys',
+          'entity_labels',
+          'entity_properties',
+        });
       }
     },
   );
