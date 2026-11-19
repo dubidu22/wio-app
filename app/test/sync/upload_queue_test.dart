@@ -471,6 +471,37 @@ void main() {
       expect(temporary.existsSync(), isTrue);
     });
 
+    test(
+      'a reused copy gets a fresh time, so a sweep spares it (N7)',
+      () async {
+        final phone = Phone(server);
+        final source = phone.source(1000);
+        // An old copy of the same bytes whose row was discarded long ago.
+        final old =
+            File(
+                '${phone.folder.path}/uploads/'
+                '${sha256Of(source.readAsBytesSync())}',
+              )
+              ..createSync(recursive: true)
+              ..writeAsBytesSync(source.readAsBytesSync())
+              ..setLastModifiedSync(DateTime(2020));
+        // A sweep that started now read the rows before this enqueue's row.
+        final sweepStart = DateTime.now();
+        final sha = await phone.enqueue(source);
+        expect(
+          old.lastModifiedSync().isBefore(
+            sweepStart.subtract(const Duration(seconds: 2)),
+          ),
+          isFalse,
+        );
+        await phone.store.sweep(
+          <String>{},
+          before: sweepStart.subtract(sweepMargin),
+        );
+        expect(phone.copies(), <String>[sha]);
+      },
+    );
+
     test('an enqueue alongside a sweep keeps its copy (S1)', () async {
       final phone = Phone(server);
       final source = phone.source(3 * mib);

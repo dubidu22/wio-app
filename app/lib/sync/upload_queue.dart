@@ -110,17 +110,129 @@ Future<void> sweepUploads(
   }, before: started.subtract(sweepMargin));
 }
 
-/// Failed uploads for "Nicht gesendet", newest first (D-214).
-final failedUploadsProvider = StreamProvider<List<Upload>>((ref) {
+/// What a failed file is (D-386): a picture, a voice note recording, or
+/// a file no row on this device points at.
+enum UploadKind { picture, voice, unknown }
+
+/// A failed upload with what it belongs to, for "Nicht gesendet" (D-384,
+/// D-385): found by the file's hash, so no column links file and record.
+class FailedUpload {
+  const FailedUpload(
+    this.upload, {
+    this.kind = UploadKind.unknown,
+    this.customerName,
+    this.roomName,
+  });
+
+  final Upload upload;
+  final UploadKind kind;
+
+  /// The customer stands for the job: files point at no job (D-385).
+  final String? customerName;
+  final String? roomName;
+
+  /// Customer and room joined with ", "; null when neither has a name.
+  String? get place {
+    final parts = <String>[?customerName, ?roomName];
+    return parts.isEmpty ? null : parts.join(', ');
+  }
+}
+
+/// Failed uploads for "Nicht gesendet", newest first (D-214), each with
+/// what it belongs to (D-384). Watches the tables the names come from, so
+/// a renamed room shows at once.
+final failedUploadsProvider = StreamProvider<List<FailedUpload>>((ref) {
   final db = ref.watch(databaseProvider);
-  return (db.select(db.uploads)
-        ..where((u) => u.failedReason.isNotNull())
-        ..orderBy(<OrderClauseGenerator<$UploadsTable>>[
-          (u) => OrderingTerm.desc(u.createdAt),
-          (u) => OrderingTerm.asc(u.sha256),
-        ]))
-      .watch();
+  return watchFailedUploads(db);
 });
+
+/// The stream behind [failedUploadsProvider].
+Stream<List<FailedUpload>> watchFailedUploads(WioDatabase db) => db
+    .customSelect(
+      'SELECT * FROM uploads WHERE failed_reason IS NOT NULL '
+      'ORDER BY created_at DESC, sha256 ASC',
+      readsFrom: <ResultSetImplementation<Object?, Object?>>{
+        db.uploads,
+        db.pictures,
+        db.notes,
+        db.rooms,
+        db.customers,
+      },
+    )
+    .watch()
+    .asyncMap(
+      (rows) async => <FailedUpload>[
+        for (final row in rows)
+          await describeUpload(db, db.uploads.map(row.data)),
+      ],
+    );
+
+/// Finds what [upload] belongs to (D-384, D-385): a picture with its hash,
+/// else a note whose recording has it; live rows before deleted ones, then
+/// the newest (ids are UUIDv7, so they sort by time). A picture names its customer and
+/// room; a voice note its customer and the room of its subject (a room, or
+/// a picture's room).
+Future<FailedUpload> describeUpload(WioDatabase db, Upload upload) async {
+  final picture =
+      await (db.select(db.pictures)
+            ..where((p) => p.fileSha256.equals(upload.sha256))
+            ..orderBy(<OrderClauseGenerator<$PicturesTable>>[
+              (p) => OrderingTerm.asc(p.deletedAt.isNotNull()),
+              (p) => OrderingTerm.desc(p.id),
+            ])
+            ..limit(1))
+          .getSingleOrNull();
+  if (picture != null) {
+    return FailedUpload(
+      upload,
+      kind: UploadKind.picture,
+      customerName: await _customerName(db, picture.customerId),
+      roomName: await _roomName(db, picture.roomId),
+    );
+  }
+  final note =
+      await (db.select(db.notes)
+            ..where((n) => n.audioSha256.equals(upload.sha256))
+            ..orderBy(<OrderClauseGenerator<$NotesTable>>[
+              (n) => OrderingTerm.asc(n.deletedAt.isNotNull()),
+              (n) => OrderingTerm.desc(n.id),
+            ])
+            ..limit(1))
+          .getSingleOrNull();
+  if (note == null) return FailedUpload(upload);
+  final roomId = switch (note.subjectType) {
+    'room' => note.subjectId,
+    'picture' => (await (db.select(
+      db.pictures,
+    )..where((p) => p.id.equals(note.subjectId))).getSingleOrNull())?.roomId,
+    _ => null,
+  };
+  return FailedUpload(
+    upload,
+    kind: UploadKind.voice,
+    customerName: await _customerName(db, note.customerId),
+    roomName: await _roomName(db, roomId),
+  );
+}
+
+Future<String?> _customerName(WioDatabase db, String? id) async => id == null
+    ? null
+    : _named(
+        (await (db.select(
+          db.customers,
+        )..where((c) => c.id.equals(id))).getSingleOrNull())?.name,
+      );
+
+Future<String?> _roomName(WioDatabase db, String? id) async => id == null
+    ? null
+    : _named(
+        (await (db.select(
+          db.rooms,
+        )..where((r) => r.id.equals(id))).getSingleOrNull())?.name,
+      );
+
+String? _named(String? name) =>
+    name == null || name.trim().isEmpty ? null : name;
 
 /// "Noch einmal senden" for a refused upload (D-214).
 Future<void> retryUpload(WioDatabase db, Upload row) =>

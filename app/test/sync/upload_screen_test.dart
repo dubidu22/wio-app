@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/data/database.dart';
 
+import '../support/media.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
 
@@ -27,7 +28,7 @@ void main() {
     tester,
   ) async {
     await failed(tester);
-    expect(find.text('2 Änderungen wurden nicht übernommen.'), findsOneWidget);
+    expect(find.text('2 Einträge wurden nicht gesendet.'), findsOneWidget);
     await tester.tap(find.widgetWithText(OutlinedButton, 'Ansehen'));
     await settle(tester);
     expect(find.text('Datei (2,4 MB)'), findsOneWidget);
@@ -43,6 +44,58 @@ void main() {
       findsOneWidget,
     );
     expect(find.widgetWithText(OutlinedButton, 'Verwerfen'), findsNWidgets(2));
+  });
+
+  testWidgets('a failed file is named by what it belongs to (D-386, D-387)', (
+    tester,
+  ) async {
+    final db = memoryDatabase();
+    addTearDown(db.close);
+    await seedWithNotes(db);
+    await seedUploads(db, <(String, int, String?)>[
+      (DemoFiles.kuecheRegal, 2500000, 'permission'),
+      (DemoFiles.noteAudio, 1300000, 'damaged'),
+      (DemoFiles.flurKartons, 1000000, 'invalid'),
+      ('f' * 64, 12900000, 'too_large'),
+    ]);
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: '/nicht-gesendet',
+      mediaFolder: demoMediaFolder(without: <String>{DemoFiles.flurKartons}),
+    );
+    await settle(tester);
+    expect(find.text('Foto: Familie Beispiel, Küche'), findsOneWidget);
+    expect(find.text('Sprachnotiz: Familie Beispiel, Küche'), findsOneWidget);
+    expect(find.text('Foto: Familie Beispiel'), findsOneWidget);
+    expect(
+      find.text('Die Datei (2,4 MB) wurde nicht hochgeladen.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Die Datei (1,2 MB) wurde nicht hochgeladen.'),
+      findsOneWidget,
+    );
+    // A file no row points at keeps its old title.
+    expect(find.text('Datei (12,3 MB)'), findsOneWidget);
+    expect(find.text('Die Datei wurde nicht hochgeladen.'), findsOneWidget);
+    // Only the picture that is on this device has a thumbnail.
+    expect(find.byType(Image), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Foto: Familie Beispiel, Küche'),
+          matching: find.byType(Row),
+        ),
+        matching: find.byType(Image),
+      ),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(OutlinedButton, 'Verwerfen'), findsNWidgets(4));
+    expect(
+      find.widgetWithText(FilledButton, 'Noch einmal senden'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Noch einmal senden makes the file pending again', (

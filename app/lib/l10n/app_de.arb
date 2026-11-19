@@ -302,9 +302,9 @@
   "@syncOffline": {
     "description": "Sync status line after a run without an answer; it retries by itself (D-201, D-203)."
   },
-  "rejectedHint": "{count, plural, =1{1 Änderung wurde nicht übernommen.} other{{count} Änderungen wurden nicht übernommen.}}",
+  "rejectedHint": "{count, plural, =1{1 Eintrag wurde nicht gesendet.} other{{count} Einträge wurden nicht gesendet.}}",
   "@rejectedHint": {
-    "description": "Job-list hint while refused changes are listed (D-197).",
+    "description": "Job-list hint while refused changes or failed files are listed (D-197, D-214, D-388).",
     "placeholders": {
       "count": {
         "type": "int"
@@ -481,6 +481,23 @@
   "uploadTitle": "Datei ({size})",
   "@uploadTitle": {
     "description": "A file that was not uploaded, with its size such as 1,2 MB (D-214).",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "uploadKindPicture": "Foto",
+  "@uploadKindPicture": {
+    "description": "Kind of a failed file: a picture, before its customer and room (D-386)."
+  },
+  "uploadKindVoice": "Sprachnotiz",
+  "@uploadKindVoice": {
+    "description": "Kind of a failed file: a voice note recording (D-386)."
+  },
+  "uploadNotSentSize": "Die Datei ({size}) wurde nicht hochgeladen.",
+  "@uploadNotSentSize": {
+    "description": "What happened to a failed file whose record is known, with its size such as 2,4 MB (D-386).",
     "placeholders": {
       "size": {
         "type": "String"
