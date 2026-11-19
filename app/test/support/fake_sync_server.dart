@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
+
+import 'package:crypto/crypto.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -62,6 +65,38 @@ class FakeSyncServer {
   /// Every request that reached the server, as "METHOD /path".
   final List<String> requests = <String>[];
 
+  /// Files of the workspace by SHA-256: the bytes received so far and the
+  /// total from the first chunk (D-185, D-186).
+  final Map<String, ({int total, BytesBuilder bytes})> partFiles =
+      <String, ({int total, BytesBuilder bytes})>{};
+
+  /// Complete files by SHA-256.
+  final Map<String, Uint8List> files = <String, Uint8List>{};
+
+  /// Devices whose token is a helper's: files answer 403 (D-206).
+  final Set<String> helpers = <String>{};
+
+  /// Files whose next completion fails the hash check once more (422).
+  final Map<String, int> breakHash = <String, int>{};
+
+  /// Content-Range headers of every chunk that reached the server.
+  final List<String> chunks = <String>[];
+
+  /// Answer every file request with this status and code (for example
+  /// 413, or 401 `token_invalid`).
+  int? fileStatus;
+  String fileCode = 'refused';
+
+  /// How long a chunk's answer takes after the server stored it.
+  Duration chunkDelay = Duration.zero;
+
+  /// Lose the answers of this many chunk uploads after storing them.
+  int loseChunkAnswers = 0;
+
+  /// Called with "METHOD /path" after each answer, to change the server
+  /// between two requests.
+  void Function(String key)? afterRequest;
+
   /// A record the server already holds, with a new revision.
   Map<String, Object?> put(
     String entity,
@@ -119,11 +154,23 @@ class FakeSyncServer {
         response = _push(request, device);
       case 'GET /sync/pull':
         response = _pull(request);
+      case _ when key.startsWith('GET /files/') && key.endsWith('/state'):
+        response = _fileState(request.url.pathSegments[1], device);
+      case _ when key.startsWith('PUT /files/'):
+        response = _putChunk(request, request.url.pathSegments[1], device);
       default:
         response = _json(404, problemBody(404, 'not_found'));
     }
+    afterRequest?.call(key);
+    if (key.startsWith('PUT /files/') && chunkDelay > Duration.zero) {
+      await Future<void>.delayed(chunkDelay);
+    }
     if (_lose(() => loseAnswers--, loseAnswers > 0)) {
       throw http.ClientException('answer lost (fake)');
+    }
+    if (key.startsWith('PUT /files/') && loseChunkAnswers > 0) {
+      loseChunkAnswers--;
+      throw http.ClientException('chunk answer lost (fake)');
     }
     return response;
   });
@@ -326,6 +373,14 @@ class FakeSyncServer {
     'rooms': <String>['site_id'],
     'jobs': <String>['customer_id', 'date'],
     'labels': <String>['name'],
+    'pictures': <String>[
+      'file_sha256',
+      'file_bytes',
+      'file_mime',
+      'width_px',
+      'height_px',
+    ],
+    'notes': <String>['subject_type', 'subject_id'],
   };
 
   static const Set<String> _readOnly = <String>{
@@ -376,6 +431,81 @@ class FakeSyncServer {
     });
   }
 
+  /// A part of a file stored as the server would hold it after a lost
+  /// answer.
+  void putPart(String sha256, List<int> bytes, int total) =>
+      partFiles[sha256] = (total: total, bytes: BytesBuilder()..add(bytes));
+
+  int _received(String sha256) =>
+      files[sha256]?.length ?? partFiles[sha256]?.bytes.length ?? 0;
+
+  Map<String, Object?> _state(String sha256) => <String, Object?>{
+    'sha256': sha256,
+    'size': files[sha256]?.length ?? partFiles[sha256]?.total,
+    'received_bytes': _received(sha256),
+    'complete': files.containsKey(sha256),
+  };
+
+  http.Response? _fileRefusal(String device) {
+    if (helpers.contains(device)) {
+      return _json(403, problemBody(403, 'forbidden'));
+    }
+    final status = fileStatus;
+    if (status != null) return _json(status, problemBody(status, fileCode));
+    return null;
+  }
+
+  http.Response _fileState(String sha256, String device) =>
+      _fileRefusal(device) ?? _json(200, _state(sha256));
+
+  http.Response _putChunk(http.Request request, String sha256, String device) {
+    final refused = _fileRefusal(device);
+    if (refused != null) return refused;
+    final range = request.headers['content-range'] ?? '';
+    chunks.add(range);
+    final match = RegExp(r'^bytes (\d+)-(\d+)/(\d+)$').firstMatch(range);
+    if (match == null) return _json(400, problemBody(400, 'invalid_request'));
+    final first = int.parse(match[1]!);
+    final last = int.parse(match[2]!);
+    final total = int.parse(match[3]!);
+    final body = request.bodyBytes;
+    if (total < 1 || last < first || last >= total) {
+      return _json(400, problemBody(400, 'invalid_request'));
+    }
+    // As the real server: a body that does not match its range is a bad
+    // request; a chunk or file over the limits is too large.
+    if (body.length != last - first + 1) {
+      return _json(400, problemBody(400, 'invalid_request'));
+    }
+    if (body.length > 4 * 1024 * 1024 || total > 100 * 1024 * 1024) {
+      return _json(413, problemBody(413, 'payload_too_large'));
+    }
+    if (files.containsKey(sha256)) return _json(200, _state(sha256));
+    final part = partFiles[sha256];
+    if (part != null && part.total != total) {
+      return _json(400, problemBody(400, 'invalid_request'));
+    }
+    if (first != _received(sha256)) {
+      return _json(409, <String, Object?>{
+        ...problemBody(409, 'offset_mismatch'),
+        'received_bytes': _received(sha256),
+      });
+    }
+    final stored = part ?? (total: total, bytes: BytesBuilder());
+    partFiles[sha256] = stored;
+    stored.bytes.add(body);
+    if (stored.bytes.length < total) return _json(202, _state(sha256));
+    final bytes = stored.bytes.takeBytes();
+    partFiles.remove(sha256);
+    final broken = (breakHash[sha256] ?? 0) > 0;
+    if (broken) breakHash[sha256] = breakHash[sha256]! - 1;
+    if (broken || sha256Of(bytes) != sha256) {
+      return _json(422, problemBody(422, 'hash_mismatch'));
+    }
+    files[sha256] = bytes;
+    return _json(200, _state(sha256));
+  }
+
   static Map<String, Object?> _result(
     String changeId,
     String status, {
@@ -401,3 +531,6 @@ class FakeSyncServer {
         },
       );
 }
+
+/// Lower-case hex SHA-256 of [bytes].
+String sha256Of(List<int> bytes) => sha256.convert(bytes).toString();

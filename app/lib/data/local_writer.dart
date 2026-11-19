@@ -65,6 +65,8 @@ class LocalWriter {
           _db.sites,
           _db.rooms,
           _db.jobs,
+          _db.pictures,
+          _db.notes,
         ])
           table.actualTableName: table,
       };

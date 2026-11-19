@@ -67,3 +67,43 @@ final customerProvider = StreamProvider.family<CustomerView?, String>(
     return watchCustomer(ref.watch(databaseProvider), customerId);
   },
 );
+
+/// Key of a room or a picture below a customer in the routes (D-259).
+typedef CustomerItem = ({String customerId, String id});
+
+/// Level 3: one room of a customer; null when it does not exist (D-264).
+final roomProvider = StreamProvider.family<RoomScreenView?, CustomerItem>(
+  retry: _noRetry,
+  (ref, key) => watchRoom(ref.watch(databaseProvider), key.customerId, key.id),
+);
+
+/// Live pictures of one room, oldest first (D-245).
+final roomPicturesProvider = StreamProvider.family<List<Picture>, String>(
+  retry: _noRetry,
+  (ref, roomId) => watchPicturesOfRoom(ref.watch(databaseProvider), roomId),
+);
+
+/// Live pictures of one customer that belong to no room (D-245).
+final customerPicturesProvider = StreamProvider.family<List<Picture>, String>(
+  retry: _noRetry,
+  (ref, customerId) => watchPicturesOfCustomerWithoutRoom(
+    ref.watch(databaseProvider),
+    customerId,
+  ),
+);
+
+/// One picture of a customer, optionally checked to be in a room; null
+/// when it does not exist (D-259).
+final pictureProvider =
+    StreamProvider.family<
+      Picture?,
+      ({String customerId, String? roomId, String pictureId})
+    >(
+      retry: _noRetry,
+      (ref, key) => watchPicture(
+        ref.watch(databaseProvider),
+        key.customerId,
+        key.pictureId,
+        roomId: key.roomId,
+      ),
+    );

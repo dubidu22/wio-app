@@ -460,6 +460,44 @@
   "@rejectedOther": {
     "description": "Any other or unknown reason (D-96)."
   },
+  "syncUploads": "{count, plural, =1{1 Datei wird hochgeladen.} other{{count} Dateien werden hochgeladen.}}",
+  "@syncUploads": {
+    "description": "Sync status line: files waiting for upload while no change waits (D-216).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadTitle": "Datei ({size})",
+  "@uploadTitle": {
+    "description": "A file that was not uploaded, with its size such as 1,2 MB (D-214).",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "uploadNotSent": "Die Datei wurde nicht hochgeladen.",
+  "@uploadNotSent": {
+    "description": "What happened to a file that failed (D-214)."
+  },
+  "uploadPermission": "Keine Berechtigung, diese Datei zu senden.",
+  "@uploadPermission": {
+    "description": "Upload refused with 403 forbidden (D-206, D-212)."
+  },
+  "uploadDamaged": "Datei beschädigt.",
+  "@uploadDamaged": {
+    "description": "The copy is missing or does not match its hash (D-212)."
+  },
+  "uploadTooLarge": "Datei zu groß (höchstens 100 MB).",
+  "@uploadTooLarge": {
+    "description": "File over 100 MiB or refused with 413 (D-212)."
+  },
+  "uploadInvalid": "Ungültige Anfrage.",
+  "@uploadInvalid": {
+    "description": "Upload refused with 400 (D-212)."
+  },
   "rejectedRetry": "Noch einmal senden",
   "@rejectedRetry": {
     "description": "Sends a refused change again as a new change (D-172, D-197)."
@@ -479,5 +517,70 @@
   "undo": "Rückgängig",
   "@undo": {
     "description": "Undo button in a note (UX rule 10)."
+  },
+  "roomPictureCount": "{count, plural, =0{Noch keine Fotos} =1{1 Foto} other{{count} Fotos}}",
+  "@roomPictureCount": {
+    "description": "Second line of a room button on the customer screen: how many pictures the room has.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "roomPictures": "Fotos",
+  "@roomPictures": {
+    "description": "Heading above the room's pictures."
+  },
+  "roomPicturesEmpty": "Noch keine Fotos in diesem Raum.",
+  "@roomPicturesEmpty": {
+    "description": "Hint on the room screen when the room has no pictures (D-75; the Fotos button comes with the camera, D-258)."
+  },
+  "roomMissing": "Diesen Raum gibt es nicht mehr.",
+  "@roomMissing": {
+    "description": "Shown when a room was deleted or a link points to an unknown room."
+  },
+  "pictureTakenAt": "{time}",
+  "@pictureTakenAt": {
+    "description": "When a picture was taken, under its thumbnail and on the picture screen, e.g. 'Do. 19.11., 09:05'.",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "E d.M., HH:mm",
+        "isCustomDateFormat": "true"
+      }
+    }
+  },
+  "pictureOpen": "Öffnen",
+  "@pictureOpen": {
+    "description": "Word on a picture tile that opens the picture full screen (UX rule 1)."
+  },
+  "pictureOpenLabel": "Foto {time} öffnen",
+  "@pictureOpenLabel": {
+    "description": "Screen reader label of a picture tile.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pictureAfter": "Nachher",
+  "@pictureAfter": {
+    "description": "Marks an after picture (D-7); a word, not a colour (D-5)."
+  },
+  "pictureNotOnDevice": "Foto ist noch nicht auf diesem Gerät.",
+  "@pictureNotOnDevice": {
+    "description": "Tile and picture screen text when the picture's file is not on this device yet (D-260)."
+  },
+  "pictureTitle": "Foto",
+  "@pictureTitle": {
+    "description": "Title of the full-screen picture."
+  },
+  "pictureMissing": "Dieses Foto gibt es nicht mehr.",
+  "@pictureMissing": {
+    "description": "Shown when a picture was deleted or a link points to an unknown picture."
+  },
+  "pictureNoTime": "Ohne Zeit",
+  "@pictureNoTime": {
+    "description": "Shown instead of the time when a picture has none."
   }
 }

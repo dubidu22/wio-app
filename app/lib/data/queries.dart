@@ -44,10 +44,26 @@ class SiteView {
 
 /// A room, for the customer screen.
 class RoomView {
-  const RoomView({required this.id, required this.name});
+  const RoomView({required this.id, required this.name, this.pictureCount = 0});
 
   final String id;
   final String? name;
+
+  /// Live pictures of the room (D-264).
+  final int pictureCount;
+}
+
+/// Everything the room screen shows besides its pictures (D-259).
+class RoomScreenView {
+  const RoomScreenView({
+    required this.id,
+    required this.name,
+    required this.siteName,
+  });
+
+  final String id;
+  final String? name;
+  final String? siteName;
 }
 
 /// Everything level 2 shows of one customer.
@@ -116,6 +132,7 @@ Stream<CustomerView?> watchCustomer(WioDatabase db, String customerId) {
           db.customers,
           db.sites,
           db.rooms,
+          db.pictures,
         },
       )
       .watch()
@@ -151,6 +168,19 @@ Future<CustomerView?> _loadCustomer(WioDatabase db, String customerId) async {
               (r) => OrderingTerm.asc(r.id),
             ]))
           .get();
+  final count = db.pictures.id.count();
+  final counts = <String, int>{
+    for (final row
+        in await (db.selectOnly(db.pictures)
+              ..addColumns(<Expression<Object>>[db.pictures.roomId, count])
+              ..where(
+                db.pictures.roomId.isIn(rooms.map((r) => r.id)) &
+                    db.pictures.deletedAt.isNull(),
+              )
+              ..groupBy(<Expression<Object>>[db.pictures.roomId]))
+            .get())
+      row.read(db.pictures.roomId)!: row.read(count)!,
+  };
   return CustomerView(
     id: customer.id,
     name: customer.name,
@@ -162,9 +192,125 @@ Future<CustomerView?> _loadCustomer(WioDatabase db, String customerId) async {
           address: site.address,
           rooms: <RoomView>[
             for (final room in rooms.where((r) => r.siteId == site.id))
-              RoomView(id: room.id, name: room.name),
+              RoomView(
+                id: room.id,
+                name: room.name,
+                pictureCount: counts[room.id] ?? 0,
+              ),
           ],
         ),
     ],
   );
 }
+
+/// Room [roomId] of customer [customerId] with its site's name, or null
+/// when the room, its site or the customer is unknown or tombstoned, or the
+/// room belongs to another customer (D-264).
+Stream<RoomScreenView?> watchRoom(
+  WioDatabase db,
+  String customerId,
+  String roomId,
+) {
+  final query =
+      db.select(db.rooms).join(<Join<HasResultSet, Object?>>[
+        innerJoin(db.sites, db.sites.id.equalsExp(db.rooms.siteId)),
+        innerJoin(db.customers, db.customers.id.equalsExp(db.sites.customerId)),
+      ])..where(
+        db.rooms.id.equals(roomId) &
+            db.rooms.deletedAt.isNull() &
+            db.sites.deletedAt.isNull() &
+            db.customers.id.equals(customerId) &
+            db.customers.deletedAt.isNull(),
+      );
+  return query.watchSingleOrNull().map((row) {
+    if (row == null) {
+      return null;
+    }
+    final room = row.readTable(db.rooms);
+    return RoomScreenView(
+      id: room.id,
+      name: room.name,
+      siteName: row.readTable(db.sites).name,
+    );
+  });
+}
+
+/// Live picture [pictureId] of customer [customerId], or null when it is
+/// unknown, tombstoned or another customer's. With [roomId], also null when
+/// the picture is not in that room or the room or its site is tombstoned
+/// (D-259).
+Stream<Picture?> watchPicture(
+  WioDatabase db,
+  String customerId,
+  String pictureId, {
+  String? roomId,
+}) {
+  final query =
+      db.select(db.pictures).join(<Join<HasResultSet, Object?>>[
+        if (roomId != null) ...<Join<HasResultSet, Object?>>[
+          innerJoin(db.rooms, db.rooms.id.equalsExp(db.pictures.roomId)),
+          innerJoin(db.sites, db.sites.id.equalsExp(db.rooms.siteId)),
+        ],
+      ])..where(
+        db.pictures.id.equals(pictureId) &
+            db.pictures.customerId.equals(customerId) &
+            db.pictures.deletedAt.isNull() &
+            (roomId == null
+                ? const Constant(true)
+                : db.pictures.roomId.equals(roomId) &
+                      db.rooms.deletedAt.isNull() &
+                      db.sites.deletedAt.isNull()),
+      );
+  return query.watchSingleOrNull().map((row) => row?.readTable(db.pictures));
+}
+
+/// Live pictures of room [roomId], oldest first (D-245).
+Stream<List<Picture>> watchPicturesOfRoom(WioDatabase db, String roomId) =>
+    (db.select(db.pictures)
+          ..where((p) => p.roomId.equals(roomId) & p.deletedAt.isNull())
+          ..orderBy(_pictureOrder))
+        .watch();
+
+/// Live pictures of customer [customerId] that belong to no room and no
+/// entry (customer screen "Fotos"), oldest first (D-245).
+Stream<List<Picture>> watchPicturesOfCustomerWithoutRoom(
+  WioDatabase db,
+  String customerId,
+) =>
+    (db.select(db.pictures)
+          ..where(
+            (p) =>
+                p.customerId.equals(customerId) &
+                p.roomId.isNull() &
+                p.entryId.isNull() &
+                p.deletedAt.isNull(),
+          )
+          ..orderBy(_pictureOrder))
+        .watch();
+
+/// Live notes about [subjectId] of [subjectType], oldest first; notes not
+/// yet confirmed by the server come last (D-245).
+Stream<List<Note>> watchNotesOf(
+  WioDatabase db,
+  String subjectType,
+  String subjectId,
+) =>
+    (db.select(db.notes)
+          ..where(
+            (n) =>
+                n.subjectType.equals(subjectType) &
+                n.subjectId.equals(subjectId) &
+                n.deletedAt.isNull(),
+          )
+          ..orderBy(<OrderClauseGenerator<$NotesTable>>[
+            (n) => OrderingTerm.asc(n.createdAt, nulls: NullsOrder.last),
+            (n) => OrderingTerm.asc(n.id),
+          ]))
+        .watch();
+
+final List<OrderClauseGenerator<$PicturesTable>> _pictureOrder =
+    <OrderClauseGenerator<$PicturesTable>>[
+      (p) => OrderingTerm.asc(p.takenAt, nulls: NullsOrder.last),
+      (p) => OrderingTerm.asc(p.createdAt, nulls: NullsOrder.last),
+      (p) => OrderingTerm.asc(p.id),
+    ];

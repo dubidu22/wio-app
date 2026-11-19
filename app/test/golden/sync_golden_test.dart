@@ -45,4 +45,22 @@ void main() {
       },
     );
   }
+  testWidgets(
+    'job list with uploads waiting at phone size (D-216)',
+    skip: _notLinux,
+    (tester) async {
+      final db = memoryDatabase();
+      addTearDown(db.close);
+      await seedTestData(db);
+      await seedUploads(db, <(String, int, String?)>[
+        ('c' * 64, 1000, null),
+        ('d' * 64, 2000, null),
+      ]);
+      await pumpWioApp(tester, db: db);
+      await expectLater(
+        find.byType(WidgetsApp),
+        matchesGoldenFile('goldens/job_list_uploads_phone.png'),
+      );
+    },
+  );
 }

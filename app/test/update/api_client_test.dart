@@ -68,6 +68,7 @@ operations = <String, Future<TonikResult<Object?, Object?>> Function(Server)>{
   'syncPush': (s) => SyncApi(s).syncPush(body: const PushRequest(changes: [])),
   'syncPull': (s) => SyncApi(s).syncPull(since: 0),
   'getFileState': (s) => FilesApi(s).getFileState(sha256: 'a' * 64),
+  'getFile': (s) => FilesApi(s).getFile(sha256: 'a' * 64),
   'putFileChunk': (s) => FilesApi(s).putFileChunk(
     body: const TonikFileBytes(<int>[1, 2, 3]),
     sha256: 'a' * 64,

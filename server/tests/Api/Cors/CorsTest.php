@@ -37,7 +37,7 @@ final class CorsTest extends DatabaseTestCase
         self::assertSame(204, $response->getStatusCode());
         self::assertSame(self::WEB, $response->getHeaderLine('Access-Control-Allow-Origin'));
         self::assertSame('GET, POST, PUT, DELETE', $response->getHeaderLine('Access-Control-Allow-Methods'));
-        self::assertSame('Authorization, Content-Type, Content-Range, Wio-App-Version', $response->getHeaderLine('Access-Control-Allow-Headers'));
+        self::assertSame('Authorization, Content-Type, Content-Range, Wio-App-Version, Range, If-None-Match, If-Range', $response->getHeaderLine('Access-Control-Allow-Headers'));
         self::assertSame('600', $response->getHeaderLine('Access-Control-Max-Age'));
         self::assertSame('Origin', $response->getHeaderLine('Vary'));
         self::assertFalse($response->hasHeader('Access-Control-Allow-Credentials'));
@@ -137,7 +137,7 @@ final class CorsTest extends DatabaseTestCase
 
         self::assertCors($response, 429);
         self::assertSame('900', $response->getHeaderLine('Retry-After'));
-        self::assertSame('Retry-After', $response->getHeaderLine('Access-Control-Expose-Headers'));
+        self::assertSame('Retry-After, Content-Range, ETag, Accept-Ranges, Content-Disposition', $response->getHeaderLine('Access-Control-Expose-Headers'));
     }
 
     public function testAServerErrorCarriesTheHeaders(): void
@@ -207,7 +207,7 @@ final class CorsTest extends DatabaseTestCase
     {
         self::assertSame($status, $response->getStatusCode(), (string) $response->getBody());
         self::assertSame(self::WEB, $response->getHeaderLine('Access-Control-Allow-Origin'));
-        self::assertSame('Retry-After', $response->getHeaderLine('Access-Control-Expose-Headers'));
+        self::assertSame('Retry-After, Content-Range, ETag, Accept-Ranges, Content-Disposition', $response->getHeaderLine('Access-Control-Expose-Headers'));
         self::assertContains('Origin', array_map('trim', explode(',', $response->getHeaderLine('Vary'))));
         self::assertFalse($response->hasHeader('Access-Control-Allow-Credentials'));
     }

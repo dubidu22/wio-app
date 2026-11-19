@@ -28,6 +28,7 @@ use Wio\Tests\Support\AuthFixtures;
 #[Operation('syncPull')]
 #[Operation('getFileState')]
 #[Operation('putFileChunk')]
+#[Operation('getFile')]
 final class AppVersionTest extends DatabaseTestCase
 {
     private const string OLD = '1.9.9+40';
@@ -69,7 +70,7 @@ final class AppVersionTest extends DatabaseTestCase
         }
     }
 
-    private const array OPERATIONS = ['getHealth', 'signIn', 'signOut', 'getMe', 'listDevices', 'revokeDevice', 'syncPush', 'syncPull', 'getFileState', 'putFileChunk'];
+    private const array OPERATIONS = ['getHealth', 'signIn', 'signOut', 'getMe', 'listDevices', 'revokeDevice', 'syncPush', 'syncPull', 'getFileState', 'putFileChunk', 'getFile'];
 
     #[DataProvider('operations')]
     public function testAnOldAppGets426OnEveryOperation(string $operation): void
@@ -233,6 +234,7 @@ final class AppVersionTest extends DatabaseTestCase
             'syncPull' => $this->call('GET', '/sync/pull?since=0', token: $token, appVersion: $appVersion),
             'getFileState' => $this->call('GET', '/files/' . hash('sha256', 'Kiste') . '/state', token: $token, appVersion: $appVersion),
             'putFileChunk' => $this->chunk(hash('sha256', 'Kiste'), 'Kiste', 0, 5, $token, $appVersion),
+            'getFile' => $this->call('GET', '/files/' . hash('sha256', 'Kiste'), token: $token, appVersion: $appVersion),
             default => self::fail("No request for {$operation}"),
         };
     }

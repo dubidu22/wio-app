@@ -62,6 +62,34 @@ final class FileStore
     }
 
     /**
+     * Opens a complete file for reading, with its size; null when the
+     * workspace holds no complete file with this hash. Complete files only
+     * appear by rename and never change, so no lock is taken (D-231).
+     *
+     * @return array{resource, int<0, max>}|null
+     */
+    public function open(string $workspaceId, string $sha256): ?array
+    {
+        $path = $this->dir($workspaceId) . '/' . $sha256;
+        self::checkSha($sha256);
+        if (!is_file($path)) {
+            return null;
+        }
+        $handle = @fopen($path, 'rb');
+        if ($handle === false) {
+            return null;
+        }
+        $stat = fstat($handle);
+        if ($stat === false) {
+            fclose($handle);
+
+            throw new RuntimeException('Cannot read a file size.');
+        }
+
+        return [$handle, max(0, $stat['size'])];
+    }
+
+    /**
      * Appends one chunk whose size and range the caller has checked against
      * the limits. A chunk for a complete file changes nothing.
      *

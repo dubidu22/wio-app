@@ -14,7 +14,7 @@ use Wio\Database\Sql;
  * directly by (workspace_id, revision), inside one consistent read-only
  * snapshot: the workspace counter C is read first, and because a writer holds
  * the counter's row lock until it commits (D-52), every revision up to C is
- * committed and visible. The token's scope is part of the SQL, so pages stay
+ * committed and visible. The token's scope (ReadScope, D-225) is part of the SQL, so pages stay
  * full and last_revision can move past records the caller may not read.
  *
  * The snapshot holds only under REPEATABLE READ (under READ COMMITTED,
@@ -25,9 +25,6 @@ use Wio\Database\Sql;
 final class Pull
 {
     public const int MAX_LIMIT = 500;
-
-    /** Every synced table but these has customer_id and is read by a customer for their own customer only. */
-    private const array CUSTOMER_READS_ALL = ['labels', 'property_keys'];
 
     public function __construct(private readonly Sql $sql) {}
 
@@ -67,7 +64,7 @@ final class Pull
         $parts = [];
         $values = [];
         foreach (array_keys(RecordSchemas::FIELDS) as $table) {
-            $scope = $this->scope($caller, $table);
+            $scope = ReadScope::of($caller, $table);
             if ($scope === null) {
                 continue;
             }
@@ -99,40 +96,6 @@ final class Pull
     }
 
     /**
-     * The rows a caller may read from one table (D-182), as SQL and values;
-     * null when the caller reads nothing from it.
-     *
-     * @return array{string, list<string>}|null
-     */
-    private function scope(AuthContext $caller, string $table): ?array
-    {
-        $workspace = $table === 'workspaces' ? 'id = ?' : 'workspace_id = ?';
-        if ($caller->role === 'owner') {
-            return [$workspace, [$caller->workspaceId]];
-        }
-        if ($table === 'workspaces') {
-            return [$workspace, [$caller->workspaceId]];
-        }
-        if ($table === 'users') {
-            return ['workspace_id = ? AND id = ?', [$caller->workspaceId, $caller->userId]];
-        }
-        if ($caller->role !== 'customer' || $caller->customerId === null || $table === 'conflicts') {
-            return null;
-        }
-        if (\in_array($table, self::CUSTOMER_READS_ALL, true)) {
-            return [$workspace, [$caller->workspaceId]];
-        }
-        if ($table === 'customers') {
-            return ['workspace_id = ? AND id = ?', [$caller->workspaceId, $caller->customerId]];
-        }
-        if (!isset(RecordSchemas::FIELDS[$table]['customer_id'])) {
-            return null;
-        }
-
-        return ['workspace_id = ? AND customer_id = ?', [$caller->workspaceId, $caller->customerId]];
-    }
-
-    /**
      * The full rows of the changed records, by entity and id, under the same
      * scope and revision <= C as the id list.
      *
@@ -151,7 +114,7 @@ final class Pull
             if (!isset($ids[$table])) {
                 continue;
             }
-            [$where, $bind] = $this->scope($caller, $table) ?? throw new \LogicException('A changed record outside the scope.');
+            [$where, $bind] = ReadScope::of($caller, $table) ?? throw new \LogicException('A changed record outside the scope.');
             $marks = implode(', ', array_fill(0, \count($ids[$table]), '?'));
             foreach ($this->sql->rows("SELECT * FROM {$table} WHERE {$where} AND revision <= ? AND id IN ({$marks})", [...$bind, $top, ...$ids[$table]]) as $row) {
                 $out[$table][Sql::text($row['id'])] = $row;

@@ -56,6 +56,46 @@ class Jobs extends Table with SyncedColumns {
   TextColumn get reportSentAt => text().nullable()();
 }
 
+/// Any picture (D-7, D-238). The file is addressed by its SHA-256 and kept
+/// on the device in the media folder (D-240); file fields never change
+/// after create (D-241).
+class Pictures extends Table with SyncedColumns {
+  TextColumn get customerId => text().nullable()();
+  TextColumn get fileSha256 => text()();
+  IntColumn get fileBytes => integer()();
+  TextColumn get fileMime => text()();
+  IntColumn get widthPx => integer()();
+  IntColumn get heightPx => integer()();
+
+  /// Device time, information only.
+  TextColumn get takenAt => text().nullable()();
+  TextColumn get roomId => text().nullable()();
+  TextColumn get entryId => text().nullable()();
+
+  /// The picture this one is the after picture of (D-7).
+  TextColumn get afterOf => text().nullable()();
+}
+
+/// Text and/or voice about an entry, room, picture, job or customer
+/// (D-3, D-50, D-238).
+class Notes extends Table with SyncedColumns {
+  TextColumn get customerId => text().nullable()();
+
+  /// `entry`, `room`, `picture`, `job` or `customer`.
+  TextColumn get subjectType => text()();
+  TextColumn get subjectId => text()();
+
+  /// The column `text`; the getter cannot be called `text` in drift.
+  TextColumn get noteText => text().named('text').nullable()();
+  TextColumn get audioSha256 => text().nullable()();
+  IntColumn get audioBytes => integer().nullable()();
+  IntColumn get audioSeconds => integer().nullable()();
+  TextColumn get transcript => text().nullable()();
+
+  /// `device` or `manual`; set exactly when there is a transcript.
+  TextColumn get transcriptSource => text().nullable()();
+}
+
 /// The ops of contract v1 (D-176); schema v2 adds the column (D-192).
 const List<String> outboxOps = <String>[
   'upsert',
