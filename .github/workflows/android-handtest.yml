@@ -1,0 +1,162 @@
+# Builds the app as a release-signed Android APK against the staging API for
+# Colin's hand test (issue #56, plan 056, D-223, D-247 to D-256). Manual only,
+# from main. The signing key lives only in the GitHub environment
+# android-handtest, which Colin set up (plan 056 section 6); no other job
+# uses that environment. No store upload (D-256).
+name: android-handtest
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-handtest
+  cancel-in-progress: false
+
+env:
+  # Not a secret (D-252): the APK talks to staging only.
+  WIO_API_URL: https://api-staging.wieder-in-ordnung.de
+  FLUTTER_SUPPRESS_ANALYTICS: "true"
+  DART_SUPPRESS_ANALYTICS: "true"
+
+jobs:
+  apk:
+    name: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: android-handtest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Only from main
+        if: github.ref != 'refs/heads/main'
+        working-directory: .
+        run: |
+          echo "::error::hand-test builds come from main only (D-253), not $GITHUB_REF"
+          exit 1
+
+      # D-252: build only against a live staging (deploy, #10).
+      - name: Staging answers
+        working-directory: .
+        run: |
+          set -euo pipefail
+          body="$(curl -sS --max-time 30 "$WIO_API_URL/health" || true)"
+          if [[ "$(jq -r '.status // empty' <<< "$body" 2> /dev/null)" != ok ]]; then
+            echo "::error::staging is not deployed yet (#10): $WIO_API_URL/health answered '${body:0:200}'"
+            exit 1
+          fi
+          echo "staging ok"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+
+      - name: Turn off tool analytics
+        run: flutter config --no-analytics && dart --disable-analytics
+
+      # D-253: a short safety net; CI ran the full set on main already.
+      - run: flutter pub get --enforce-lockfile
+      - name: Analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
+      - name: Unit and widget tests
+        run: ../tools/ci/flutter-test.sh --exclude-tags golden,ux
+
+      - name: Signing key (D-248)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.WIO_ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.WIO_ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.WIO_ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ vars.WIO_ANDROID_KEY_ALIAS }}
+          CERT_SHA256: ${{ vars.WIO_ANDROID_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_PASSWORD KEY_ALIAS CERT_SHA256; do
+            [[ -n "${!name}" ]] || { echo "::error::$name is not set in the environment android-handtest (plan 056 section 6)"; exit 1; }
+          done
+          umask 077
+          base64 -d <<< "$KEYSTORE_BASE64" > "$RUNNER_TEMP/handtest.p12"
+          echo "WIO_ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/handtest.p12" >> "$GITHUB_ENV"
+
+      - name: Build the APK (D-249, D-250, D-255)
+        env:
+          WIO_HANDTEST: "true"
+          WIO_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.WIO_ANDROID_KEYSTORE_PASSWORD }}
+          WIO_ANDROID_KEY_PASSWORD: ${{ secrets.WIO_ANDROID_KEY_PASSWORD }}
+          WIO_ANDROID_KEY_ALIAS: ${{ vars.WIO_ANDROID_KEY_ALIAS }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          flutter build apk --release \
+            --build-number="$RUN_NUMBER" \
+            --dart-define=WIO_API_URL="$WIO_API_URL"
+
+      # D-251: the APK must carry Colin's certificate, never the debug key.
+      - name: Check the signature
+        id: check
+        env:
+          CERT_SHA256: ${{ vars.WIO_ANDROID_CERT_SHA256 }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          certs="$("$apksigner" verify --print-certs "$apk")"
+          echo "$certs" | grep -i 'SHA-256'
+          want="$(tr -d ':[:space:]' <<< "$CERT_SHA256" | tr '[:upper:]' '[:lower:]')"
+          mapfile -t found < <(grep -i 'certificate SHA-256 digest' <<< "$certs" | awk '{print tolower($NF)}' | sort -u)
+          if [[ ${#found[@]} -ne 1 || "${found[0]}" != "$want" ]]; then
+            echo "::error::the APK is not signed with the android-handtest key (found: ${found[*]:-none})"
+            exit 1
+          fi
+          version="$(grep -E '^version:' pubspec.yaml | sed -E 's/^version:[[:space:]]*//; s/\+.*//')"
+          name="wio-handtest-${version}+${RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "$RUNNER_TEMP/out"
+          cp "$apk" "$RUNNER_TEMP/out/$name.apk"
+          {
+            echo "name=$name"
+            echo "version=${version}+${RUN_NUMBER}"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.check.outputs.name }}
+          path: ${{ runner.temp }}/out/${{ steps.check.outputs.name }}.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Summary with install steps (plan 056 section 7)
+        env:
+          NAME: ${{ steps.check.outputs.name }}
+          VERSION: ${{ steps.check.outputs.version }}
+          CERT_SHA256: ${{ vars.WIO_ANDROID_CERT_SHA256 }}
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          ## Wio Test $VERSION
+
+          - Commit: \`$GITHUB_SHA\`, API: $WIO_API_URL
+          - Certificate SHA-256: \`$CERT_SHA256\`
+          - Artifact: **$NAME** (kept 7 days)
+
+          ### Install on the phone
+          1. Below on this page, under "Artifacts", download **$NAME**. GitHub gives a .zip: open it in the file manager and tap the .apk inside.
+          2. First time only: allow installing from that app; if Play Protect warns about an unknown developer, choose "Install anyway".
+          3. Open "Wio Test" and sign in with the staging owner account.
+          4. A newer build installs over the old one and keeps its data. "App not installed" means a different key: uninstall "Wio Test" first.
+          EOF
+
+      - name: Remove the signing key
+        if: always()
+        working-directory: .
+        run: rm -f -- "$RUNNER_TEMP/handtest.p12"
