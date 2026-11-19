@@ -9,9 +9,8 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 failures=0
 
-LAUNCH_CHECK_SOURCE_ONLY=1
-# shellcheck source=../android-launch-check.sh
-source "$here/../android-launch-check.sh"
+# shellcheck disable=SC1091
+source "$here/../lib/android-crash-lines.sh"
 
 pkg=de.wiederinordnung.app.handtest
 
