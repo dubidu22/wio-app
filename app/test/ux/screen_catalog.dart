@@ -39,4 +39,8 @@ const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
     seed: seedWithRejectedAndUploads,
   ),
   'lib/update/update_required_screen.dart': CatalogScreen('/aktualisieren'),
+  'lib/voice/voice_screen.dart': CatalogScreen(
+    '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}/sprechen',
+    seed: seedWithPictures,
+  ),
 };

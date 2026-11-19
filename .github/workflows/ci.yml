@@ -170,6 +170,33 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - name: Android debug build
         run: flutter build apk --debug
+      # D-287: the voice guard's rules (Kotlin unit tests, no device).
+      - name: Android unit tests
+        working-directory: app/android
+        run: ./gradlew --no-daemon :app:testDebugUnitTest
+      # D-60, D-294, D-296 (moved from the speech spike's workflow): the
+      # built APK keeps the app's data out of Android backup and device
+      # transfer, and declares the microphone for the voice note. The full
+      # permission allow-list is #70.
+      - name: Check backup and microphone in the APK
+        run: |
+          apk=build/app/outputs/flutter-apk/app-debug.apk
+          aapt2="$(find "$ANDROID_HOME"/build-tools -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)/aapt2"
+          "$aapt2" dump permissions "$apk" | tee "$RUNNER_TEMP/perms.txt"
+          if ! grep -q 'android.permission.RECORD_AUDIO' "$RUNNER_TEMP/perms.txt"; then
+            echo "::error::The APK must declare RECORD_AUDIO for the voice note (D-294)"
+            exit 1
+          fi
+          "$aapt2" dump xmltree --file AndroidManifest.xml "$apk" > "$RUNNER_TEMP/manifest.txt"
+          grep -E 'allowBackup|fullBackupContent|dataExtractionRules' "$RUNNER_TEMP/manifest.txt"
+          if ! grep -Eq 'allowBackup\(0x[0-9a-f]+\)=false' "$RUNNER_TEMP/manifest.txt"; then
+            echo "::error::The APK must set android:allowBackup=\"false\" (D-60)"
+            exit 1
+          fi
+          if ! grep -Eq 'dataExtractionRules\(0x[0-9a-f]+\)=@' "$RUNNER_TEMP/manifest.txt"; then
+            echo "::error::The APK must set android:dataExtractionRules (D-60)"
+            exit 1
+          fi
 
   server:
     name: server

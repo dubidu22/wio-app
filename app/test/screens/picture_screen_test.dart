@@ -54,7 +54,11 @@ void main() {
     expect(find.byType(Image), findsNWidgets(2), reason: 'picture + tile');
     expect(find.widgetWithText(FilledButton, 'Nachher aufnehmen'), findsOne);
     expect(find.widgetWithText(OutlinedButton, 'Löschen'), findsOneWidget);
-    expect(find.text('Sprechen'), findsNothing, reason: 'comes with #60');
+    expect(
+      find.widgetWithText(OutlinedButton, 'Sprechen'),
+      findsOneWidget,
+      reason: 'D-295',
+    );
 
     await tester.tap(find.widgetWithText(OutlinedButton, 'Öffnen'));
     await tester.pumpAndSettle();

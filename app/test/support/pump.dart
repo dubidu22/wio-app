@@ -10,15 +10,21 @@ import 'package:wio_app/camera/capture_camera.dart';
 import 'package:wio_app/camera/capture_files.dart';
 import 'package:wio_app/camera/picture_processor.dart';
 import 'package:wio_app/data/database.dart';
+import 'package:wio_app/data/local_writer.dart';
+import 'package:wio_app/data/media_writer.dart';
 import 'package:wio_app/l10n/app_localizations.dart';
 import 'package:wio_app/media/media_store.dart';
 import 'package:wio_app/shell/providers.dart';
 import 'package:wio_app/sync/sync_runner.dart';
 import 'package:wio_app/sync/upload_queue.dart';
 import 'package:wio_app/update/app_version.dart';
+import 'package:wio_app/voice/voice_notes.dart';
+import 'package:wio_app/voice/voice_providers.dart';
+import 'package:wio_app/voice/voice_recorder.dart';
 
 import 'fake_api.dart';
 import 'fake_camera.dart';
+import 'fake_voice.dart';
 import 'media.dart';
 import 'test_data.dart';
 
@@ -79,6 +85,7 @@ Future<void> pumpWioApp(
   MediaStore? mediaStore,
   CaptureFiles? captureFiles,
   PictureProcessor? preparePicture,
+  VoiceRecorder? voiceRecorder,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -115,6 +122,16 @@ Future<void> pumpWioApp(
         captureFilesProvider.overrideWithValue(
           captureFiles ?? CaptureFiles(() => Future<String>.error('no files')),
         ),
+        // A recorder that records nothing unless a test brings one (plan 060).
+        voiceRecorderProvider.overrideWithValue(
+          voiceRecorder ?? FakeVoiceRecorder(),
+        ),
+        // Without a working folder, the voice note gets a path that is
+        // never written (goldens and UX checks only record).
+        if (captureFiles == null)
+          voiceNotesProvider.overrideWith(
+            (ref) => _NoFilesVoiceNotes(ref.watch(databaseProvider)),
+          ),
         if (preparePicture != null)
           preparePictureProvider.overrideWithValue(preparePicture),
         mediaStoreProvider.overrideWithValue(
@@ -141,4 +158,25 @@ Future<void> settle(WidgetTester tester) async {
     await tester.pump(const Duration(milliseconds: 1));
   }
   await tester.pumpAndSettle();
+}
+
+/// Voice notes without files: a fixed path to record to, nothing kept.
+class _NoFilesVoiceNotes extends VoiceNotes {
+  _NoFilesVoiceNotes(WioDatabase db)
+    : super(
+        db,
+        MediaWriter(
+          db,
+          LocalWriter(db),
+          MediaStore(() => Future<String>.error('no files')),
+          UploadStore(() => Future<String>.error('no files')),
+        ),
+        CaptureFiles(() => Future<String>.error('no files')),
+      );
+
+  @override
+  Future<String> newPath() async => '/no-files/recording.m4a';
+
+  @override
+  Future<void> discard(String path) async {}
 }
