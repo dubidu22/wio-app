@@ -6,7 +6,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
-import '../notes/notes_providers.dart';
+import '../notes/notes_section.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -64,10 +64,6 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // A note playing on the screen below stops (D-301), after this frame:
-    // the cards below listen to the player.
-    final player = ref.read(notePlayerProvider);
-    WidgetsBinding.instance.addPostFrameCallback((_) => player.stop());
     unawaited(_open());
   }
 
@@ -239,58 +235,61 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return PopScope(
-      // While recording or saving, back saves first (D-291).
-      canPop: switch (_state) {
-        _VoiceState.recording || _VoiceState.saving => false,
-        _ => true,
-      },
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) unawaited(_stop());
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          leading: WioBackButton(label: l10n.voiceDone, onPressed: _stop),
-          leadingWidth: wioBackButtonWidth(context),
-          title: Text(_title(l10n)),
-        ),
-        body: ContentWidth(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: _body(context, l10n),
+    // A note playing on the screen below stops (D-301).
+    return StopNotesOnOpen(
+      child: PopScope(
+        // While recording or saving, back saves first (D-291).
+        canPop: switch (_state) {
+          _VoiceState.recording || _VoiceState.saving => false,
+          _ => true,
+        },
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) unawaited(_stop());
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            leading: WioBackButton(label: l10n.voiceDone, onPressed: _stop),
+            leadingWidth: wioBackButtonWidth(context),
+            title: Text(_title(l10n)),
           ),
-        ),
-        bottomNavigationBar: _state == _VoiceState.recording
-            ? SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Center(
-                    heightFactor: 1,
-                    child: Semantics(
-                      button: true,
-                      label: l10n.voiceStopLabel,
-                      excludeSemantics: true,
-                      child: SizedBox.square(
-                        dimension: stopButtonSize,
-                        child: FilledButton(
-                          style: FilledButton.styleFrom(
-                            shape: const CircleBorder(),
-                            padding: EdgeInsets.zero,
-                            minimumSize: const Size.square(stopButtonSize),
-                          ),
-                          onPressed: _stop,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(l10n.voiceStop),
+          body: ContentWidth(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: _body(context, l10n),
+            ),
+          ),
+          bottomNavigationBar: _state == _VoiceState.recording
+              ? SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Center(
+                      heightFactor: 1,
+                      child: Semantics(
+                        button: true,
+                        label: l10n.voiceStopLabel,
+                        excludeSemantics: true,
+                        child: SizedBox.square(
+                          dimension: stopButtonSize,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              shape: const CircleBorder(),
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size.square(stopButtonSize),
+                            ),
+                            onPressed: _stop,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(l10n.voiceStop),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              )
-            : null,
+                )
+              : null,
+        ),
       ),
     );
   }

@@ -156,7 +156,10 @@ class NoteCard extends StatelessWidget {
                         minimumSize: const Size.fromHeight(56),
                       ),
                       onPressed: () => context.go(location),
-                      child: Text(l10n.noteOpen),
+                      child: Text(
+                        l10n.noteOpen,
+                        semanticsLabel: l10n.noteOpenLabel(line),
+                      ),
                     ),
                   ),
                 ],
@@ -205,6 +208,8 @@ class NotePlayControl extends ConsumerWidget {
         button: null,
       ));
     }
+    // The note's time names it for screen readers (UX rule 1).
+    final line = noteLine(l10n, note);
     final player = ref.watch(notePlayerProvider);
     return ValueListenableBuilder<NotePlayback>(
       valueListenable: player.playback,
@@ -217,14 +222,20 @@ class NotePlayControl extends ConsumerWidget {
                   minimumSize: const Size.fromHeight(56),
                 ),
                 onPressed: player.stop,
-                child: Text(l10n.noteStop),
+                child: Text(
+                  l10n.noteStop,
+                  semanticsLabel: l10n.noteStopLabel(line),
+                ),
               )
             : OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(56),
                 ),
                 onPressed: () => player.play(note.id, path),
-                child: Text(l10n.notePlay),
+                child: Text(
+                  l10n.notePlay,
+                  semanticsLabel: l10n.notePlayLabel(line),
+                ),
               );
         return builder(context, (
           line: playing
@@ -270,4 +281,33 @@ class NotePlayControlColumn extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Stops a playing note once the screen around it opened (D-301): go_router
+/// keeps the screen below mounted, so its cards do not stop by themselves.
+/// [keep] is a note that may go on playing (the note screen's own note).
+class StopNotesOnOpen extends ConsumerStatefulWidget {
+  const StopNotesOnOpen({required this.child, this.keep, super.key});
+
+  final Widget child;
+  final String? keep;
+
+  @override
+  ConsumerState<StopNotesOnOpen> createState() => _StopNotesOnOpenState();
+}
+
+class _StopNotesOnOpenState extends ConsumerState<StopNotesOnOpen> {
+  @override
+  void initState() {
+    super.initState();
+    final player = ref.read(notePlayerProvider);
+    // After this frame: the cards below listen to the player.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final playing = player.playback.value.noteId;
+      if (playing != null && playing != widget.keep) unawaited(player.stop());
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

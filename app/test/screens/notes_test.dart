@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/data/database.dart';
 import 'package:wio_app/notes/note_screen.dart';
+import 'package:wio_app/pictures/picture_screen.dart';
+import 'package:wio_app/pictures/picture_tile.dart';
 import 'package:wio_app/rooms/room_screen.dart';
 
 import '../support/fake_player.dart';
@@ -511,5 +513,99 @@ void main() {
     await tester.tap(find.text('Sprechen'));
     await tester.pump(const Duration(seconds: 1));
     expect(player.playback.value.noteId, isNull);
+  });
+
+  group('opening another screen stops a playing card (PR 74 S1)', () {
+    Future<FakeNotePlayer> playKueche(WidgetTester tester) async {
+      final player = FakeNotePlayer();
+      await pumpWioApp(
+        tester,
+        db: db,
+        location: _kueche,
+        mediaFolder: demoMediaFolder(),
+        notePlayer: player,
+      );
+      await scrollTo(tester, find.text('Notiz schreiben'));
+      await tester.tap(_button('Abspielen'));
+      await tester.pumpAndSettle();
+      expect(player.playback.value.noteId, TestIds.notizSprache);
+      return player;
+    }
+
+    testWidgets('a picture tile', (tester) async {
+      final player = await playKueche(tester);
+      final tile = find
+          .descendant(of: find.byType(PictureGrid), matching: _button('Öffnen'))
+          .first;
+      // Back to the top, where the pictures are.
+      await tester.fling(
+        find.byType(Scrollable).first,
+        const Offset(0, 3000),
+        3000,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+      expect(find.byType(PictureScreen), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(player.playback.value.noteId, isNull);
+    });
+
+    testWidgets('Fotos', (tester) async {
+      final player = await playKueche(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'Fotos'));
+      await tester.pump(const Duration(seconds: 1));
+      expect(player.playback.value.noteId, isNull);
+    });
+
+    testWidgets('Öffnen on another note', (tester) async {
+      final player = await playKueche(tester);
+      await tester.tap(
+        find.descendant(
+          of: _card('Schlüssel liegt'),
+          matching: _button('Öffnen'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(player.playback.value.noteId, isNull);
+    });
+
+    testWidgets('Öffnen on the playing note keeps it playing', (tester) async {
+      final player = await playKueche(tester);
+      await tester.tap(
+        find.descendant(
+          of: _card('Kiste mit Winter'),
+          matching: _button('Öffnen'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(NoteScreen), findsOneWidget);
+      expect(player.playback.value.noteId, TestIds.notizSprache);
+      expect(_button('Stopp'), findsOneWidget);
+    });
+  });
+
+  testWidgets('card buttons name their note for screen readers (rule 1)', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pumpWioApp(
+      tester,
+      db: db,
+      location: _kueche,
+      mediaFolder: demoMediaFolder(),
+    );
+    await scrollTo(tester, find.text('Notiz schreiben'));
+    final line = '${_time(8, 41)} · 0:45';
+    expect(find.bySemanticsLabel('Notiz von $line abspielen'), findsOneWidget);
+    expect(find.bySemanticsLabel('Notiz von $line öffnen'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Notiz von Noch nicht gesendet öffnen'),
+      findsOneWidget,
+    );
+    await tester.tap(_button('Abspielen'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Notiz von $line anhalten'), findsOneWidget);
+    handle.dispose();
   });
 }

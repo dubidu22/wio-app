@@ -220,40 +220,43 @@ class _NoteScreenState extends ConsumerState<NoteScreen> {
     } else {
       body = const SizedBox.shrink();
     }
-    return PopScope(
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) unawaited(_save());
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          leading: WioBackButton(label: l10n.noteDone, onPressed: _done),
-          leadingWidth: wioBackButtonWidth(context),
-          title: Text(l10n.noteTitle),
-        ),
-        body: body,
-        bottomNavigationBar: value == null
-            ? null
-            : SafeArea(
-                child: Align(
-                  heightFactor: 1,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: wioMaxContentWidth,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(64),
+    return StopNotesOnOpen(
+      keep: widget.noteId,
+      child: PopScope(
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) unawaited(_save());
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            leading: WioBackButton(label: l10n.noteDone, onPressed: _done),
+            leadingWidth: wioBackButtonWidth(context),
+            title: Text(l10n.noteTitle),
+          ),
+          body: body,
+          bottomNavigationBar: value == null
+              ? null
+              : SafeArea(
+                  child: Align(
+                    heightFactor: 1,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: wioMaxContentWidth,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(64),
+                          ),
+                          onPressed: _delete,
+                          child: Text(l10n.noteDelete),
                         ),
-                        onPressed: _delete,
-                        child: Text(l10n.noteDelete),
                       ),
                     ),
                   ),
                 ),
-              ),
+        ),
       ),
     );
   }

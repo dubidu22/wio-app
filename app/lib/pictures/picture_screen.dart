@@ -60,37 +60,39 @@ class PictureScreen extends ConsumerWidget {
         pictureId: pictureId,
       )),
     );
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: const WioBackButton(),
-        leadingWidth: wioBackButtonWidth(context),
-        title: Text(l10n.pictureTitle),
-      ),
-      body: switch (picture) {
-        AsyncData(value: final Picture value) => _PictureBody(
-          picture: value,
-          base: _base,
+    return StopNotesOnOpen(
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          leading: const WioBackButton(),
+          leadingWidth: wioBackButtonWidth(context),
+          title: Text(l10n.pictureTitle),
         ),
-        AsyncData() => ContentWidth(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: HintText(l10n.pictureMissing),
+        body: switch (picture) {
+          AsyncData(value: final Picture value) => _PictureBody(
+            picture: value,
+            base: _base,
           ),
-        ),
-        AsyncError(:final error) => LoadFailed(
-          message: l10n.loadFailed,
-          error: error,
-        ),
-        _ => const SizedBox.shrink(),
-      },
-      bottomNavigationBar: switch (picture) {
-        AsyncData(value: final Picture value) => _PictureButtons(
-          picture: value,
-          base: _base,
-        ),
-        _ => null,
-      },
+          AsyncData() => ContentWidth(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: HintText(l10n.pictureMissing),
+            ),
+          ),
+          AsyncError(:final error) => LoadFailed(
+            message: l10n.loadFailed,
+            error: error,
+          ),
+          _ => const SizedBox.shrink(),
+        },
+        bottomNavigationBar: switch (picture) {
+          AsyncData(value: final Picture value) => _PictureButtons(
+            picture: value,
+            base: _base,
+          ),
+          _ => null,
+        },
+      ),
     );
   }
 }

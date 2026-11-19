@@ -889,5 +889,32 @@
   "noteNotSaved": "Die Notiz konnte nicht gespeichert werden.",
   "@noteNotSaved": {
     "description": "Note when saving a note failed."
+  },
+  "notePlayLabel": "Notiz von {time} abspielen",
+  "@notePlayLabel": {
+    "description": "Semantic label of Abspielen, naming the note by its time line (UX rule 1).",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "noteStopLabel": "Notiz von {time} anhalten",
+  "@noteStopLabel": {
+    "description": "Semantic label of Stopp while a note plays.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "noteOpenLabel": "Notiz von {time} öffnen",
+  "@noteOpenLabel": {
+    "description": "Semantic label of Öffnen on a card.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   }
 }
