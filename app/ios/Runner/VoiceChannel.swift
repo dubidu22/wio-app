@@ -17,6 +17,11 @@ final class VoiceChannel {
 
   private let channel: FlutterMethodChannel
   private var session: VoiceSession?
+  /// The session between `stop` and its outcome. VoiceSession's own timer
+  /// and recognizer callbacks hold it weakly, so without this reference it
+  /// would be released while waiting for the last words and `stop` would
+  /// never answer (PR 78 review B1).
+  private var stopping: VoiceSession?
   private var observers: [NSObjectProtocol] = []
 
   init(messenger: FlutterBinaryMessenger) {
@@ -176,8 +181,10 @@ final class VoiceChannel {
       return
     }
     session = nil
+    stopping = current
     keepScreenOn(false)
-    current.stop { outcome in
+    current.stop { [weak self] outcome in
+      if self?.stopping === current { self?.stopping = nil }
       var answer: [String: Any] = [
         "millis": outcome.millis,
         "transcript": outcome.transcript,

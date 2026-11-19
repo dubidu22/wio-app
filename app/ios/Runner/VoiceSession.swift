@@ -73,6 +73,9 @@ final class VoiceSession {
       endCapture()
       task?.cancel()
       task = nil
+      // endCapture releases the audio session only after capture began;
+      // release it on every failed start too (PR 78 review S1).
+      try? audio.setActive(false, options: .notifyOthersOnDeactivation)
       try? FileManager.default.removeItem(at: url)
       throw error
     }

@@ -55,13 +55,13 @@ struct VoiceGuardTests {
 /// App data out of iCloud backup (D-347, #19).
 struct BackupExclusionTests {
   @Test func applicationSupportIsExcludedAtLaunch() throws {
-    // The app under test ran AppDelegate's launch code already; run it again
-    // to read the folder it returns.
-    let folder = try BackupExclusion.excludeAppData()
-    #expect(try BackupExclusion.isExcluded(folder))
-    let expected = try FileManager.default.url(
+    // The tests run inside the app, so AppDelegate's launch code has run:
+    // read the flag without setting it here (PR 78 review S2).
+    let folder = try FileManager.default.url(
       for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-    #expect(folder.standardizedFileURL == expected.standardizedFileURL)
+    #expect(try BackupExclusion.isExcluded(folder))
+    // And the launch code excludes that same folder.
+    #expect(try BackupExclusion.excludeAppData().standardizedFileURL == folder.standardizedFileURL)
   }
 
   @Test func excludingAFolderSetsTheFlag() throws {
