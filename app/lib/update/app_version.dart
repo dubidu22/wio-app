@@ -42,17 +42,33 @@ class InstalledApp {
   final String packageName;
 }
 
-/// Read once from the platform, which takes both from pubspec.yaml's
-/// `version:` (D-150). Tests override it.
-final installedAppProvider = FutureProvider<InstalledApp>((ref) async {
+/// How long the platform read may take before the version counts as
+/// unknown (D-412). On the web it fetches version.json from the app's own
+/// origin, which can hang.
+const Duration installedAppReadTimeout = Duration(seconds: 5);
+
+/// Reads the installed build through [read], which is
+/// `PackageInfo.fromPlatform` in the app (D-413). A read that fails or takes
+/// longer than [timeout] gives [InstalledApp.unknown]: no header is the safe
+/// side, the server lets it pass (D-142).
+Future<InstalledApp> readInstalledApp(
+  Future<PackageInfo> Function() read, {
+  Duration timeout = installedAppReadTimeout,
+}) async {
   try {
-    final info = await PackageInfo.fromPlatform();
+    final info = await read().timeout(timeout);
     return InstalledApp(
       version: normaliseAppVersion(info.version, info.buildNumber),
       packageName: info.packageName,
     );
   } on Object {
-    // No header is the safe side: the server lets it pass (D-142).
     return InstalledApp.unknown;
   }
-});
+}
+
+/// Read once from the platform, which takes both from pubspec.yaml's
+/// `version:` (D-150). The result, also a timed-out one, is kept for the
+/// session (D-414). Tests override it.
+final installedAppProvider = FutureProvider<InstalledApp>(
+  (ref) => readInstalledApp(PackageInfo.fromPlatform),
+);
