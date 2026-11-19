@@ -37,7 +37,8 @@ class UploadStore {
   /// Copies [source] into the folder and names the copy by the hash of the
   /// copy itself, so a source that changes while it is copied cannot give
   /// a row whose bytes do not match its name (PR 51 review N3). The copy
-  /// appears whole or not at all; an existing copy of the same bytes stays.
+  /// appears whole or not at all; an existing copy of the same bytes stays
+  /// and gets the current time (D-390).
   Future<({String sha256, int size, String path})> keep(String source) async {
     final folder = (await _folder()).path;
     final stamp = DateTime.now().microsecondsSinceEpoch;
@@ -48,10 +49,17 @@ class UploadStore {
     final (:sha256, :size) = await hash(temporary.path);
     final target = File('$folder/$sha256');
     if (target.existsSync()) {
-      await remove(temporary.path);
-    } else {
-      await temporary.rename(target.path);
+      try {
+        // A sweep that read the rows before this file's row is inserted
+        // spares files changed after its start (D-390, PR 51 review N7).
+        await target.setLastModified(DateTime.now());
+        await remove(temporary.path);
+        return (sha256: sha256, size: size, path: target.path);
+      } on FileSystemException {
+        // Swept meanwhile: the new copy takes its place.
+      }
     }
+    await temporary.rename(target.path);
     return (sha256: sha256, size: size, path: target.path);
   }
 

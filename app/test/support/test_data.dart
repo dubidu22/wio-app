@@ -323,11 +323,14 @@ Future<void> seedWithNotes(WioDatabase db) async {
   });
 }
 
-/// Test data plus two changes the server refused (D-197): a renamed
+/// Test data ([base]) plus two changes the server refused (D-197): a renamed
 /// customer (permission) and a new customer whose number existed already
 /// (duplicate, re-pointed).
-Future<void> seedWithRejected(WioDatabase db) async {
-  await seedTestData(db);
+Future<void> seedWithRejected(
+  WioDatabase db, {
+  Future<void> Function(WioDatabase db) base = seedTestData,
+}) async {
+  await base(db);
   await db.batch((b) {
     b.insertAll(db.rejectedChanges, <RejectedChangesCompanion>[
       RejectedChangesCompanion.insert(
@@ -357,13 +360,17 @@ Future<void> seedWithRejected(WioDatabase db) async {
   });
 }
 
-/// [seedWithRejected] plus two uploads that failed (D-214): one refused
-/// for permission, one damaged.
+/// [seedWithRejected] over [seedWithNotes] plus three uploads that failed
+/// (D-214, D-386): the Küche shelf picture (permission; its file is in the
+/// demo media folder, so it has a thumbnail), the voice note recording on
+/// that picture (damaged) and a file no row points at (too large).
 Future<void> seedWithRejectedAndUploads(WioDatabase db) async {
-  await seedWithRejected(db);
+  await seedWithRejected(db, base: seedWithNotes);
   await seedUploads(db, <(String, int, String?)>[
-    ('a' * 64, 2500000, 'permission'),
-    ('b' * 64, 12900000, 'damaged'),
+    ('b' * 64, 12900000, 'too_large'),
+    (DemoFiles.noteAudio, 1300000, 'damaged'),
+    // Newest, so listed first and inside the phone golden.
+    (DemoFiles.kuecheRegal, 2500000, 'permission'),
   ]);
 }
 

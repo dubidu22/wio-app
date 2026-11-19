@@ -195,7 +195,7 @@ void main() {
       tester,
     ) async {
       await refused(tester);
-      expect(find.text('1 Änderung wurde nicht übernommen.'), findsOneWidget);
+      expect(find.text('1 Eintrag wurde nicht gesendet.'), findsOneWidget);
       await tester.tap(find.widgetWithText(OutlinedButton, 'Ansehen'));
       await settle(tester);
       expect(find.byType(RejectedScreen), findsOneWidget);

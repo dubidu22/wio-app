@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../data/database.dart';
 import '../l10n/app_localizations.dart';
+import '../media/local_picture.dart';
+import '../media/media_presence.dart';
+import '../media/media_store.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -43,7 +45,7 @@ class RejectedScreen extends ConsumerWidget {
                 if (changes.isEmpty && files.isEmpty)
                   HintText(l10n.rejectedEmpty),
                 for (final entry in changes) _RejectedTile(entry: entry),
-                for (final file in files) _UploadTile(upload: file),
+                for (final file in files) _UploadTile(failed: file),
               ],
             ),
           ),
@@ -142,17 +144,35 @@ class _RejectedTile extends ConsumerWidget {
   }
 }
 
-/// A failed upload (D-214): "Noch einmal senden" only after a refused
-/// permission; "Verwerfen" with "Rückgängig" (UX rule 10).
+/// A failed upload (D-214): what it is and where it belongs, with a
+/// thumbnail for a picture on this device (D-386, D-387); "Noch einmal
+/// senden" only after a refused permission; "Verwerfen" with "Rückgängig"
+/// (UX rule 10).
 class _UploadTile extends ConsumerWidget {
-  const _UploadTile({required this.upload});
+  const _UploadTile({required this.failed});
 
-  final Upload upload;
+  final FailedUpload failed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final upload = failed.upload;
+    final size = megabytes(upload.size);
+    final kind = switch (failed.kind) {
+      UploadKind.picture => l10n.uploadKindPicture,
+      UploadKind.voice => l10n.uploadKindVoice,
+      UploadKind.unknown => null,
+    };
+    final title = Text(
+      kind == null
+          ? l10n.uploadTitle(size)
+          : l10n.rejectedRecord(kind, failed.place ?? l10n.rejectedUnnamed),
+      style: theme.textTheme.titleMedium,
+    );
+    final thumbnail = failed.kind == UploadKind.picture
+        ? _thumbnail(context, ref, upload.sha256)
+        : null;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: DecoratedBox(
@@ -165,12 +185,23 @@ class _UploadTile extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(
-                l10n.uploadTitle(megabytes(upload.size)),
-                style: theme.textTheme.titleMedium,
-              ),
+              if (thumbnail == null)
+                title
+              else
+                Row(
+                  children: <Widget>[
+                    thumbnail,
+                    const SizedBox(width: 12),
+                    Expanded(child: title),
+                  ],
+                ),
               const SizedBox(height: 4),
-              Text(l10n.uploadNotSent, style: theme.textTheme.bodyLarge),
+              Text(
+                kind == null
+                    ? l10n.uploadNotSent
+                    : l10n.uploadNotSentSize(size),
+                style: theme.textTheme.bodyLarge,
+              ),
               const SizedBox(height: 4),
               Text(
                 _uploadWhy(l10n, upload.failedReason),
@@ -223,6 +254,36 @@ class _UploadTile extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Side of the thumbnail of a failed picture (D-387).
+const double _thumbnailSide = 72;
+
+/// The picture file [sha256] as a small square, when it is on this device
+/// (D-332); null otherwise. Not a button, and the title says what it is.
+Widget? _thumbnail(BuildContext context, WidgetRef ref, String sha256) {
+  if (ref.watch(mediaFileProvider(sha256)) != MediaFileState.present) {
+    return null;
+  }
+  final image = localPicture(
+    ref.watch(mediaStoreProvider),
+    ref.watch(mediaFolderProvider).value,
+    sha256,
+    cacheWidth: (_thumbnailSide * MediaQuery.devicePixelRatioOf(context))
+        .round(),
+  );
+  if (image == null) return null;
+  return ExcludeSemantics(
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image(
+        image: image,
+        width: _thumbnailSide,
+        height: _thumbnailSide,
+        fit: BoxFit.cover,
+      ),
+    ),
+  );
 }
 
 /// A size in MB with one decimal, German style ("1,2 MB").
