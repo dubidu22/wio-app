@@ -3,13 +3,15 @@ library;
 
 import 'dart:io';
 
-import 'package:flutter/widgets.dart' show Size, WidgetsApp;
+import 'package:flutter/widgets.dart'
+    show AxisDirection, Scrollable, Size, WidgetsApp;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:wio_app/camera/capture_camera.dart';
 import 'package:wio_app/voice/voice_recorder.dart';
 
 import '../support/fake_camera.dart';
+import '../support/fake_player.dart';
 import '../support/fake_voice.dart';
 import '../support/media.dart';
 import '../support/pump.dart';
@@ -170,6 +172,78 @@ void main() {
         );
         drive(recorder);
         await tester.pump();
+        await expectLater(
+          find.byType(WidgetsApp),
+          matchesGoldenFile('goldens/${name}_$sizeName.png'),
+        );
+      });
+    }
+  }
+
+  // The Notizen section on the three screens, scrolled into view (D-298,
+  // D-305), a note playing (D-301), and the note screen for a text note
+  // and a new one (D-302, D-304); the voice note's screen is in the
+  // catalogue.
+  const kueche =
+      '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}';
+  final notes = <String, ({String location, bool scroll, bool play})>{
+    'room_screen_notes': (location: kueche, scroll: true, play: false),
+    'room_screen_playing': (location: kueche, scroll: true, play: true),
+    'customer_screen_notes': (
+      location: '/customers/${TestIds.familieBeispiel}',
+      scroll: true,
+      play: false,
+    ),
+    'picture_screen_notes': (
+      location: '$kueche/pictures/${TestIds.fotoRegal}',
+      scroll: true,
+      play: false,
+    ),
+    'note_screen_text': (
+      location: '$kueche/notizen/${TestIds.notizText}',
+      scroll: false,
+      play: false,
+    ),
+    'note_screen_new': (
+      location: '$kueche/notizen/neu',
+      scroll: false,
+      play: false,
+    ),
+  };
+  for (final MapEntry(key: name, value: shot) in notes.entries) {
+    for (final MapEntry(key: sizeName, value: size) in sizes.entries) {
+      testWidgets('$name at $sizeName size', skip: _notLinux, (tester) async {
+        final db = memoryDatabase();
+        addTearDown(db.close);
+        await seedWithNotes(db);
+        final player = FakeNotePlayer();
+        await pumpWioApp(
+          tester,
+          db: db,
+          location: shot.location,
+          size: size,
+          mediaFolder: demoMediaFolder(),
+          notePlayer: player,
+        );
+        if (shot.scroll) {
+          await tester.scrollUntilVisible(
+            find.text('Notiz schreiben'),
+            200,
+            scrollable: find
+                .byWidgetPredicate(
+                  (w) =>
+                      w is Scrollable && w.axisDirection == AxisDirection.down,
+                )
+                .first,
+          );
+          await tester.pumpAndSettle();
+        }
+        if (shot.play) {
+          await tester.tap(find.text('Abspielen'));
+          await tester.pumpAndSettle();
+          player.at(const Duration(seconds: 12));
+          await tester.pump();
+        }
         await expectLater(
           find.byType(WidgetsApp),
           matchesGoldenFile('goldens/${name}_$sizeName.png'),

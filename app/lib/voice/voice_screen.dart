@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
+import '../notes/notes_providers.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -63,6 +64,10 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // A note playing on the screen below stops (D-301), after this frame:
+    // the cards below listen to the player.
+    final player = ref.read(notePlayerProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) => player.stop());
     unawaited(_open());
   }
 

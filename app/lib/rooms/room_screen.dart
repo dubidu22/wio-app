@@ -5,6 +5,7 @@ import '../camera/take_pictures_button.dart';
 import '../data/database.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
+import '../notes/notes_section.dart';
 import '../pictures/picture_tile.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
@@ -12,8 +13,8 @@ import '../shell/providers.dart';
 
 /// Level 3: one room with its pictures (KB workflows.md "Take pictures of a
 /// room", D-259). The main button "Fotos" opens the camera (D-258, D-271),
-/// "Sprechen" a voice note about the room (D-295); the list of notes comes
-/// with #61.
+/// "Sprechen" a voice note about the room (D-295). Its notes are listed
+/// under "Notizen" (D-298).
 class RoomScreen extends ConsumerWidget {
   const RoomScreen({required this.customerId, required this.roomId, super.key});
 
@@ -102,6 +103,10 @@ class _RoomBody extends ConsumerWidget {
             ),
             _ => const SizedBox.shrink(),
           },
+          NotesSection(
+            subject: (type: 'room', id: view.id),
+            base: '/customers/$customerId/rooms/${view.id}',
+          ),
         ],
       ),
     );

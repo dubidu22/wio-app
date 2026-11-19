@@ -104,8 +104,10 @@ void main() {
 
     expect(
       find.byWidgetPredicate((w) => w is ButtonStyleButton),
-      findsNWidgets(6),
-      reason: 'Zurück, Keller, Küche, one picture, Sprechen, Fotos',
+      findsNWidgets(7),
+      reason:
+          'Zurück, Keller, Küche, one picture, Notiz schreiben, '
+          'Sprechen, Fotos',
     );
     expect(find.widgetWithText(OutlinedButton, 'Sprechen'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Fotos'), findsOneWidget);

@@ -8,6 +8,7 @@ import '../data/database.dart';
 import '../l10n/app_localizations.dart';
 import '../media/local_picture.dart';
 import '../media/media_store.dart';
+import '../notes/notes_section.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -27,7 +28,9 @@ const double _relatedTileWidth = 140;
 /// the web, D-283); "Löschen" deletes at once with "Rückgängig" (D-278).
 /// Its after pictures, or its before picture, are tiles under it with a
 /// word (D-280). Pinch zoom is a view aid only (D-279). "Sprechen" opens a
-/// voice note about the picture (D-295, Android only).
+/// voice note about the picture (D-295, Android only); its notes are listed
+/// under the picture (D-298), in an area that scrolls and takes at most half
+/// the height.
 class PictureScreen extends ConsumerWidget {
   const PictureScreen({
     required this.customerId,
@@ -226,6 +229,10 @@ class _PictureBody extends ConsumerWidget {
         Text(l10n.pictureAfter, style: textTheme.bodyLarge),
     ];
     final related = _Related(picture: picture, base: base);
+    final notes = NotesSection(
+      subject: (type: 'picture', id: picture.id),
+      base: '$base/pictures/${picture.id}',
+    );
     if (image == null) {
       return ContentWidth(
         child: ListView(
@@ -234,38 +241,59 @@ class _PictureBody extends ConsumerWidget {
             HintText(l10n.pictureNotOnDevice),
             ...words,
             related,
+            notes,
           ],
         ),
       );
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Expanded(
-          child: ClipRect(
-            child: InteractiveViewer(
-              maxScale: 4,
-              child: Image(
-                image: image,
-                fit: BoxFit.contain,
-                gaplessPlayback: true,
-                semanticLabel: l10n.pictureTitle,
-                errorBuilder: (context, error, stack) =>
-                    Center(child: HintText(l10n.pictureNotOnDevice)),
+    return LayoutBuilder(
+      builder: (context, constraints) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Expanded(child: _zoomable(l10n, image)),
+          ConstrainedBox(
+            // The picture keeps at least half the height (D-298).
+            constraints: BoxConstraints(maxHeight: constraints.maxHeight / 2),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: words,
+                    ),
+                  ),
+                  related,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: notes,
+                  ),
+                ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _zoomable(AppLocalizations l10n, ImageProvider image) {
+    return ClipRect(
+      child: InteractiveViewer(
+        maxScale: 4,
+        child: Image(
+          image: image,
+          fit: BoxFit.contain,
+          gaplessPlayback: true,
+          semanticLabel: l10n.pictureTitle,
+          errorBuilder: (context, error, stack) =>
+              Center(child: HintText(l10n.pictureNotOnDevice)),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: words,
-          ),
-        ),
-        related,
-      ],
+      ),
     );
   }
 }
