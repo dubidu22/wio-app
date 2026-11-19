@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../sync/rebuild.dart';
 import 'tables.dart';
 
 part 'database.g.dart';
@@ -12,6 +13,8 @@ part 'database.g.dart';
     Sites,
     Rooms,
     Jobs,
+    Pictures,
+    Notes,
     Outbox,
     SyncState,
     ServerRecords,
@@ -28,7 +31,7 @@ class WioDatabase extends _$WioDatabase {
   final Future<void> Function()? onFirstCreate;
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -40,7 +43,10 @@ class WioDatabase extends _$WioDatabase {
     // recreated: the outbox may hold changes the server has never seen, so
     // the database fails to open and the screens show the error (D-65).
     onUpgrade: (m, from, to) async {
-      if (from == 1 && to == 2) {
+      if (from < 1 || from >= to || to > 3) {
+        throw StateError('No migration from local schema $from to $to.');
+      }
+      if (from < 2) {
         // v2 (D-192): the outbox op, the server copies, the rejected list
         // and the upload queue. Existing outbox rows become upserts, which
         // is what they are.
@@ -48,9 +54,14 @@ class WioDatabase extends _$WioDatabase {
         await m.createTable(serverRecords);
         await m.createTable(rejectedChanges);
         await m.createTable(uploads);
-        return;
       }
-      throw StateError('No migration from local schema $from to $to.');
+      if (from < 3 && to >= 3) {
+        // v3 (D-238, D-239): typed pictures and notes, rebuilt at once from
+        // the server copies and unsent changes already on the device.
+        await m.createTable(pictures);
+        await m.createTable(notes);
+        await rebuildAll(this, const <String>{'pictures', 'notes'});
+      }
     },
   );
 }

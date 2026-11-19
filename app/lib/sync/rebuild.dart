@@ -26,6 +26,30 @@ Future<void> rebuildRecords(WioDatabase db, Iterable<RecordKey> keys) async {
   }
 }
 
+/// Rebuilds every record of [entities] that has a server copy or an unsent
+/// change: the schema step that gives those entities a typed table
+/// (D-239). Call it inside the transaction or migration that needs it.
+Future<void> rebuildAll(WioDatabase db, Set<String> entities) async {
+  if (entities.isEmpty) return;
+  final marks = List<String>.filled(entities.length, '?').join(', ');
+  final names = <Variable<Object>>[
+    for (final entity in entities) Variable<String>(entity),
+  ];
+  final rows = await db
+      .customSelect(
+        'SELECT entity, id FROM server_records WHERE entity IN ($marks) '
+        'UNION SELECT entity, entity_id AS id FROM outbox '
+        'WHERE entity IN ($marks)',
+        variables: <Variable<Object>>[...names, ...names],
+        readsFrom: <TableInfo<Table, Object?>>{db.serverRecords, db.outbox},
+      )
+      .get();
+  await rebuildRecords(db, <RecordKey>[
+    for (final row in rows)
+      (entity: row.read<String>('entity'), id: row.read<String>('id')),
+  ]);
+}
+
 Future<void> _rebuild(
   WioDatabase db,
   TableInfo<Table, Object?> table,

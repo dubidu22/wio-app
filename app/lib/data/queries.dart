@@ -168,3 +168,54 @@ Future<CustomerView?> _loadCustomer(WioDatabase db, String customerId) async {
     ],
   );
 }
+
+/// Live pictures of room [roomId], oldest first (D-245).
+Stream<List<Picture>> watchPicturesOfRoom(WioDatabase db, String roomId) =>
+    (db.select(db.pictures)
+          ..where((p) => p.roomId.equals(roomId) & p.deletedAt.isNull())
+          ..orderBy(_pictureOrder))
+        .watch();
+
+/// Live pictures of customer [customerId] that belong to no room and no
+/// entry (customer screen "Fotos"), oldest first (D-245).
+Stream<List<Picture>> watchPicturesOfCustomerWithoutRoom(
+  WioDatabase db,
+  String customerId,
+) =>
+    (db.select(db.pictures)
+          ..where(
+            (p) =>
+                p.customerId.equals(customerId) &
+                p.roomId.isNull() &
+                p.entryId.isNull() &
+                p.deletedAt.isNull(),
+          )
+          ..orderBy(_pictureOrder))
+        .watch();
+
+/// Live notes about [subjectId] of [subjectType], oldest first; notes not
+/// yet confirmed by the server come last (D-245).
+Stream<List<Note>> watchNotesOf(
+  WioDatabase db,
+  String subjectType,
+  String subjectId,
+) =>
+    (db.select(db.notes)
+          ..where(
+            (n) =>
+                n.subjectType.equals(subjectType) &
+                n.subjectId.equals(subjectId) &
+                n.deletedAt.isNull(),
+          )
+          ..orderBy(<OrderClauseGenerator<$NotesTable>>[
+            (n) => OrderingTerm.asc(n.createdAt, nulls: NullsOrder.last),
+            (n) => OrderingTerm.asc(n.id),
+          ]))
+        .watch();
+
+final List<OrderClauseGenerator<$PicturesTable>> _pictureOrder =
+    <OrderClauseGenerator<$PicturesTable>>[
+      (p) => OrderingTerm.asc(p.takenAt, nulls: NullsOrder.last),
+      (p) => OrderingTerm.asc(p.createdAt, nulls: NullsOrder.last),
+      (p) => OrderingTerm.asc(p.id),
+    ];
