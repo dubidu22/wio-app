@@ -12,12 +12,13 @@ final voiceRecorderProvider = Provider<VoiceRecorder>(
   (ref) => ChannelVoiceRecorder(),
 );
 
-/// Whether this build records voice notes (D-295): Android only, where the
-/// media store keeps files. Not the web (Q1) and not iOS until #63.
+/// Whether this build records voice notes (D-295, D-350): Android and iOS,
+/// where the media store keeps files. Not the web (Q1).
 final canRecordVoiceProvider = Provider<bool>(
   (ref) =>
       !kIsWeb &&
-      defaultTargetPlatform == TargetPlatform.android &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS) &&
       ref.watch(mediaStoreProvider).supported,
 );
 

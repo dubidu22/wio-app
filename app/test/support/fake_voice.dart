@@ -37,6 +37,7 @@ class FakeVoiceRecorder implements VoiceRecorder {
   String? path;
   ValueChanged<TranscriptStatus>? _onTranscript;
   ValueChanged<String>? _onPartial;
+  VoidCallback? _onInterrupted;
 
   bool get recording => started > stopped + cancelled;
 
@@ -55,6 +56,7 @@ class FakeVoiceRecorder implements VoiceRecorder {
     String path, {
     required ValueChanged<TranscriptStatus> onTranscript,
     required ValueChanged<String> onPartial,
+    VoidCallback? onInterrupted,
   }) async {
     final error = startError;
     if (error != null) throw error;
@@ -62,7 +64,11 @@ class FakeVoiceRecorder implements VoiceRecorder {
     this.path = path;
     _onTranscript = onTranscript;
     _onPartial = onPartial;
+    _onInterrupted = onInterrupted;
   }
+
+  /// The phone ended the recording itself (iOS, D-343).
+  void interrupt() => _onInterrupted?.call();
 
   /// The guard's answer, as the phone sends it.
   void transcript(TranscriptStatus status) => _onTranscript?.call(status);

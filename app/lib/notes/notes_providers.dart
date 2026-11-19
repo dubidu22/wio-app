@@ -56,12 +56,12 @@ final notePlayerProvider = Provider<NotePlayer>(
   (ref) => platformNotePlayer(ref.watch(mediaStoreProvider)),
 );
 
-/// Whether this build plays recordings (D-300, D-335): Android, where the
-/// media store keeps files, and the web from memory. iOS gets its player
-/// with #63.
+/// Whether this build plays recordings (D-300, D-335, D-350): Android and
+/// iOS, where the media store keeps files, and the web from memory.
 final canPlayNotesProvider = Provider<bool>(
   (ref) =>
       kIsWeb ||
-      (defaultTargetPlatform == TargetPlatform.android &&
+      ((defaultTargetPlatform == TargetPlatform.android ||
+              defaultTargetPlatform == TargetPlatform.iOS) &&
           ref.watch(mediaStoreProvider).supported),
 );

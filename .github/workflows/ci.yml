@@ -127,7 +127,7 @@ jobs:
     name: app-macos
     if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci') }}
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: app
@@ -148,6 +148,56 @@ jobs:
         run: ../tools/ci/flutter-test.sh --tags ux
       - name: iOS build without signing
         run: flutter build ios --debug --no-codesign
+      # D-348: the app's own Swift (voice guard, backup exclusion, M4A
+      # writer) is tested on one iOS simulator; only the RunnerTests target.
+      - name: Swift tests on one iOS simulator
+        timeout-minutes: 15
+        run: |
+          udid="$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          for runtime in sorted(devices, reverse=True):
+              if "iOS" not in runtime:
+                  continue
+              for device in devices[runtime]:
+                  if device["name"].startswith("iPhone"):
+                      print(device["udid"])
+                      sys.exit(0)
+          sys.exit("no iPhone simulator available")
+          ')"
+          echo "Simulator: $udid"
+          xcodebuild test \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Debug \
+            -destination "id=$udid" \
+            -only-testing:RunnerTests \
+            -resultBundlePath "$RUNNER_TEMP/RunnerTests.xcresult" \
+            CODE_SIGNING_ALLOWED=NO \
+            > "$RUNNER_TEMP/runner-tests.log" 2>&1 || true
+          # Test results, Swift Testing issues (failed #expect lines) and
+          # build errors; the full log only when the tests did not pass.
+          grep -E 'Test|[Ee]xpectation|recorded an issue|failed|error:|\*\*' \
+            "$RUNNER_TEMP/runner-tests.log" || true
+          if ! grep -q '\*\* TEST SUCCEEDED \*\*' "$RUNNER_TEMP/runner-tests.log"; then
+            tail -n 300 "$RUNNER_TEMP/runner-tests.log"
+            # Swift Testing writes its failure messages only to the result
+            # bundle, not to xcodebuild's output.
+            xcrun xcresulttool get test-results tests \
+              --path "$RUNNER_TEMP/RunnerTests.xcresult" --compact \
+              | python3 -c '
+          import json, sys
+          def walk(node, path):
+              name = node.get("name", "")
+              if node.get("nodeType") == "Failure Message":
+                  print("FAILED:", " / ".join(path), "--", name)
+              for child in node.get("children", []):
+                  walk(child, path + [name] if name else path)
+          for root in json.load(sys.stdin).get("testNodes", []):
+              walk(root, [])
+          ' || true
+            exit 1
+          fi
 
   app-android:
     name: app-android

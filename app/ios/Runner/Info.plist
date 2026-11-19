@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Wio braucht die Kamera, um Fotos von Räumen und Arbeiten aufzunehmen.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Wio braucht das Mikrofon für Sprachnotizen zu Räumen, Fotos und Kunden. Die Aufnahme wird nur an Ihren eigenen Wio-Server gesendet.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Wio schreibt Ihre Sprachnotizen in Text um. Die Erkennung läuft nur auf diesem iPhone; die Sprache wird dafür nicht gesendet.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

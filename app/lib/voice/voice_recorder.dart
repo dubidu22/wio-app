@@ -17,6 +17,10 @@ enum TranscriptStatus {
 
   /// German can be loaded with the phone's own download (D-287).
   germanMissing,
+
+  /// iOS: speech recognition may not be used; record only with its own
+  /// hint (D-340).
+  speechRefused,
 }
 
 /// The microphone is in use elsewhere, or recording failed to start.
@@ -55,12 +59,15 @@ abstract class VoiceRecorder {
 
   /// Starts recording into the M4A file at [path] at once (D-288).
   /// [onTranscript] is called once with the guard's answer; [onPartial]
-  /// with the text so far while speaking (D-62). Throws [VoiceRefused] or
-  /// [VoiceUnavailable].
+  /// with the text so far while speaking (D-62). [onInterrupted] is called
+  /// when the phone ended the recording itself (iOS: a call, Siri, an
+  /// alarm, headphones out; D-343); the screen then saves as with Stopp.
+  /// Throws [VoiceRefused] or [VoiceUnavailable].
   Future<void> start(
     String path, {
     required ValueChanged<TranscriptStatus> onTranscript,
     required ValueChanged<String> onPartial,
+    VoidCallback? onInterrupted,
   });
 
   /// Ends recording; waits at most 5 s for the last words (D-289).
@@ -73,7 +80,8 @@ abstract class VoiceRecorder {
   Future<void> downloadGerman();
 }
 
-/// The app's own Android code on channel `wio/voice` (D-284).
+/// The app's own Android and iOS code on channel `wio/voice` (D-284,
+/// D-337).
 class ChannelVoiceRecorder implements VoiceRecorder {
   ChannelVoiceRecorder([MethodChannel? channel])
     : _channel = channel ?? const MethodChannel('wio/voice') {
@@ -83,6 +91,7 @@ class ChannelVoiceRecorder implements VoiceRecorder {
   final MethodChannel _channel;
   ValueChanged<TranscriptStatus>? _onTranscript;
   ValueChanged<String>? _onPartial;
+  VoidCallback? _onInterrupted;
 
   Future<Object?> _onCall(MethodCall call) async {
     switch (call.method) {
@@ -94,6 +103,8 @@ class ChannelVoiceRecorder implements VoiceRecorder {
           orElse: () => TranscriptStatus.noOnDevice,
         );
         _onTranscript?.call(status);
+      case 'onInterrupted':
+        _onInterrupted?.call();
     }
     return null;
   }
@@ -114,9 +125,11 @@ class ChannelVoiceRecorder implements VoiceRecorder {
     String path, {
     required ValueChanged<TranscriptStatus> onTranscript,
     required ValueChanged<String> onPartial,
+    VoidCallback? onInterrupted,
   }) async {
     _onTranscript = onTranscript;
     _onPartial = onPartial;
+    _onInterrupted = onInterrupted;
     try {
       await _channel.invokeMethod<void>('start', <String, Object>{
         'path': path,
@@ -124,6 +137,7 @@ class ChannelVoiceRecorder implements VoiceRecorder {
     } on PlatformException catch (error) {
       _onTranscript = null;
       _onPartial = null;
+      _onInterrupted = null;
       if (error.code == 'refused') throw const VoiceRefused();
       throw VoiceUnavailable(error);
     }
@@ -143,6 +157,7 @@ class ChannelVoiceRecorder implements VoiceRecorder {
     } finally {
       _onTranscript = null;
       _onPartial = null;
+      _onInterrupted = null;
     }
   }
 
@@ -150,6 +165,7 @@ class ChannelVoiceRecorder implements VoiceRecorder {
   Future<void> cancel() async {
     _onTranscript = null;
     _onPartial = null;
+    _onInterrupted = null;
     await _channel.invokeMethod<void>('cancel');
   }
 
