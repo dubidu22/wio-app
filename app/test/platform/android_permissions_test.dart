@@ -5,6 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// D-272: the camera asks for the camera only. The camera plugin's own
 /// manifest adds shared storage; the app removes it, and iOS explains the
 /// camera in German. D-294: the voice note declares the microphone itself.
+/// D-313, D-317: the merger's implied READ_EXTERNAL_STORAGE is removed, and
+/// no camera or microphone is required to install the app. The built APK's
+/// whole list is checked in CI against android/permissions.txt (D-310).
 void main() {
   final manifest = File('android/app/src/main/AndroidManifest.xml')
       .readAsStringSync();
@@ -14,9 +17,13 @@ void main() {
       RegExp('<(uses-permission|uses-feature)\\s+android:name="$name"[^>]*/>')
           .firstMatch(manifest)![0]!;
 
-  test('shared storage is removed', () {
+  test('shared storage is removed, reading too (D-313)', () {
     expect(
       element('android.permission.WRITE_EXTERNAL_STORAGE'),
+      contains('tools:node="remove"'),
+    );
+    expect(
+      element('android.permission.READ_EXTERNAL_STORAGE'),
       contains('tools:node="remove"'),
     );
   });
@@ -35,6 +42,20 @@ void main() {
     final feature = element('android.hardware.camera.any');
     expect(feature, contains('android:required="false"'));
     expect(feature, contains('tools:node="replace"'));
+  });
+
+  test('no camera or microphone is required to install the app (D-317)', () {
+    for (final name in <String>[
+      'android.hardware.camera',
+      'android.hardware.camera.autofocus',
+      'android.hardware.microphone',
+    ]) {
+      expect(
+        element(name),
+        contains('android:required="false"'),
+        reason: name,
+      );
+    }
   });
 
   test('iOS explains the camera in German', () {

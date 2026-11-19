@@ -16,10 +16,27 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         tools:node="remove"/>
+    <!-- The manifest merger adds READ_EXTERNAL_STORAGE on its own because a
+         library asks for WRITE; it goes with WRITE (D-313). CI compares the
+         APK's list with android/permissions.txt (D-310). -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        tools:node="remove"/>
     <uses-feature
         android:name="android.hardware.camera.any"
         android:required="false"
         tools:node="replace"/>
+    <!-- CAMERA and RECORD_AUDIO would otherwise make a camera and a
+         microphone required to install the app (D-317). -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false"/>
     <application
         android:label="${appLabel}"
         android:name="${applicationName}"

@@ -174,19 +174,23 @@ jobs:
       - name: Android unit tests
         working-directory: app/android
         run: ./gradlew --no-daemon :app:testDebugUnitTest
-      # D-60, D-294, D-296 (moved from the speech spike's workflow): the
-      # built APK keeps the app's data out of Android backup and device
-      # transfer, and declares the microphone for the voice note. The full
-      # permission allow-list is #70.
-      - name: Check backup and microphone in the APK
+      # D-310..D-319 (#70): the APK asks for exactly the permissions in
+      # app/android/permissions.txt (extra or missing fails, naming the
+      # manifest that added it), and no camera or microphone is required to
+      # install it (D-272, D-317).
+      - name: Check the APK's permissions and features
+        run: >-
+          ../tools/ci/android-permissions-check.sh
+          build/app/outputs/flutter-apk/app-debug.apk
+          android/permissions.txt
+          build/app/outputs/logs/manifest-merger-debug-report.txt
+      # D-60, D-296 (moved from the speech spike's workflow): the built APK
+      # keeps the app's data out of Android backup and device transfer.
+      # RECORD_AUDIO (D-294) is in the permission allow-list above.
+      - name: Check backup in the APK
         run: |
           apk=build/app/outputs/flutter-apk/app-debug.apk
           aapt2="$(find "$ANDROID_HOME"/build-tools -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)/aapt2"
-          "$aapt2" dump permissions "$apk" | tee "$RUNNER_TEMP/perms.txt"
-          if ! grep -q 'android.permission.RECORD_AUDIO' "$RUNNER_TEMP/perms.txt"; then
-            echo "::error::The APK must declare RECORD_AUDIO for the voice note (D-294)"
-            exit 1
-          fi
           "$aapt2" dump xmltree --file AndroidManifest.xml "$apk" > "$RUNNER_TEMP/manifest.txt"
           grep -E 'allowBackup|fullBackupContent|dataExtractionRules' "$RUNNER_TEMP/manifest.txt"
           if ! grep -Eq 'allowBackup\(0x[0-9a-f]+\)=false' "$RUNNER_TEMP/manifest.txt"; then
@@ -299,6 +303,7 @@ jobs:
           tools/ci/test/check-needs.test.sh
           tools/ci/test/flutter-test.test.sh
           tools/ci/test/generated-code-fresh.test.sh
+          tools/ci/test/android-permissions-check.test.sh
           tools/deploy/test/resolve.test.sh
 
   ci-passed:

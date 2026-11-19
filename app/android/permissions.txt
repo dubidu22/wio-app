@@ -1,0 +1,18 @@
+# Every permission the Android APK may hold, and nothing else (D-310).
+# CI reads the built APK with aapt2 and fails on any extra or missing entry
+# (tools/ci/android-permissions-check.sh, D-312). Change this list only with
+# a reason and a decision ID; a change here is critical (D-319).
+# ${applicationId} stands for the APK's package name.
+
+# Sync with the own server (D-247).
+uses-permission android.permission.INTERNET
+# Camera for room pictures, from the camera plugin (D-265, D-272).
+uses-permission android.permission.CAMERA
+# Voice note, declared by the app (D-294).
+uses-permission android.permission.RECORD_AUDIO
+# Network state, added by a library (D-314); no prompt, no user data.
+uses-permission android.permission.ACCESS_NETWORK_STATE
+# androidx.core protects the app's own non-exported broadcast receivers with
+# this signature permission (D-314); only this app holds it.
+permission ${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission ${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
