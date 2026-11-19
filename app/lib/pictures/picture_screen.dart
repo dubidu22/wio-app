@@ -7,6 +7,7 @@ import '../camera/take_pictures_button.dart';
 import '../data/database.dart';
 import '../l10n/app_localizations.dart';
 import '../media/local_picture.dart';
+import '../media/media_presence.dart';
 import '../media/media_store.dart';
 import '../notes/notes_section.dart';
 import '../shell/back_button.dart';
@@ -218,13 +219,19 @@ class _PictureBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final textTheme = Theme.of(context).textTheme;
-    final folder = ref.watch(mediaFolderProvider);
-    if (folder.isLoading && !folder.hasValue) {
-      // No hint until the folder is known (rule 7).
+    final state = ref.watch(mediaFileProvider(picture.fileSha256));
+    if (state == MediaFileState.unknown) {
+      // No hint until the folder is listed (rule 7).
       return const SizedBox.shrink();
     }
     // Full size (at most 2560 px, D-219), so zooming stays sharp (D-279).
-    final image = localPicture(folder.value, picture.fileSha256);
+    final image = state == MediaFileState.present
+        ? localPicture(
+            ref.watch(mediaStoreProvider),
+            ref.watch(mediaFolderProvider).value,
+            picture.fileSha256,
+          )
+        : null;
     final words = <Widget>[
       Text(pictureTime(l10n, picture), style: textTheme.bodyLarge),
       if (picture.afterOf != null)
@@ -240,7 +247,11 @@ class _PictureBody extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
-            HintText(l10n.pictureNotOnDevice),
+            HintText(
+              state == MediaFileState.loading
+                  ? l10n.pictureLoading
+                  : l10n.pictureNotOnDevice,
+            ),
             ...words,
             related,
             notes,

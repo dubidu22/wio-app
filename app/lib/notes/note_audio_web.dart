@@ -1,2 +1,6 @@
-/// See `note_audio.dart`; #62 decides where the web keeps files.
-String? localNoteAudio(String folder, String sha256) => null;
+/// Prefix of a recording kept in the web's memory (D-335).
+const String webMemoryPrefix = 'memory:';
+
+/// See `note_audio.dart`.
+String? localNoteAudio(String? folder, String sha256) =>
+    '$webMemoryPrefix$sha256';

@@ -31,16 +31,21 @@ abstract final class DemoFiles {
 /// A temporary media folder (D-240) holding the demo picture files under
 /// their hash, as the app keeps them. Call it inside a test: the folder is
 /// deleted when the test ends.
-String demoMediaFolder() {
+/// Files named in [without] are left out, as if made on another device
+/// (plan 062).
+String demoMediaFolder({Set<String> without = const <String>{}}) {
   final target = Directory.systemTemp.createTempSync('wio-media-');
   addTearDown(() => target.deleteSync(recursive: true));
   for (final file in Directory(DemoFiles.folder).listSync().whereType<File>()) {
     final name = file.uri.pathSegments.last;
-    if (name.endsWith('.jpg')) {
-      file.copySync('${target.path}/${name.replaceAll('.jpg', '')}');
+    final hash = name.replaceAll('.jpg', '');
+    if (name.endsWith('.jpg') && !without.contains(hash)) {
+      file.copySync('${target.path}/$hash');
     }
   }
-  File('${target.path}/${DemoFiles.noteAudio}').writeAsBytesSync(<int>[0, 1]);
+  if (!without.contains(DemoFiles.noteAudio)) {
+    File('${target.path}/${DemoFiles.noteAudio}').writeAsBytesSync(<int>[0, 1]);
+  }
   return target.path;
 }
 

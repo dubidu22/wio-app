@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../data/database.dart';
 import '../l10n/app_localizations.dart';
+import '../media/media_presence.dart';
 import '../shell/layout.dart';
 import 'note_format.dart';
 import 'note_player.dart';
@@ -195,9 +196,16 @@ class NotePlayControl extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final path = ref.watch(noteAudioProvider(sha));
     if (path == null) {
+      final state = ref.watch(mediaFileProvider(sha));
       return builder(context, (
         line: null,
-        hint: HintText(l10n.noteNotOnDevice),
+        // No hint while it is not known yet (rule 7); "wird geladen" only
+        // while the file comes in (D-333).
+        hint: switch (state) {
+          MediaFileState.unknown => null,
+          MediaFileState.loading => HintText(l10n.noteLoading),
+          _ => HintText(l10n.noteNotOnDevice),
+        },
         button: null,
       ));
     }

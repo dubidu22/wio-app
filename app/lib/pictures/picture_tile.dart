@@ -6,6 +6,7 @@ import '../data/database.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
 import '../media/local_picture.dart';
+import '../media/media_presence.dart';
 import '../media/media_store.dart';
 
 /// Space between picture tiles.
@@ -66,8 +67,10 @@ class PictureGrid extends StatelessWidget {
 
 /// One picture: a button with its thumbnail, time and the word "Öffnen"
 /// (UX rule 1, D-259). A picture whose file is not on this device is a
-/// plain text tile without "Öffnen" (D-260). While the media folder is not
-/// known yet, the tile shows an empty frame and the time only.
+/// plain text tile without "Öffnen" (D-260), saying "Foto wird geladen."
+/// while it comes in (D-333); the tile turns into the picture when it lands
+/// (D-332). While the media folder is not listed yet, the tile shows an
+/// empty frame and the time only.
 class PictureTile extends ConsumerWidget {
   const PictureTile({
     required this.picture,
@@ -84,21 +87,24 @@ class PictureTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final folder = ref.watch(mediaFolderProvider);
+    final state = ref.watch(mediaFileProvider(picture.fileSha256));
     final pixels = (width * MediaQuery.devicePixelRatioOf(context)).round();
-    final image = localPicture(
-      folder.value,
-      picture.fileSha256,
-      cacheWidth: pixels,
-    );
+    final image = state == MediaFileState.present
+        ? localPicture(
+            ref.watch(mediaStoreProvider),
+            ref.watch(mediaFolderProvider).value,
+            picture.fileSha256,
+            cacheWidth: pixels,
+          )
+        : null;
     final time = pictureTime(l10n, picture);
     final words = <Widget>[
       Text(time, style: theme.textTheme.bodyMedium),
       if (picture.afterOf != null)
         Text(l10n.pictureAfter, style: theme.textTheme.bodyMedium),
     ];
-    if (folder.isLoading && !folder.hasValue) {
-      // The folder is not known yet: no hint that may be wrong (rule 7).
+    if (state == MediaFileState.unknown) {
+      // The folder is not listed yet: no hint that may be wrong (rule 7).
       return DecoratedBox(
         decoration: BoxDecoration(
           border: Border.all(color: theme.colorScheme.outlineVariant),
@@ -133,7 +139,13 @@ class PictureTile extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(l10n.pictureNotOnDevice, style: theme.textTheme.bodyLarge),
+              Text(
+                // "wird geladen" only while it comes in (D-333).
+                state == MediaFileState.loading
+                    ? l10n.pictureLoading
+                    : l10n.pictureNotOnDevice,
+                style: theme.textTheme.bodyLarge,
+              ),
               const SizedBox(height: 4),
               ...words,
             ],

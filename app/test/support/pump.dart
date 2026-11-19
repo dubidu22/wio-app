@@ -90,6 +90,7 @@ Future<void> pumpWioApp(
   PictureProcessor? preparePicture,
   VoiceRecorder? voiceRecorder,
   NotePlayer? notePlayer,
+  List<Override> overrides = const <Override>[],
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -147,6 +148,7 @@ Future<void> pumpWioApp(
         mediaFolderProvider.overrideWith(
           (ref) => mediaFolderFuture ?? Future<String?>.value(mediaFolder),
         ),
+        ...overrides,
       ],
       child: WioApp(initialLocation: location),
     ),

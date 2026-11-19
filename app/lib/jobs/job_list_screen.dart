@@ -6,6 +6,7 @@ import '../auth/session.dart';
 import '../auth/session_provider.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
+import '../media/media_presence.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
 import '../shell/router.dart';
@@ -199,7 +200,10 @@ class _SyncStatusLine extends ConsumerWidget {
     final pending = ref.watch(outboxCountProvider).value;
     if (pending == null) return const SizedBox.shrink();
     final uploads = ref.watch(pendingUploadCountProvider).value ?? 0;
+    final downloads = ref.watch(downloadingCountProvider);
     final text = switch (ref.watch(syncProvider)) {
+      // Files from other devices come in (D-333).
+      SyncActivity.running when downloads > 0 => l10n.syncDownloads(downloads),
       SyncActivity.running => l10n.syncRunning,
       SyncActivity.offline when pending > 0 || uploads > 0 => l10n.syncOffline,
       _ when pending > 0 => l10n.syncPending(pending),

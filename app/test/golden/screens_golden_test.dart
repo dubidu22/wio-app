@@ -5,9 +5,11 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart'
     show AxisDirection, Scrollable, Size, WidgetsApp;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:wio_app/camera/capture_camera.dart';
+import 'package:wio_app/media/media_presence.dart';
 import 'package:wio_app/voice/voice_recorder.dart';
 
 import '../support/fake_camera.dart';
@@ -243,6 +245,52 @@ void main() {
           await tester.pumpAndSettle();
           player.at(const Duration(seconds: 12));
           await tester.pump();
+        }
+        await expectLater(
+          find.byType(WidgetsApp),
+          matchesGoldenFile('goldens/${name}_$sizeName.png'),
+        );
+      });
+    }
+  }
+
+  // Files coming in from another device (plan 062, D-333): the tile and the
+  // note card say "wird geladen".
+  final loading = <String, bool>{
+    'room_screen_loading': false,
+    'room_screen_notes_loading': true,
+  };
+  for (final MapEntry(key: name, value: scroll) in loading.entries) {
+    for (final MapEntry(key: sizeName, value: size) in sizes.entries) {
+      testWidgets('$name at $sizeName size', skip: _notLinux, (tester) async {
+        final db = memoryDatabase();
+        addTearDown(db.close);
+        await seedWithNotes(db);
+        await pumpWioApp(
+          tester,
+          db: db,
+          location: kueche,
+          size: size,
+          mediaFolder: demoMediaFolder(
+            without: <String>{DemoFiles.kuecheRegal, DemoFiles.noteAudio},
+          ),
+        );
+        ProviderScope.containerOf(tester.element(find.byType(WidgetsApp)))
+            .read(mediaPresenceProvider.notifier)
+            .setLoading(<String>{DemoFiles.kuecheRegal, DemoFiles.noteAudio});
+        await tester.pumpAndSettle();
+        if (scroll) {
+          await tester.scrollUntilVisible(
+            find.text('Notiz schreiben'),
+            200,
+            scrollable: find
+                .byWidgetPredicate(
+                  (w) =>
+                      w is Scrollable && w.axisDirection == AxisDirection.down,
+                )
+                .first,
+          );
+          await tester.pumpAndSettle();
         }
         await expectLater(
           find.byType(WidgetsApp),

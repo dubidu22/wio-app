@@ -370,3 +370,39 @@ final List<OrderClauseGenerator<$PicturesTable>> _pictureOrder =
 Stream<Note?> watchNote(WioDatabase db, String id) => (db.select(
   db.notes,
 )..where((n) => n.id.equals(id) & n.deletedAt.isNull())).watchSingleOrNull();
+
+/// One file that a live picture or a live note's recording points at
+/// (D-327): its hash, its size as the row says, and the newest row's
+/// creation time (null while that row is not sent yet).
+typedef MediaRef = ({String sha256, int bytes, String? createdAt});
+
+const String _mediaRefsSql =
+    'SELECT sha256, MAX(bytes) AS bytes, MAX(created_at) AS created_at FROM ('
+    'SELECT file_sha256 AS sha256, file_bytes AS bytes, created_at '
+    'FROM pictures WHERE deleted_at IS NULL '
+    'UNION ALL '
+    'SELECT audio_sha256, COALESCE(audio_bytes, 0), created_at '
+    'FROM notes WHERE deleted_at IS NULL AND audio_sha256 IS NOT NULL'
+    ') GROUP BY sha256 ORDER BY created_at IS NULL, created_at DESC, sha256';
+
+Selectable<MediaRef> _mediaRefs(WioDatabase db) => db
+    .customSelect(
+      _mediaRefsSql,
+      readsFrom: <ResultSetImplementation<Object?, Object?>>{
+        db.pictures,
+        db.notes,
+      },
+    )
+    .map(
+      (row) => (
+        sha256: row.read<String>('sha256'),
+        bytes: row.read<int?>('bytes') ?? 0,
+        createdAt: row.read<String?>('created_at'),
+      ),
+    );
+
+/// Files that live rows point at, newest row first (D-327, D-328).
+Stream<List<MediaRef>> watchMediaRefs(WioDatabase db) => _mediaRefs(db).watch();
+
+/// The same once.
+Future<List<MediaRef>> mediaRefs(WioDatabase db) => _mediaRefs(db).get();
