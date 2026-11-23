@@ -1,12 +1,14 @@
 // Generated code - do not modify by hand
 // ignore_for_file: lines_longer_than_80_chars
 
+
 /// wio-app API
 /// Version 1.0.0
 /// API of wio-app, the field app for tidy-up and moving work. The phone writes locally first and syncs later; the server is the only place that orders changes (KB sync.md). Errors are application/problem+json with a machine `code` (D-98).
 ///
 /// License: AGPL-3.0-only
 /// License URL: https://www.gnu.org/licenses/agpl-3.0.html
+
 
 library;
 
