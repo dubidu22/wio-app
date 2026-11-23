@@ -1093,5 +1093,54 @@
   "placeFailed": "Das ging nicht. Diesen Raum gibt es nicht mehr.",
   "@placeFailed": {
     "description": "Shown when a room was deleted while the picker was open."
+  },
+  "placeHistoryTitle": "Verlauf",
+  "@placeHistoryTitle": {
+    "description": "Heading of the place history on the entry screen (plan 108)."
+  },
+  "placeHistoryStepSemantics": "Von {from} nach {to}, {when}",
+  "@placeHistoryStepSemantics": {
+    "description": "Spoken form of one move in the place history (plan 108).",
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "placeHistoryEmpty": "Noch kein Verlauf.",
+  "@placeHistoryEmpty": {
+    "description": "Plain hint when an entry was never placed or moved (plan 108)."
+  },
+  "placeHistoryPending": "wird gesendet",
+  "@placeHistoryPending": {
+    "description": "In place of date and time while the server has not confirmed the move yet (plan 108)."
+  },
+  "placeHistoryTime": "{time}",
+  "@placeHistoryTime": {
+    "description": "When an entry was moved this year, e.g. 'Do. 19.11., 09:05' (plan 108).",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "E d.M., HH:mm",
+        "isCustomDateFormat": "true"
+      }
+    }
+  },
+  "placeHistoryTimeYear": "{time}",
+  "@placeHistoryTimeYear": {
+    "description": "When an entry was moved in another year, e.g. 'Do. 19.11.2026, 09:05' (plan 108).",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "E d.M.y, HH:mm",
+        "isCustomDateFormat": "true"
+      }
+    }
   }
 }

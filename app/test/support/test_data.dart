@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:wio_app/data/database.dart';
@@ -442,6 +444,76 @@ Future<void> seedWithEntries(WioDatabase db) async {
         title: const Value<String?>('Kiste Muster'),
         createdAt: const Value<String?>('2026-11-19T08:10:00.000Z'),
         revision: const Value<int?>(4),
+      ),
+    ]);
+  });
+}
+
+/// [seedWithEntries] plus the place history of Kiste Geschirr (plan 108):
+/// not placed → Küche, Küche → Wohnzimmer, Wohnzimmer → Küche, newest last
+/// (19, 20 and 21 Nov 2026, UTC). Typed rows only, as the server sent them.
+Future<void> seedWithHistory(WioDatabase db) async {
+  await seedWithEntries(db);
+  PlaceHistoryCompanion step(
+    String id,
+    String movedAt, {
+    String? fromSite,
+    String? fromRoom,
+    required String toSite,
+    required String toRoom,
+    required int revision,
+  }) => PlaceHistoryCompanion.insert(
+    id: id,
+    workspaceId: TestIds.workspace,
+    customerId: const Value<String?>(TestIds.familieBeispiel),
+    entryId: TestIds.kiste,
+    fromSiteId: Value<String?>(fromSite),
+    fromRoomId: Value<String?>(fromRoom),
+    toSiteId: Value<String?>(toSite),
+    toRoomId: Value<String?>(toRoom),
+    movedAt: movedAt,
+    revision: Value<int?>(revision),
+  );
+  // The server's copy of the entry, which pending steps start from.
+  await db
+      .into(db.serverRecords)
+      .insert(
+        ServerRecordsCompanion.insert(
+          entity: 'entries',
+          id: TestIds.kiste,
+          revision: 7,
+          fields: jsonEncode(<String, Object?>{
+            'site_id': TestIds.alteWohnung,
+            'room_id': TestIds.kueche,
+          }),
+        ),
+      );
+  await db.batch((b) {
+    b.insertAll(db.placeHistory, <PlaceHistoryCompanion>[
+      step(
+        '01970000-0000-7000-8000-000000000a01',
+        '2026-11-19T08:30:00.000Z',
+        toSite: TestIds.alteWohnung,
+        toRoom: TestIds.kueche,
+        revision: 5,
+      ),
+      step(
+        '01970000-0000-7000-8000-000000000a02',
+        '2026-11-20T10:15:00.000Z',
+        fromSite: TestIds.alteWohnung,
+        fromRoom: TestIds.kueche,
+        toSite: TestIds.neueWohnung,
+        toRoom: TestIds.wohnzimmer,
+        revision: 6,
+      ),
+      step(
+        '01970000-0000-7000-8000-000000000a03',
+        '2026-11-21T14:05:00.000Z',
+        fromSite: TestIds.neueWohnung,
+        fromRoom: TestIds.wohnzimmer,
+        toSite: TestIds.alteWohnung,
+        toRoom: TestIds.kueche,
+        revision: 7,
       ),
     ]);
   });

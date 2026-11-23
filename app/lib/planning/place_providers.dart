@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/entry_queries.dart';
 import '../shell/providers.dart';
 import 'place_choices.dart';
 
@@ -18,4 +19,11 @@ final placeChoicesProvider = StreamProvider.family<PlaceChoices?, EntryKey>(
     key.customerId,
     key.entryId,
   ),
+);
+
+/// An entry's place history, newest first, with the moves the server has
+/// not confirmed yet (D-440, plan 108).
+final placeHistoryProvider = StreamProvider.family<List<PlaceStep>, String>(
+  retry: _noRetry,
+  (ref, entryId) => watchPlaceHistory(ref.watch(databaseProvider), entryId),
 );
