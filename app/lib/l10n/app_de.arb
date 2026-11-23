@@ -1094,6 +1094,38 @@
   "@placeFailed": {
     "description": "Shown when a room was deleted while the picker was open."
   },
+  "newEntry": "+ Eintrag",
+  "@newEntry": {
+    "description": "Button in the Einträge section of the customer and room screens: opens the QR scanner at once (D-465); on the web it creates an entry without code (D-433)."
+  },
+  "roomEntries": "Einträge in diesem Raum",
+  "@roomEntries": {
+    "description": "Heading of the room screen's entries section."
+  },
+  "scanTitle": "Neuer Eintrag",
+  "@scanTitle": {
+    "description": "Title of the QR scan screen."
+  },
+  "scanHold": "QR-Code vor die Kamera halten",
+  "@scanHold": {
+    "description": "Line under the live image of the QR scanner."
+  },
+  "scanWithoutCode": "Ohne Code",
+  "@scanWithoutCode": {
+    "description": "Main button of the scan screen: creates an entry without a QR code (D-466)."
+  },
+  "scanCodeTooLong": "Dieser Code ist zu lang für Wio (höchstens 255 Zeichen).",
+  "@scanCodeTooLong": {
+    "description": "Hint when the QR code read is longer than 255 bytes; scanning goes on (D-469)."
+  },
+  "scanRetry": "Das ging nicht. Bitte noch einmal versuchen.",
+  "@scanRetry": {
+    "description": "Shown when creating or finding an entry failed for another reason than a deleted customer or room (PR 113 S1)."
+  },
+  "scanFailed": "Das ging nicht. Diesen Kunden oder Raum gibt es nicht mehr.",
+  "@scanFailed": {
+    "description": "Shown when the customer or room was deleted before the entry was created."
+  },
   "placeHistoryTitle": "Verlauf",
   "@placeHistoryTitle": {
     "description": "Heading of the place history on the entry screen (plan 108)."

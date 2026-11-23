@@ -16,6 +16,8 @@ import 'package:wio_app/l10n/app_localizations.dart';
 import 'package:wio_app/media/media_store.dart';
 import 'package:wio_app/notes/note_player.dart';
 import 'package:wio_app/notes/notes_providers.dart';
+import 'package:wio_app/scan/qr_scanner.dart';
+import 'package:wio_app/scan/scan_providers.dart';
 import 'package:wio_app/shell/providers.dart';
 import 'package:wio_app/sync/sync_runner.dart';
 import 'package:wio_app/sync/upload_queue.dart';
@@ -27,6 +29,7 @@ import 'package:wio_app/voice/voice_recorder.dart';
 import 'fake_api.dart';
 import 'fake_camera.dart';
 import 'fake_player.dart';
+import 'fake_qr_scanner.dart';
 import 'fake_voice.dart';
 import 'media.dart';
 import 'test_data.dart';
@@ -85,6 +88,7 @@ Future<void> pumpWioApp(
   String? mediaFolder,
   Future<String?>? mediaFolderFuture,
   CaptureCameraFactory? camera,
+  QrScannerFactory? qrScanner,
   MediaStore? mediaStore,
   CaptureFiles? captureFiles,
   PictureProcessor? preparePicture,
@@ -124,6 +128,8 @@ Future<void> pumpWioApp(
         // A fake camera with a grey preview unless a test brings one; shots
         // and kept files only where a test brings folders (plan 058).
         captureCameraProvider.overrideWithValue(camera ?? FakeCamera.new),
+        // A fake scanner that reads only what a test hands it (plan 102).
+        qrScannerProvider.overrideWithValue(qrScanner ?? FakeQrScanner.new),
         captureFilesProvider.overrideWithValue(
           captureFiles ?? CaptureFiles(() => Future<String>.error('no files')),
         ),

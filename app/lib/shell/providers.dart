@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../auth/session_provider.dart';
 import '../data/database.dart';
+import '../data/entry_queries.dart';
 import '../data/entry_writer.dart';
 import '../data/local_writer.dart';
 import '../data/open_database.dart';
@@ -130,3 +131,9 @@ final pictureProvider =
         roomId: key.roomId,
       ),
     );
+
+/// Live entry [id]; null when it does not exist or is deleted.
+final entryProvider = StreamProvider.family<Entry?, String>(
+  retry: _noRetry,
+  (ref, id) => watchEntry(ref.watch(databaseProvider), id),
+);

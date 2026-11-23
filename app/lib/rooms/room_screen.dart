@@ -7,6 +7,7 @@ import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
 import '../notes/notes_section.dart';
 import '../pictures/picture_tile.dart';
+import '../scan/new_entry_button.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -87,6 +88,8 @@ class _RoomBody extends ConsumerWidget {
               style: textTheme.bodyLarge,
             ),
           ),
+          SectionHeading(l10n.roomEntries),
+          NewEntryButton(from: (customerId: customerId, roomId: view.id)),
           SectionHeading(l10n.roomPictures),
           switch (pictures) {
             AsyncData(value: final List<Picture> list) when list.isEmpty =>

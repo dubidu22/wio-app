@@ -48,6 +48,10 @@ const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
     '/${TestIds.kueche}',
     seed: seedWithEntries,
   ),
+  'lib/scan/scan_screen.dart': CatalogScreen(
+    '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}/eintrag',
+    seed: seedWithEntries,
+  ),
   'lib/sync/rejected_screen.dart': CatalogScreen(
     '/nicht-gesendet',
     seed: seedWithRejectedAndUploads,

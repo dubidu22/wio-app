@@ -8,6 +8,7 @@ import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
 import '../notes/notes_section.dart';
 import '../pictures/picture_tile.dart';
+import '../scan/new_entry_button.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -16,9 +17,9 @@ import '../shell/providers.dart';
 /// database; each room is a button to its room screen (D-259). "Fotos" lists
 /// the customer's pictures without a room; the main button "Fotos" takes
 /// such pictures (Q3, D-258, D-271), "Sprechen" a voice note about the
-/// customer (D-295), listed under "Notizen" (D-298). Entries are a plain hint until they
-/// exist (D-75). "Tag abschließen" comes in M5 and then takes the main
-/// place.
+/// customer (D-295), listed under "Notizen" (D-298). "Einträge" has
+/// **+ Eintrag** (D-465); the list of entries comes with #105. "Tag
+/// abschließen" comes in M5 and then takes the main place.
 class CustomerScreen extends ConsumerWidget {
   const CustomerScreen({required this.customerId, super.key});
 
@@ -101,6 +102,7 @@ class _CustomerBody extends ConsumerWidget {
           ],
           SectionHeading(l10n.customerEntries),
           HintText(l10n.customerEntriesEmpty),
+          NewEntryButton(from: (customerId: view.id, roomId: null)),
           SectionHeading(l10n.customerPictures),
           switch (pictures) {
             AsyncData(value: final List<Picture> list) when list.isEmpty =>

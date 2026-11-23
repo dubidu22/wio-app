@@ -14,6 +14,7 @@ import 'package:wio_app/voice/voice_recorder.dart';
 
 import '../support/fake_camera.dart';
 import '../support/fake_player.dart';
+import '../support/fake_qr_scanner.dart';
 import '../support/fake_voice.dart';
 import '../support/media.dart';
 import '../support/pump.dart';
@@ -104,6 +105,29 @@ void main() {
       await expectLater(
         find.byType(WidgetsApp),
         matchesGoldenFile('goldens/camera_screen_denied_$sizeName.png'),
+      );
+    });
+  }
+
+  // A refused camera on the scan screen: the plain hint, and Ohne Code
+  // still works (D-269, D-466).
+  for (final MapEntry(key: sizeName, value: size) in sizes.entries) {
+    testWidgets('scan_screen denied at $sizeName size', skip: _notLinux, (
+      tester,
+    ) async {
+      final db = memoryDatabase();
+      addTearDown(db.close);
+      await seedWithEntries(db);
+      await pumpWioApp(
+        tester,
+        db: db,
+        location: '/customers/${TestIds.familieBeispiel}/eintrag',
+        size: size,
+        qrScanner: () => FakeQrScanner(openError: const CameraDenied()),
+      );
+      await expectLater(
+        find.byType(WidgetsApp),
+        matchesGoldenFile('goldens/scan_screen_denied_$sizeName.png'),
       );
     });
   }

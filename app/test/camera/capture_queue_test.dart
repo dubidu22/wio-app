@@ -63,6 +63,7 @@ void main() {
     customerId: TestIds.familieBeispiel,
     roomId: TestIds.kueche,
     afterOf: null,
+    entryId: null,
   );
 
   setUp(() async {
@@ -136,6 +137,7 @@ void main() {
       customerId: TestIds.familieBeispiel,
       roomId: null,
       afterOf: null,
+      entryId: null,
     ));
     queue.add(session, shot(), now);
     await queue.idle;
@@ -159,6 +161,7 @@ void main() {
         customerId: TestIds.familieBeispiel,
         roomId: null,
         afterOf: before.id,
+        entryId: null,
       ));
       queue.add(session, shot(shade: 90), now);
       queue.add(session, shot(shade: 170), now);
@@ -196,6 +199,7 @@ void main() {
       customerId: TestIds.familieBeispiel,
       roomId: TestIds.kueche,
       afterOf: before.id,
+      entryId: null,
     ));
     queue.add(session, shot(), now);
     await queue.idle;

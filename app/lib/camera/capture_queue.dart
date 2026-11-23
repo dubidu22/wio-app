@@ -10,8 +10,14 @@ import 'picture_processor.dart';
 /// Where new pictures go: a room of a customer, or the customer itself
 /// when [roomId] is null (customer screen "Fotos", Q3). With [afterOf],
 /// every picture is an after picture of that picture (D-276) and takes
-/// its room and customer.
-typedef CaptureTarget = ({String customerId, String? roomId, String? afterOf});
+/// its room and customer. With [entryId], every picture is a picture of
+/// that entry, without a room (D-467).
+typedef CaptureTarget = ({
+  String customerId,
+  String? roomId,
+  String? afterOf,
+  String? entryId,
+});
 
 /// What one opening of the camera has done so far; the camera screen
 /// shows it (D-268).
@@ -107,6 +113,7 @@ class CaptureQueue {
           workspaceId: customer.workspaceId,
           file: file,
           roomId: session.target.roomId,
+          entryId: session.target.entryId,
           customerId: session.target.customerId,
         );
       }

@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../camera/camera_screen.dart';
 import 'place_screen.dart';
 import 'spot_screen.dart';
 
@@ -18,7 +19,17 @@ GoRoute entryRoute() => GoRoute(
         ? '/customers/$customerId'
         : null;
   },
-  routes: placeRoutes(),
+  routes: <RouteBase>[
+    ...placeRoutes(),
+    // The entry's photo camera, part of the entry task (D-468).
+    GoRoute(
+      path: 'kamera',
+      builder: (context, state) => CameraScreen(
+        customerId: state.pathParameters['customerId']!,
+        entryId: state.pathParameters['entryId'],
+      ),
+    ),
+  ],
 );
 
 /// The place and target pickers, part of the entry task, not a fourth level
