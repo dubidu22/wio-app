@@ -418,3 +418,77 @@ Stream<List<MediaRef>> watchMediaRefs(WioDatabase db) => _mediaRefs(db).watch();
 
 /// The same once.
 Future<List<MediaRef>> mediaRefs(WioDatabase db) => _mediaRefs(db).get();
+
+/// The live jobs of live customer [customerId] from [today] (`YYYY-MM-DD`)
+/// on, soonest first (plan 106, P7).
+Stream<List<Job>> watchJobsOfCustomer(
+  WioDatabase db,
+  String customerId,
+  String today,
+) => watchReads<List<Job>>(
+  db,
+  name: 'customer_jobs',
+  tables: <TableInfo<Table, Object?>>{db.jobs, db.customers},
+  read: () async {
+    final live = await (db.select(
+      db.customers,
+    )..where((c) => c.id.equals(customerId) & c.deletedAt.isNull())).get();
+    if (live.isEmpty) return <Job>[];
+    return (db.select(db.jobs)
+          ..where(
+            (j) =>
+                j.customerId.equals(customerId) &
+                j.deletedAt.isNull() &
+                j.date.isBiggerOrEqualValue(today),
+          )
+          ..orderBy(<OrderClauseGenerator<$JobsTable>>[
+            (j) => OrderingTerm.asc(j.date),
+            (j) => OrderingTerm.asc(j.id),
+          ]))
+        .get();
+  },
+);
+
+/// What a change screen needs of a customer, site, room or job: its name
+/// (a job has none) and its date (plan 106).
+typedef RecordView = ({String? name, String? date, String? customerId});
+
+/// The live record [id] of [entity] (`customers`, `sites`, `rooms` or
+/// `jobs`), or null when it does not exist or is deleted.
+Future<RecordView?> readRecord(WioDatabase db, String entity, String id) async {
+  switch (entity) {
+    case 'customers':
+      final row =
+          await (db.select(db.customers)
+                ..where((c) => c.id.equals(id) & c.deletedAt.isNull()))
+              .getSingleOrNull();
+      return row == null
+          ? null
+          : (name: row.name, date: null, customerId: row.id);
+    case 'sites':
+      final row =
+          await (db.select(db.sites)
+                ..where((s) => s.id.equals(id) & s.deletedAt.isNull()))
+              .getSingleOrNull();
+      return row == null
+          ? null
+          : (name: row.name, date: null, customerId: row.customerId);
+    case 'rooms':
+      final row =
+          await (db.select(db.rooms)
+                ..where((r) => r.id.equals(id) & r.deletedAt.isNull()))
+              .getSingleOrNull();
+      return row == null
+          ? null
+          : (name: row.name, date: null, customerId: row.customerId);
+    case 'jobs':
+      final row =
+          await (db.select(db.jobs)
+                ..where((j) => j.id.equals(id) & j.deletedAt.isNull()))
+              .getSingleOrNull();
+      return row == null
+          ? null
+          : (name: null, date: row.date, customerId: row.customerId);
+  }
+  throw ArgumentError.value(entity, 'entity', 'not a record kind');
+}

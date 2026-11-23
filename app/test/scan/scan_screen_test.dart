@@ -17,6 +17,7 @@ import 'package:wio_app/rooms/room_screen.dart';
 import 'package:wio_app/scan/scan_screen.dart';
 import 'package:wio_app/shell/providers.dart';
 
+import '../support/fake_api.dart';
 import '../support/fake_qr_scanner.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
@@ -71,6 +72,7 @@ void main() {
     tester,
     db: db,
     location: location,
+    store: FakeTokenStore(),
     qrScanner: () => scanner,
     mediaStore: mediaStore,
     overrides: <Override>[

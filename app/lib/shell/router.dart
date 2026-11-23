@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../auth/sign_in_screen.dart';
 import '../camera/camera_screen.dart';
 import '../customers/customer_screen.dart';
+import '../customers/job_screen.dart';
+import '../customers/name_screen.dart';
 import '../jobs/job_list_screen.dart';
 import '../pictures/picture_screen.dart';
 import '../planning/place_routes.dart';
@@ -40,6 +42,12 @@ GoRouter buildRouter({String initialLocation = '/'}) {
             path: 'aktualisieren',
             builder: (context, state) => const UpdateRequiredScreen(),
           ),
+          // A new customer, part of the job list task (plan 106).
+          GoRoute(
+            path: 'kunde/neu',
+            builder: (context, state) =>
+                const NameScreen(kind: NameKind.customer),
+          ),
           GoRoute(
             path: 'customers/:customerId',
             builder: (context, state) =>
@@ -62,6 +70,15 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                   ),
                   voiceRoute(),
                   ...notesRoutes(),
+                  // Change the room (plan 106).
+                  GoRoute(
+                    path: 'aendern',
+                    builder: (context, state) => NameScreen(
+                      kind: NameKind.room,
+                      customerId: state.pathParameters['customerId'],
+                      recordId: state.pathParameters['roomId'],
+                    ),
+                  ),
                   // "+ Eintrag" from the room (D-468).
                   GoRoute(
                     path: 'eintrag',
@@ -111,6 +128,51 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                   voiceRoute(),
                   ...notesRoutes(),
                 ],
+              ),
+              // Add and change customer, sites, rooms and jobs: parts of the
+              // customer task, not levels (plan 106). `neu` before `:id`.
+              GoRoute(
+                path: 'aendern',
+                builder: (context, state) => NameScreen(
+                  kind: NameKind.customer,
+                  customerId: state.pathParameters['customerId'],
+                  recordId: state.pathParameters['customerId'],
+                ),
+              ),
+              GoRoute(
+                path: 'ort/neu',
+                builder: (context, state) => NameScreen(
+                  kind: NameKind.site,
+                  customerId: state.pathParameters['customerId'],
+                ),
+              ),
+              GoRoute(
+                path: 'ort/:siteId',
+                builder: (context, state) => NameScreen(
+                  kind: NameKind.site,
+                  customerId: state.pathParameters['customerId'],
+                  recordId: state.pathParameters['siteId'],
+                ),
+              ),
+              GoRoute(
+                path: 'ort/:siteId/raum/neu',
+                builder: (context, state) => NameScreen(
+                  kind: NameKind.room,
+                  customerId: state.pathParameters['customerId'],
+                  siteId: state.pathParameters['siteId'],
+                ),
+              ),
+              GoRoute(
+                path: 'auftrag/neu',
+                builder: (context, state) =>
+                    JobScreen(customerId: state.pathParameters['customerId']!),
+              ),
+              GoRoute(
+                path: 'auftrag/:jobId',
+                builder: (context, state) => JobScreen(
+                  customerId: state.pathParameters['customerId']!,
+                  jobId: state.pathParameters['jobId'],
+                ),
               ),
               // An entry and its place pickers (D-451).
               entryRoute(),

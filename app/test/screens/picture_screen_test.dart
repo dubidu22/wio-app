@@ -7,6 +7,7 @@ import 'package:wio_app/data/database.dart';
 import 'package:wio_app/pictures/picture_screen.dart';
 import 'package:wio_app/rooms/room_screen.dart';
 
+import '../support/fake_api.dart';
 import '../support/media.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
@@ -203,6 +204,7 @@ void main() {
       tester,
       db: db,
       location: _customer,
+      store: FakeTokenStore(),
       mediaFolder: demoMediaFolder(),
     );
 

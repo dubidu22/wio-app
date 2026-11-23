@@ -13,6 +13,7 @@ import '../scan/new_entry_button.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
+import 'owner_button.dart';
 
 /// Level 2: one customer (KB workflows.md). Sites come from the local
 /// database; each room is a button to its room screen (D-259). "Fotos" lists
@@ -78,6 +79,8 @@ class _CustomerBody extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final pictures = ref.watch(customerPicturesProvider(view.id));
     final entries = ref.watch(customerEntriesProvider(view.id));
+    final jobs = ref.watch(customerJobsProvider(view.id));
+    final base = '/customers/${view.id}';
     return ContentWidth(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -101,7 +104,14 @@ class _CustomerBody extends ConsumerWidget {
               ),
             for (final room in site.rooms)
               _RoomButton(customerId: view.id, room: room),
+            OwnerButtonPair(
+              firstLabel: l10n.addRoom,
+              firstLocation: '$base/ort/${site.id}/raum/neu',
+              secondLabel: l10n.changeSite,
+              secondLocation: '$base/ort/${site.id}',
+            ),
           ],
+          OwnerButton(label: l10n.addSite, location: '$base/ort/neu'),
           SectionHeading(l10n.customerEntries),
           // Above the list, so it stays in reach with any number of entries
           // (plan 105, P4).
@@ -131,6 +141,23 @@ class _CustomerBody extends ConsumerWidget {
             subject: (type: 'customer', id: view.id),
             base: '/customers/${view.id}',
           ),
+          SectionHeading(l10n.customerJobs),
+          OwnerButton(label: l10n.addJob, location: '$base/auftrag/neu'),
+          switch (jobs) {
+            AsyncData(value: final List<Job> list) when list.isEmpty =>
+              HintText(l10n.customerJobsEmpty),
+            AsyncData(value: final List<Job> list) => Column(
+              children: <Widget>[
+                for (final job in list) _JobRow(customerId: view.id, job: job),
+              ],
+            ),
+            AsyncError(:final error) => LoadFailed(
+              message: l10n.loadFailed,
+              error: error,
+            ),
+            _ => const SizedBox.shrink(),
+          },
+          OwnerButton(label: l10n.changeCustomer, location: '$base/aendern'),
         ],
       ),
     );
@@ -172,6 +199,44 @@ class _RoomButton extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One job of the customer: a full-width button with its date; a tap opens
+/// the job screen (plan 106, P7). Owner only, as the other change buttons.
+class _JobRow extends ConsumerWidget {
+  const _JobRow({required this.customerId, required this.job});
+
+  final String customerId;
+  final Job job;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final text = Text(
+      l10n.jobDate(DateTime.parse(job.date)),
+      style: Theme.of(context).textTheme.titleMedium,
+    );
+    if (!ref.watch(isOwnerProvider)) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: text,
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(64),
+          alignment: Alignment.centerLeft,
+        ),
+        onPressed: () => context.go('/customers/$customerId/auftrag/${job.id}'),
+        child: text,
       ),
     );
   }

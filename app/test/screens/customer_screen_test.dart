@@ -5,6 +5,7 @@ import 'package:wio_app/data/local_writer.dart';
 import 'package:wio_app/jobs/job_list_screen.dart';
 import 'package:wio_app/rooms/room_screen.dart';
 
+import '../support/fake_api.dart';
 import '../support/media.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
@@ -24,6 +25,7 @@ void main() {
     await pumpWioApp(
       tester,
       db: db,
+      store: FakeTokenStore(),
       location: '/customers/${TestIds.familieBeispiel}',
     );
 
@@ -46,6 +48,7 @@ void main() {
     await pumpWioApp(
       tester,
       db: db,
+      store: FakeTokenStore(),
       location: '/customers/${TestIds.familieBeispiel}',
     );
 
@@ -74,6 +77,7 @@ void main() {
     await pumpWioApp(
       tester,
       db: db,
+      store: FakeTokenStore(),
       location: '/customers/${TestIds.familieBeispiel}',
       mediaFolder: demoMediaFolder(),
     );
@@ -87,6 +91,7 @@ void main() {
     await pumpWioApp(
       tester,
       db: db,
+      store: FakeTokenStore(),
       location: '/customers/${TestIds.frauMuster}',
     );
 
@@ -98,6 +103,7 @@ void main() {
     await pumpWioApp(
       tester,
       db: db,
+      store: FakeTokenStore(),
       location: '/customers/${TestIds.familieBeispiel}',
       mediaFolder: demoMediaFolder(),
     );
@@ -121,6 +127,7 @@ void main() {
     await pumpWioApp(
       tester,
       db: db,
+      store: FakeTokenStore(),
       location: '/customers/${TestIds.frauMuster}',
     );
 
@@ -131,7 +138,12 @@ void main() {
 
   testWidgets('an unknown or deleted customer shows a hint', (tester) async {
     for (final id in <String>['no-such-id', TestIds.geloescht]) {
-      await pumpWioApp(tester, db: db, location: '/customers/$id');
+      await pumpWioApp(
+        tester,
+        db: db,
+        location: '/customers/$id',
+        store: FakeTokenStore(),
+      );
       expect(find.text('Diesen Kunden gibt es nicht mehr.'), findsOneWidget);
       expect(find.text('Zurück'), findsOneWidget);
     }
@@ -141,6 +153,7 @@ void main() {
     await pumpWioApp(
       tester,
       db: db,
+      store: FakeTokenStore(),
       location: '/customers/${TestIds.familieBeispiel}',
     );
 
@@ -160,6 +173,7 @@ void main() {
     await pumpWioApp(
       tester,
       db: db,
+      store: FakeTokenStore(),
       location: '/customers/${TestIds.familieBeispiel}',
     );
 
@@ -174,6 +188,7 @@ void main() {
     await pumpWioApp(
       tester,
       db: db,
+      store: FakeTokenStore(),
       location: '/customers/${TestIds.familieBeispiel}',
       textScale: 2,
     );

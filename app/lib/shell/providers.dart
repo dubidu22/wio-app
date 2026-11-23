@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:wio_api/wio_api.dart' show MeUserRoleModel;
 
 import '../auth/session_provider.dart';
+import '../data/customer_writer.dart';
 import '../data/database.dart';
 import '../data/entry_queries.dart';
 import '../data/entry_writer.dart';
@@ -188,3 +190,34 @@ final entryPropertiesProvider = StreamProvider.family<List<PropertyOn>, String>(
     id: entryId,
   )),
 );
+
+/// Adds, changes and deletes customers, sites, rooms and jobs (plan 106).
+final customerWriterProvider = Provider<CustomerWriter>((ref) {
+  final db = ref.watch(databaseProvider);
+  return CustomerWriter(db, LocalWriter(db, clock: ref.watch(clockProvider)));
+});
+
+/// True while the session's role is owner: only then can customers, sites,
+/// rooms and jobs be added or changed (the server refuses other roles).
+final isOwnerProvider = Provider<bool>(
+  (ref) => ref.watch(sessionProvider).value?.user.role == MeUserRoleModel.owner,
+);
+
+/// The live jobs of one customer from today on, soonest first (plan 106).
+final customerJobsProvider = StreamProvider.family<List<Job>, String>(
+  retry: _noRetry,
+  (ref, customerId) {
+    final db = ref.watch(databaseProvider);
+    final today = calendarDate(ref.watch(clockProvider)());
+    return watchJobsOfCustomer(db, customerId, today);
+  },
+);
+
+/// Key of a record read for a change screen: its table and id.
+typedef RecordRef = ({String entity, String id});
+
+/// The live record behind a change screen, read once (plan 106).
+final recordProvider = FutureProvider.autoDispose
+    .family<RecordView?, RecordRef>(
+      (ref, key) => readRecord(ref.watch(databaseProvider), key.entity, key.id),
+    );
