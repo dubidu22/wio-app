@@ -37,6 +37,7 @@ GoRoute entryRoute() => GoRoute(
     ),
     voiceRoute(),
     ...notesRoutes(),
+    ...labelRoutes(),
     // A picture of the entry, with its after camera, voice note and notes.
     GoRoute(
       path: 'pictures/:pictureId',

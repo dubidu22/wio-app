@@ -44,6 +44,13 @@ abstract final class TestIds {
   static const String fotoKiste = '01970000-0000-7000-8000-0000000000f7';
   static const String fotoKisteNachher = '01970000-0000-7000-8000-0000000000f8';
   static const String notizKiste = '01970000-0000-7000-8000-0000000000d7';
+  static const String labelZerbrechlich =
+      '01970000-0000-7000-8000-000000000a01';
+  static const String labelGlas = '01970000-0000-7000-8000-000000000a02';
+  static const String labelKueche = '01970000-0000-7000-8000-000000000a03';
+  static const String keyGewicht = '01970000-0000-7000-8000-000000000a11';
+  static const String keyMaterial = '01970000-0000-7000-8000-000000000a12';
+  static const String keyFarbe = '01970000-0000-7000-8000-000000000a13';
 }
 
 PicturesCompanion _picture(
@@ -554,5 +561,107 @@ Future<void> seedWithEntryContent(WioDatabase db) async {
         createdAt: '2026-11-19T08:25:00.000Z',
       ),
     );
+  });
+}
+
+/// [seedWithEntryContent] plus a small vocabulary (plan 104): labels
+/// Zerbrechlich (on Kiste Geschirr, used 08:30), Glas (on the entry without
+/// place, used 09:00) and Küche (never used); keys Gewicht (unit kg, 12 on
+/// Kiste Geschirr, 08:40), Material (text, "Porzellan" on the entry without
+/// place, 09:10) and Farbe (never used). Typed rows, as the server sent them.
+Future<void> seedWithVocabulary(WioDatabase db) async {
+  await seedWithEntryContent(db);
+  EntityLabelsCompanion link(
+    String id,
+    String label,
+    String entry,
+    String at,
+  ) => EntityLabelsCompanion.insert(
+    id: id,
+    workspaceId: TestIds.workspace,
+    customerId: const Value<String?>(TestIds.familieBeispiel),
+    entityType: 'entry',
+    entityId: entry,
+    labelId: label,
+    createdAt: Value<String?>(at),
+    revision: const Value<int?>(1),
+  );
+  await db.batch((b) {
+    b.insertAll(db.labels, <LabelsCompanion>[
+      for (final (id, name, at) in <(String, String, String)>[
+        (TestIds.labelZerbrechlich, 'Zerbrechlich', '2026-11-19T08:00:00.000Z'),
+        (TestIds.labelGlas, 'Glas', '2026-11-19T08:01:00.000Z'),
+        (TestIds.labelKueche, 'Küche', '2026-11-19T08:02:00.000Z'),
+      ])
+        LabelsCompanion.insert(
+          id: id,
+          workspaceId: TestIds.workspace,
+          name: name,
+          createdAt: Value<String?>(at),
+          revision: const Value<int?>(1),
+        ),
+    ]);
+    b.insertAll(db.entityLabels, <EntityLabelsCompanion>[
+      link(
+        '01970000-0000-7000-8000-000000000b01',
+        TestIds.labelZerbrechlich,
+        TestIds.kiste,
+        '2026-11-19T08:30:00.000Z',
+      ),
+      link(
+        '01970000-0000-7000-8000-000000000b02',
+        TestIds.labelGlas,
+        TestIds.kisteOhneOrt,
+        '2026-11-19T09:00:00.000Z',
+      ),
+    ]);
+    b.insertAll(db.propertyKeys, <PropertyKeysCompanion>[
+      PropertyKeysCompanion.insert(
+        id: TestIds.keyGewicht,
+        workspaceId: TestIds.workspace,
+        name: 'Gewicht',
+        unit: const Value<String?>('kg'),
+        createdAt: const Value<String?>('2026-11-19T08:03:00.000Z'),
+        revision: const Value<int?>(1),
+      ),
+      PropertyKeysCompanion.insert(
+        id: TestIds.keyMaterial,
+        workspaceId: TestIds.workspace,
+        name: 'Material',
+        createdAt: const Value<String?>('2026-11-19T08:04:00.000Z'),
+        revision: const Value<int?>(1),
+      ),
+      PropertyKeysCompanion.insert(
+        id: TestIds.keyFarbe,
+        workspaceId: TestIds.workspace,
+        name: 'Farbe',
+        createdAt: const Value<String?>('2026-11-19T08:05:00.000Z'),
+        revision: const Value<int?>(1),
+      ),
+    ]);
+    b.insertAll(db.entityProperties, <EntityPropertiesCompanion>[
+      EntityPropertiesCompanion.insert(
+        id: '01970000-0000-7000-8000-000000000c01',
+        workspaceId: TestIds.workspace,
+        customerId: const Value<String?>(TestIds.familieBeispiel),
+        entityType: 'entry',
+        entityId: TestIds.kiste,
+        keyId: TestIds.keyGewicht,
+        valueNumber: const Value<String?>('12'),
+        createdAt: const Value<String?>('2026-11-19T08:40:00.000Z'),
+        revision: const Value<int?>(1),
+      ),
+      EntityPropertiesCompanion.insert(
+        id: '01970000-0000-7000-8000-000000000c02',
+        workspaceId: TestIds.workspace,
+        customerId: const Value<String?>(TestIds.familieBeispiel),
+        entityType: 'entry',
+        entityId: TestIds.kisteOhneOrt,
+        keyId: TestIds.keyMaterial,
+        valueText: const Value<String?>('Porzellan'),
+        createdAt: const Value<String?>('2026-11-19T09:10:00.000Z'),
+        revision: const Value<int?>(1),
+      ),
+    ]);
   });
 }

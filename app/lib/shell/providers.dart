@@ -145,3 +145,32 @@ final entryProvider = StreamProvider.family<Entry?, String>(
   retry: _noRetry,
   (ref, id) => watchEntry(ref.watch(databaseProvider), id),
 );
+
+/// Every live label of the workspace, most recently used first (plan 104).
+final labelChoicesProvider = StreamProvider<List<Label>>(
+  retry: _noRetry,
+  (ref) => watchLabelChoices(ref.watch(databaseProvider)),
+);
+
+/// Every live property key of the workspace, most recently used first, with
+/// what decides its keyboard (plan 104).
+final keyChoicesProvider = StreamProvider<List<KeyChoice>>(
+  retry: _noRetry,
+  (ref) => watchKeyChoices(ref.watch(databaseProvider)),
+);
+
+/// The live labels on entry [entryId] with the links to take them off by.
+final entryLabelsProvider = StreamProvider.family<List<LabelOn>, String>(
+  retry: _noRetry,
+  (ref, entryId) =>
+      watchLabelsOf(ref.watch(databaseProvider), (type: 'entry', id: entryId)),
+);
+
+/// The live property values on entry [entryId] with their keys.
+final entryPropertiesProvider = StreamProvider.family<List<PropertyOn>, String>(
+  retry: _noRetry,
+  (ref, entryId) => watchPropertiesOf(ref.watch(databaseProvider), (
+    type: 'entry',
+    id: entryId,
+  )),
+);
