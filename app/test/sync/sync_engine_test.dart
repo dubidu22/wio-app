@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wio_api/wio_api.dart' show SyncApi;
 import 'package:wio_app/auth/auth_client.dart';
+import 'package:wio_app/auth/session_provider.dart' show localWorkspaceId;
 import 'package:wio_app/data/database.dart';
 import 'package:wio_app/data/ids.dart';
 import 'package:wio_app/data/local_writer.dart';
@@ -87,6 +88,8 @@ class Device {
       c.id: c.name,
   };
 
+  /// The raw `sync_state.last_revision`, negative while a resync is
+  /// unfinished (D-457); 0 when there is no row.
   Future<int> lastRevision() async =>
       (await (db.select(
             db.syncState,
@@ -521,6 +524,110 @@ void main() {
         await phone.db.select(phone.db.serverRecords).get(),
         hasLength(1300),
       );
+    });
+  });
+
+  group('unfinished resync marker (#100, D-457..D-461)', () {
+    /// 700 records pulled, then 600 more: the next pull answers 410 and
+    /// pulls again from 0 in pages ending at 500, 1000 and 1300.
+    Future<Device> pulledThen410() async {
+      for (var i = 0; i < 700; i++) {
+        server.put('customers', newUuidV7(), <String, Object?>{'name': 'K$i'});
+      }
+      final phone = Device(server, 'a');
+      expect((await phone.engine.pull()).stop, SyncStop.done);
+      for (var i = 0; i < 600; i++) {
+        server.put('customers', newUuidV7(), <String, Object?>{'name': 'N$i'});
+      }
+      server.resyncOnPull = 1;
+      server.pullSince.clear();
+      return phone;
+    }
+
+    /// Loses the pull request that follows the [n]-th pull from now.
+    void cutAfterPull(int n) {
+      var pulls = 0;
+      server.afterRequest = (key) {
+        if (key == 'GET /sync/pull' && ++pulls == n) server.loseRequests = 1;
+      };
+    }
+
+    test('a pull cut off after a 410 keeps the marker (T1)', () async {
+      final phone = await pulledThen410();
+      cutAfterPull(2);
+      expect((await phone.engine.pull()).stop, SyncStop.offline);
+      expect(server.pullSince, <int>[700, 0]);
+      expect(await phone.lastRevision(), -501);
+      expect(pullRevision(await phone.lastRevision()), 500);
+      expect(await resyncUnfinished(phone.db), isTrue);
+      expect(await phone.names(), hasLength(500));
+    });
+
+    test('the next pull resumes, never sends a negative since, and clears '
+        'the marker only on its last page (T2)', () async {
+      final phone = await pulledThen410();
+      cutAfterPull(2);
+      await phone.engine.pull();
+      server.afterRequest = null;
+      server.pullSince.clear();
+      // Cut again after the second page of the resumed pull.
+      cutAfterPull(1);
+      expect((await phone.engine.pull()).stop, SyncStop.offline);
+      expect(await phone.lastRevision(), -1001, reason: 'still unfinished');
+      server.afterRequest = null;
+      expect((await phone.engine.pull()).stop, SyncStop.done);
+      expect(server.pullSince, <int>[500, 1000]);
+      expect(await phone.lastRevision(), 1300);
+      expect(await resyncUnfinished(phone.db), isFalse);
+      expect(await phone.names(), hasLength(1300));
+    });
+
+    test('a second 410 in one run fails and keeps the marker; a later '
+        'complete pull clears it (T3)', () async {
+      final phone = await pulledThen410();
+      var pulls = 0;
+      server.afterRequest = (key) {
+        if (key == 'GET /sync/pull' && ++pulls == 2) server.resyncOnPull = 1;
+      };
+      expect((await phone.engine.pull()).stop, SyncStop.failed);
+      expect(await phone.lastRevision(), -501);
+      server.afterRequest = null;
+      expect((await phone.engine.pull()).stop, SyncStop.done);
+      expect(await phone.lastRevision(), 1300);
+      expect(await resyncUnfinished(phone.db), isFalse);
+    });
+
+    test('a pull without 410 never stores a negative revision; the '
+        'workspace stays known with emptied tables (T4)', () async {
+      for (var i = 0; i < 1200; i++) {
+        server.put('customers', newUuidV7(), <String, Object?>{'name': 'K$i'});
+      }
+      final phone = Device(server, 'a');
+      cutAfterPull(1);
+      expect((await phone.engine.pull()).stop, SyncStop.offline);
+      expect(await phone.lastRevision(), 500);
+      server.afterRequest = null;
+      expect((await phone.engine.pull()).stop, SyncStop.done);
+      expect(await phone.lastRevision(), 1200);
+
+      // A 410 and then no answer: every pulled row is gone.
+      server.put('customers', newUuidV7(), <String, Object?>{'name': 'X'});
+      server.resyncOnPull = 1;
+      cutAfterPull(1);
+      expect((await phone.engine.pull()).stop, SyncStop.offline);
+      expect(await phone.names(), isEmpty);
+      expect(await phone.lastRevision(), -1);
+      expect(await localWorkspaceId(phone.db), ws);
+    });
+
+    test('the encoding round-trips', () {
+      for (final revision in <int>[0, 1, 500, 1 << 40]) {
+        for (final unfinished in <bool>[false, true]) {
+          final stored = storedRevision(revision, unfinished: unfinished);
+          expect(stored < 0, unfinished);
+          expect(pullRevision(stored), revision);
+        }
+      }
     });
   });
 

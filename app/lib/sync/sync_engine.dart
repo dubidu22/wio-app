@@ -374,7 +374,10 @@ class SyncEngine {
 
   /// Pulls pages until `has_more` is false (D-200).
   Future<SyncResult> pull() async {
-    var since = await _lastRevision();
+    final stored = await _storedRevision();
+    // A resync an earlier run started is still unfinished (D-457, D-458).
+    var resyncing = stored < 0;
+    var since = pullRevision(stored);
     var resyncs = 0;
     while (true) {
       if (tooOld()) return const SyncResult(SyncStop.tooOld);
@@ -396,13 +399,14 @@ class SyncEngine {
           if (!body.records.every(_inWorkspace)) {
             return const SyncResult(SyncStop.failed);
           }
-          await _store(body);
+          await _store(body, unfinished: resyncing && body.hasMore);
           if (!body.hasMore) return SyncResult.done;
           since = body.lastRevision;
         case TonikSuccess(value: SyncPullResponse410()):
           // Twice in one run means the server cannot serve from 0 either.
           if (++resyncs > 1) return const SyncResult(SyncStop.failed);
           await _resync();
+          resyncing = true;
           since = 0;
         case TonikSuccess(value: SyncPullResponse401(:final body))
             when body.code == 'token_invalid':
@@ -420,12 +424,22 @@ class SyncEngine {
     }
   }
 
-  Future<int> _lastRevision() async {
+  /// The stored `last_revision`, negative while a resync is unfinished.
+  Future<int> _storedRevision() async {
     final row = await (db.select(
       db.syncState,
     )..where((s) => s.workspaceId.equals(workspaceId))).getSingleOrNull();
     return row?.lastRevision ?? 0;
   }
+
+  Future<void> _saveRevision(int revision, {required bool unfinished}) => db
+      .into(db.syncState)
+      .insertOnConflictUpdate(
+        SyncStateCompanion.insert(
+          workspaceId: workspaceId,
+          lastRevision: storedRevision(revision, unfinished: unfinished),
+        ),
+      );
 
   /// Records of another workspace never enter this device (D-131).
   bool _inWorkspace(PulledRecord record) {
@@ -435,36 +449,34 @@ class SyncEngine {
   }
 
   /// One page: server copies, rebuilt rows and the revision, together.
-  Future<void> _store(PullResult page) => db.transaction(() async {
-    for (final record in page.records) {
-      await db
-          .into(db.serverRecords)
-          .insertOnConflictUpdate(
-            ServerRecordsCompanion.insert(
-              entity: record.entity,
-              id: record.id,
-              revision: record.revision,
-              deletedAt: Value<String?>(
-                record.deletedAt?.toUtc().toIso8601String(),
-              ),
-              fields: jsonEncode(record.fields),
-            ),
-          );
-    }
-    await rebuildRecords(db, <RecordKey>[
-      for (final r in page.records) (entity: r.entity, id: r.id),
-    ]);
-    await db
-        .into(db.syncState)
-        .insertOnConflictUpdate(
-          SyncStateCompanion.insert(
-            workspaceId: workspaceId,
-            lastRevision: page.lastRevision,
-          ),
-        );
-  });
+  /// [unfinished] keeps the resync marker (D-457): a page of the pull after
+  /// a 410 that is not its last.
+  Future<void> _store(PullResult page, {required bool unfinished}) =>
+      db.transaction(() async {
+        for (final record in page.records) {
+          await db
+              .into(db.serverRecords)
+              .insertOnConflictUpdate(
+                ServerRecordsCompanion.insert(
+                  entity: record.entity,
+                  id: record.id,
+                  revision: record.revision,
+                  deletedAt: Value<String?>(
+                    record.deletedAt?.toUtc().toIso8601String(),
+                  ),
+                  fields: jsonEncode(record.fields),
+                ),
+              );
+        }
+        await rebuildRecords(db, <RecordKey>[
+          for (final r in page.records) (entity: r.entity, id: r.id),
+        ]);
+        await _saveRevision(page.lastRevision, unfinished: unfinished);
+      });
 
   /// 410 (D-200): pulled data goes, the outbox and the rejected list stay.
+  /// The same transaction marks the resync unfinished (D-457), so a kill
+  /// before the following pull ends leaves the marker for the media sweep.
   Future<void> _resync() => db.transaction(() async {
     await db.delete(db.serverRecords).go();
     for (final entity in localTables.keys) {
@@ -474,9 +486,7 @@ class SyncEngine {
         updateKind: UpdateKind.delete,
       );
     }
-    await (db.delete(
-      db.syncState,
-    )..where((s) => s.workspaceId.equals(workspaceId))).go();
+    await _saveRevision(0, unfinished: true);
     final queued = await db.select(db.outbox).get();
     await rebuildRecords(db, <RecordKey>[
       for (final row in queued) (entity: row.entity, id: row.entityId),
@@ -486,6 +496,27 @@ class SyncEngine {
   static Duration? _seconds(int? seconds) =>
       seconds != null && seconds > 0 ? Duration(seconds: seconds) : null;
 }
+
+/// The `sync_state.last_revision` stored for [revision] (D-457). While a
+/// 410 resync is unfinished it is stored as `-revision - 1` (so revision 0
+/// is -1); a pull that ends `done` stores the plain revision (D-458).
+int storedRevision(int revision, {required bool unfinished}) =>
+    unfinished ? -revision - 1 : revision;
+
+/// The revision a pull continues from, for a stored `last_revision`
+/// ([storedRevision] reversed); never negative.
+int pullRevision(int stored) => stored < 0 ? -stored - 1 : stored;
+
+/// True while a 410 resync on this device is unfinished (D-457): the pulled
+/// tables are not complete yet, so the media sweep deletes nothing (D-459).
+Future<bool> resyncUnfinished(WioDatabase db) async =>
+    (await db
+            .customSelect(
+              'SELECT 1 FROM sync_state WHERE last_revision < 0 LIMIT 1',
+              readsFrom: <TableInfo<Table, Object?>>{db.syncState},
+            )
+            .get())
+        .isNotEmpty;
 
 /// True when [row] creates its record: an upsert without a base revision
 /// that carries `workspace_id`, which `LocalWriter` requires only for a new

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wio_app/data/database.dart';
 import 'package:wio_app/media/media_store.dart';
 import 'package:wio_app/media/media_sweep.dart';
+import 'package:wio_app/sync/sync_engine.dart';
 
 import '../support/test_data.dart';
 
@@ -311,5 +312,56 @@ void main() {
       );
       expect(_names(media), <String>[kept.sha256]);
     });
+  });
+
+  group('sweepMedia during a 410 resync (#100, D-459)', () {
+    Future<void> revision(WioDatabase db, int value) => db
+        .into(db.syncState)
+        .insertOnConflictUpdate(
+          SyncStateCompanion.insert(
+            workspaceId: TestIds.workspace,
+            lastRevision: value,
+          ),
+        );
+
+    test('an unfinished resync keeps every file (T5)', () async {
+      final db = memoryDatabase();
+      addTearDown(db.close);
+      final (:store, :media) = _store();
+      // Page 1 brought back p1; the record of the second file is on a page
+      // not pulled again yet.
+      await _picture(db, 'p1', _hex('1'));
+      await revision(db, storedRevision(500, unfinished: true));
+      _file(media, _hex('1'));
+      _file(media, _hex('2'));
+      _file(media, '${_hex('3')}.part');
+      _file(media, '1-2.tmp');
+
+      await sweepMedia(db, store);
+
+      expect(
+        _names(media),
+        <String>[_hex('1'), _hex('2'), '${_hex('3')}.part', '1-2.tmp']..sort(),
+      );
+    });
+
+    test(
+      'once the pull is complete the sweep deletes as before (T6)',
+      () async {
+        final db = memoryDatabase();
+        addTearDown(db.close);
+        final (:store, :media) = _store();
+        await _picture(db, 'p1', _hex('1'));
+        await revision(db, storedRevision(500, unfinished: true));
+        _file(media, _hex('1'));
+        _file(media, _hex('2'));
+        await sweepMedia(db, store);
+        expect(_names(media), <String>[_hex('1'), _hex('2')]);
+
+        await revision(db, 1300);
+        await sweepMedia(db, store);
+        expect(_names(media), <String>[_hex('1')]);
+      },
+    );
   });
 }

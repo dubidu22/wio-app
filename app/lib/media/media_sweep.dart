@@ -1,4 +1,5 @@
 import '../data/database.dart';
+import '../sync/sync_engine.dart';
 import 'media_store.dart';
 
 /// How old a file nothing names must be before the media sweep deletes
@@ -40,7 +41,9 @@ Future<Set<String>> namedMediaHashes(WioDatabase db) =>
 /// app start, before that start's first sync (D-421). Only files changed
 /// before the sweep's start minus [mediaSweepMargin] go. When no row names
 /// any file, nothing is deleted: an empty database next to a full folder
-/// is more likely an error than a wish (D-422).
+/// is more likely an error than a wish (D-422). While a 410 resync is
+/// unfinished the pulled rows are incomplete, so nothing is deleted either
+/// (D-459, #100).
 Future<void> sweepMedia(
   WioDatabase db,
   MediaStore store, {
@@ -48,7 +51,9 @@ Future<void> sweepMedia(
 }) async {
   if (!store.supported) return;
   final started = clock();
-  final named = await namedMediaHashes(db);
-  if (named.isEmpty) return;
+  final named = await db.transaction(
+    () async => await resyncUnfinished(db) ? null : await namedMediaHashes(db),
+  );
+  if (named == null || named.isEmpty) return;
   await store.sweep(named, before: started.subtract(mediaSweepMargin));
 }
