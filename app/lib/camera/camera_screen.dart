@@ -11,9 +11,11 @@ import '../media/local_picture.dart';
 import '../media/media_presence.dart';
 import '../media/media_store.dart';
 import '../notes/notes_section.dart';
+import '../planning/place_screen.dart' show entryLocation;
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
+import 'camera_problem.dart';
 import 'camera_providers.dart';
 import 'capture_camera.dart';
 import 'capture_queue.dart';
@@ -38,11 +40,16 @@ class CameraScreen extends ConsumerStatefulWidget {
     required this.customerId,
     this.roomId,
     this.afterOf,
+    this.entryId,
     super.key,
   });
 
   final String customerId;
   final String? roomId;
+
+  /// The entry whose pictures are taken (D-467), or null. "Fertig" then
+  /// opens the entry.
+  final String? entryId;
 
   /// The picture whose after pictures are taken, or null.
   final String? afterOf;
@@ -59,6 +66,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     customerId: widget.customerId,
     roomId: widget.roomId,
     afterOf: widget.afterOf,
+    entryId: widget.entryId,
   ));
   CaptureCamera? _camera;
   _CameraState _state = _CameraState.opening;
@@ -180,6 +188,8 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   void _done() {
     if (context.canPop()) {
       context.pop();
+    } else if (widget.entryId != null) {
+      context.go(entryLocation(widget.customerId, widget.entryId!));
     } else {
       final room = widget.roomId;
       final base = room == null
@@ -210,12 +220,12 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
             onFlashEnd: () => setState(() => _flash = false),
           ),
           _CameraState.opening => const ColoredBox(color: Colors.black),
-          _CameraState.denied => _Problem(
+          _CameraState.denied => CameraProblem(
             lines: <String>[l10n.cameraDenied, l10n.cameraDeniedHelp],
             button: l10n.cameraAskAgain,
             onPressed: _open,
           ),
-          _CameraState.unavailable => _Problem(
+          _CameraState.unavailable => CameraProblem(
             lines: <String>[l10n.cameraUnavailable],
             button: l10n.cameraTryAgain,
             onPressed: _open,
@@ -337,6 +347,15 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   }
 
   String _title(AppLocalizations l10n) {
+    final entry = widget.entryId;
+    if (entry != null) {
+      return switch (ref.watch(entryProvider(entry))) {
+        AsyncData(value: final Entry e) =>
+          e.title ?? e.code ?? l10n.unnamedEntry,
+        AsyncData() => l10n.unnamedEntry,
+        _ => '',
+      };
+    }
     final room = widget.roomId;
     if (room != null) {
       final view = ref.watch(
@@ -405,38 +424,6 @@ class _Preview extends StatelessWidget {
               },
               child: const ColoredBox(color: Colors.white),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Problem extends StatelessWidget {
-  const _Problem({
-    required this.lines,
-    required this.button,
-    required this.onPressed,
-  });
-
-  final List<String> lines;
-  final String button;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return ContentWidth(
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          for (final line in lines) HintText(line),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(64),
-            ),
-            onPressed: onPressed,
-            child: Text(button),
           ),
         ],
       ),

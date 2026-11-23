@@ -350,6 +350,41 @@ void main() {
     expect(find.byType(CustomerScreen), findsOneWidget);
   });
 
+  testWidgets('the camera of an entry takes its pictures, without a room, '
+      'and Fertig opens the entry (D-467, D-468)', (tester) async {
+    await db
+        .into(db.entries)
+        .insert(
+          EntriesCompanion.insert(
+            id: TestIds.kiste,
+            workspaceId: TestIds.workspace,
+            customerId: const Value<String?>(TestIds.familieBeispiel),
+            code: const Value<String?>('WIO-0042'),
+            siteId: const Value<String?>(TestIds.alteWohnung),
+            roomId: const Value<String?>(TestIds.kueche),
+          ),
+        );
+    await pumpCamera(
+      tester,
+      location:
+          '/customers/${TestIds.familieBeispiel}/entries/${TestIds.kiste}'
+          '/kamera',
+    );
+    expect(find.text('WIO-0042'), findsOneWidget, reason: 'title');
+
+    await press(tester);
+    await drain(tester);
+    final picture = (await newPictures(tester)).single;
+    expect(picture.entryId, TestIds.kiste);
+    expect(picture.roomId, isNull);
+    expect(picture.customerId, TestIds.familieBeispiel);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Fertig'));
+    await tester.pumpAndSettle();
+    // The entry's own address; until #103 it shows the customer.
+    expect(find.byType(CustomerScreen), findsOneWidget);
+  });
+
   testWidgets('no Fotos button where the app takes no pictures (web)', (
     tester,
   ) async {

@@ -8,6 +8,7 @@ import '../notes/note_screen.dart';
 import '../pictures/picture_screen.dart';
 import '../planning/place_routes.dart';
 import '../rooms/room_screen.dart';
+import '../scan/scan_screen.dart';
 import '../sync/rejected_screen.dart';
 import '../update/update_required_screen.dart';
 import '../voice/voice_screen.dart';
@@ -62,6 +63,14 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                   ),
                   _voiceRoute(),
                   ..._notesRoutes(),
+                  // "+ Eintrag" from the room (D-468).
+                  GoRoute(
+                    path: 'eintrag',
+                    builder: (context, state) => ScanScreen(
+                      customerId: state.pathParameters['customerId']!,
+                      roomId: state.pathParameters['roomId'],
+                    ),
+                  ),
                   // Part of the room task, not a fourth level (D-261).
                   GoRoute(
                     path: 'pictures/:pictureId',
@@ -106,6 +115,12 @@ GoRouter buildRouter({String initialLocation = '/'}) {
               ),
               // An entry and its place pickers (D-451).
               entryRoute(),
+              // "+ Eintrag" from the customer (D-468).
+              GoRoute(
+                path: 'eintrag',
+                builder: (context, state) =>
+                    ScanScreen(customerId: state.pathParameters['customerId']!),
+              ),
               // Pictures without a room (Q3, D-271).
               GoRoute(
                 path: 'kamera',
