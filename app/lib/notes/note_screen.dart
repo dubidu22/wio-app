@@ -10,6 +10,7 @@ import '../data/database.dart';
 import '../data/media_writer.dart';
 import '../l10n/app_localizations.dart';
 import '../pictures/picture_screen.dart' show undoTime;
+import '../planning/place_screen.dart' show entryLocation;
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -28,6 +29,7 @@ class NoteScreen extends ConsumerStatefulWidget {
   const NoteScreen({
     required this.customerId,
     this.roomId,
+    this.entryId,
     this.pictureId,
     this.noteId,
     super.key,
@@ -35,6 +37,10 @@ class NoteScreen extends ConsumerStatefulWidget {
 
   final String customerId;
   final String? roomId;
+
+  /// The entry the note is about, or the entry the picture was opened
+  /// from (plan 103).
+  final String? entryId;
   final String? pictureId;
 
   /// The note to show; null for a new text note.
@@ -74,7 +80,12 @@ class _NoteScreenState extends ConsumerState<NoteScreen> {
   String get _base {
     final customer = '/customers/${widget.customerId}';
     final room = widget.roomId;
-    final base = room == null ? customer : '$customer/rooms/$room';
+    final entry = widget.entryId;
+    final base = entry != null
+        ? entryLocation(widget.customerId, entry)
+        : room == null
+        ? customer
+        : '$customer/rooms/$room';
     final picture = widget.pictureId;
     return picture == null ? base : '$base/pictures/$picture';
   }
@@ -136,6 +147,7 @@ class _NoteScreenState extends ConsumerState<NoteScreen> {
         final subject = noteSubjectOf(
           customerId: widget.customerId,
           roomId: widget.roomId,
+          entryId: widget.entryId,
           pictureId: widget.pictureId,
         );
         _created = await _writer.addNote(

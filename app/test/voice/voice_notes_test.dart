@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wio_app/camera/capture_files.dart';
 import 'package:wio_app/data/database.dart';
@@ -70,6 +71,7 @@ void main() {
   const VoiceTarget kueche = (
     customerId: TestIds.familieBeispiel,
     roomId: TestIds.kueche,
+    entryId: null,
     pictureId: null,
   );
 
@@ -176,20 +178,45 @@ void main() {
     expect(File(path).existsSync(), isFalse);
   });
 
-  test('subjects: picture, else room, else customer (D-295)', () async {
+  test('subjects: picture, entry, room, customer (D-295, plan 103)', () async {
+    await db
+        .into(db.entries)
+        .insert(
+          EntriesCompanion.insert(
+            id: TestIds.kiste,
+            workspaceId: TestIds.workspace,
+            customerId: const Value<String?>(TestIds.familieBeispiel),
+          ),
+        );
     final writer = notesWith(LocalWriter(db, clock: () => now));
     for (final (target, type, subject) in <(VoiceTarget, String, String)>[
       (
         (
           customerId: TestIds.familieBeispiel,
           roomId: TestIds.kueche,
+          entryId: null,
           pictureId: TestIds.fotoVorher,
         ),
         'picture',
         TestIds.fotoVorher,
       ),
       (
-        (customerId: TestIds.familieBeispiel, roomId: null, pictureId: null),
+        (
+          customerId: TestIds.familieBeispiel,
+          roomId: null,
+          entryId: TestIds.kiste,
+          pictureId: null,
+        ),
+        'entry',
+        TestIds.kiste,
+      ),
+      (
+        (
+          customerId: TestIds.familieBeispiel,
+          roomId: null,
+          entryId: null,
+          pictureId: null,
+        ),
         'customer',
         TestIds.familieBeispiel,
       ),

@@ -1,26 +1,32 @@
 import 'package:go_router/go_router.dart';
 
 import '../camera/camera_screen.dart';
+import '../entries/entry_screen.dart';
+import '../entries/entry_title_screen.dart';
+import '../pictures/picture_screen.dart';
+import '../shell/task_routes.dart';
 import 'place_screen.dart';
 import 'spot_screen.dart';
 
-/// The routes of the entry `/customers/:customerId/entries/:entryId` (D-451).
-///
-/// Until the entry screen exists (#103), the entry's own address shows the
-/// customer screen; #103 replaces the redirect with its builder and adds
-/// the "Ort ändern" and "Ziel" buttons (plan 107, C1). No button leads here
-/// before that (D-75).
+/// The routes of the entry `/customers/:customerId/entries/:entryId` (D-451):
+/// the entry screen (plan 103) and, as parts of the entry task, its place
+/// and target pickers, title, camera, voice note, notes and pictures. The
+/// entry is a task, not a fourth level.
 GoRoute entryRoute() => GoRoute(
   path: 'entries/:entryId',
-  redirect: (context, state) {
-    final customerId = state.pathParameters['customerId']!;
-    final entryId = state.pathParameters['entryId']!;
-    return state.uri.path == entryLocation(customerId, entryId)
-        ? '/customers/$customerId'
-        : null;
-  },
+  builder: (context, state) => EntryScreen(
+    customerId: state.pathParameters['customerId']!,
+    entryId: state.pathParameters['entryId']!,
+  ),
   routes: <RouteBase>[
     ...placeRoutes(),
+    GoRoute(
+      path: 'titel',
+      builder: (context, state) => EntryTitleScreen(
+        customerId: state.pathParameters['customerId']!,
+        entryId: state.pathParameters['entryId']!,
+      ),
+    ),
     // The entry's photo camera, part of the entry task (D-468).
     GoRoute(
       path: 'kamera',
@@ -28,6 +34,29 @@ GoRoute entryRoute() => GoRoute(
         customerId: state.pathParameters['customerId']!,
         entryId: state.pathParameters['entryId'],
       ),
+    ),
+    voiceRoute(),
+    ...notesRoutes(),
+    // A picture of the entry, with its after camera, voice note and notes.
+    GoRoute(
+      path: 'pictures/:pictureId',
+      builder: (context, state) => PictureScreen(
+        customerId: state.pathParameters['customerId']!,
+        entryId: state.pathParameters['entryId'],
+        pictureId: state.pathParameters['pictureId']!,
+      ),
+      routes: <RouteBase>[
+        GoRoute(
+          path: 'nachher',
+          builder: (context, state) => CameraScreen(
+            customerId: state.pathParameters['customerId']!,
+            entryId: state.pathParameters['entryId'],
+            afterOf: state.pathParameters['pictureId'],
+          ),
+        ),
+        voiceRoute(),
+        ...notesRoutes(),
+      ],
     ),
   ],
 );

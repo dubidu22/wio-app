@@ -238,12 +238,14 @@ Stream<RoomScreenView?> watchRoom(
 /// Live picture [pictureId] of customer [customerId], or null when it is
 /// unknown, tombstoned or another customer's. With [roomId], also null when
 /// the picture is not in that room or the room or its site is tombstoned
-/// (D-259).
+/// (D-259). With [entryId], also null when the picture is not of that entry
+/// (plan 103).
 Stream<Picture?> watchPicture(
   WioDatabase db,
   String customerId,
   String pictureId, {
   String? roomId,
+  String? entryId,
 }) {
   final query =
       db.select(db.pictures).join(<Join<HasResultSet, Object?>>[
@@ -255,6 +257,9 @@ Stream<Picture?> watchPicture(
         db.pictures.id.equals(pictureId) &
             db.pictures.customerId.equals(customerId) &
             db.pictures.deletedAt.isNull() &
+            (entryId == null
+                ? const Constant(true)
+                : db.pictures.entryId.equals(entryId)) &
             (roomId == null
                 ? const Constant(true)
                 : db.pictures.roomId.equals(roomId) &
@@ -319,6 +324,13 @@ List<Picture> withAfterPicturesBehind(List<Picture> pictures) {
 Stream<List<Picture>> watchPicturesOfRoom(WioDatabase db, String roomId) =>
     (db.select(db.pictures)
           ..where((p) => p.roomId.equals(roomId) & p.deletedAt.isNull())
+          ..orderBy(_pictureOrder))
+        .watch();
+
+/// Live pictures of entry [entryId], oldest first (entry screen, plan 103).
+Stream<List<Picture>> watchPicturesOfEntry(WioDatabase db, String entryId) =>
+    (db.select(db.pictures)
+          ..where((p) => p.entryId.equals(entryId) & p.deletedAt.isNull())
           ..orderBy(_pictureOrder))
         .watch();
 

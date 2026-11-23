@@ -41,6 +41,9 @@ abstract final class TestIds {
   static const String kiste = '01970000-0000-7000-8000-0000000000e5';
   static const String kisteOhneOrt = '01970000-0000-7000-8000-0000000000e6';
   static const String fremdeKiste = '01970000-0000-7000-8000-0000000000e7';
+  static const String fotoKiste = '01970000-0000-7000-8000-0000000000f7';
+  static const String fotoKisteNachher = '01970000-0000-7000-8000-0000000000f8';
+  static const String notizKiste = '01970000-0000-7000-8000-0000000000d7';
 }
 
 PicturesCompanion _picture(
@@ -48,6 +51,7 @@ PicturesCompanion _picture(
   String sha256,
   String takenAt, {
   String? roomId,
+  String? entryId,
   String? afterOf,
   String? deletedAt,
 }) => PicturesCompanion.insert(
@@ -61,6 +65,7 @@ PicturesCompanion _picture(
   heightPx: 480,
   takenAt: Value<String?>(takenAt),
   roomId: Value<String?>(roomId),
+  entryId: Value<String?>(entryId),
   afterOf: Value<String?>(afterOf),
   revision: const Value<int?>(1),
   deletedAt: Value<String?>(deletedAt),
@@ -516,5 +521,38 @@ Future<void> seedWithHistory(WioDatabase db) async {
         revision: 7,
       ),
     ]);
+  });
+}
+
+/// [seedWithHistory] plus what the entry screen shows (plan 103): a picture
+/// of Kiste Geschirr with an after picture, and a text note about it.
+Future<void> seedWithEntryContent(WioDatabase db) async {
+  await seedWithHistory(db);
+  await db.batch((b) {
+    b.insertAll(db.pictures, <PicturesCompanion>[
+      _picture(
+        TestIds.fotoKiste,
+        DemoFiles.kellerRegal,
+        '2026-11-19T08:20:00.000Z',
+        entryId: TestIds.kiste,
+      ),
+      _picture(
+        TestIds.fotoKisteNachher,
+        DemoFiles.flurKartons,
+        '2026-11-19T09:20:00.000Z',
+        entryId: TestIds.kiste,
+        afterOf: TestIds.fotoKiste,
+      ),
+    ]);
+    b.insert(
+      db.notes,
+      _note(
+        TestIds.notizKiste,
+        'entry',
+        TestIds.kiste,
+        text: 'Gläser einzeln in Zeitungspapier.',
+        createdAt: '2026-11-19T08:25:00.000Z',
+      ),
+    );
   });
 }

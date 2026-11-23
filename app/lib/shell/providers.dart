@@ -116,12 +116,13 @@ final afterPicturesProvider =
       ),
     );
 
-/// One picture of a customer, optionally checked to be in a room; null
+/// One picture of a customer, optionally checked to be in a room or an
+/// entry; null
 /// when it does not exist (D-259).
 final pictureProvider =
     StreamProvider.family<
       Picture?,
-      ({String customerId, String? roomId, String pictureId})
+      ({String customerId, String? roomId, String? entryId, String pictureId})
     >(
       retry: _noRetry,
       (ref, key) => watchPicture(
@@ -129,8 +130,15 @@ final pictureProvider =
         key.customerId,
         key.pictureId,
         roomId: key.roomId,
+        entryId: key.entryId,
       ),
     );
+
+/// Live pictures of one entry, oldest first (plan 103).
+final entryPicturesProvider = StreamProvider.family<List<Picture>, String>(
+  retry: _noRetry,
+  (ref, entryId) => watchPicturesOfEntry(ref.watch(databaseProvider), entryId),
+);
 
 /// Live entry [id]; null when it does not exist or is deleted.
 final entryProvider = StreamProvider.family<Entry?, String>(

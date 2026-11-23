@@ -4,14 +4,13 @@ import '../auth/sign_in_screen.dart';
 import '../camera/camera_screen.dart';
 import '../customers/customer_screen.dart';
 import '../jobs/job_list_screen.dart';
-import '../notes/note_screen.dart';
 import '../pictures/picture_screen.dart';
 import '../planning/place_routes.dart';
 import '../rooms/room_screen.dart';
 import '../scan/scan_screen.dart';
 import '../sync/rejected_screen.dart';
 import '../update/update_required_screen.dart';
-import '../voice/voice_screen.dart';
+import 'task_routes.dart';
 
 /// Path of the sign-in screen (D-126).
 const String signInLocation = '/anmelden';
@@ -61,8 +60,8 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                       roomId: state.pathParameters['roomId'],
                     ),
                   ),
-                  _voiceRoute(),
-                  ..._notesRoutes(),
+                  voiceRoute(),
+                  ...notesRoutes(),
                   // "+ Eintrag" from the room (D-468).
                   GoRoute(
                     path: 'eintrag',
@@ -89,8 +88,8 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                           afterOf: state.pathParameters['pictureId'],
                         ),
                       ),
-                      _voiceRoute(),
-                      ..._notesRoutes(),
+                      voiceRoute(),
+                      ...notesRoutes(),
                     ],
                   ),
                 ],
@@ -109,8 +108,8 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                       afterOf: state.pathParameters['pictureId'],
                     ),
                   ),
-                  _voiceRoute(),
-                  ..._notesRoutes(),
+                  voiceRoute(),
+                  ...notesRoutes(),
                 ],
               ),
               // An entry and its place pickers (D-451).
@@ -128,8 +127,8 @@ GoRouter buildRouter({String initialLocation = '/'}) {
                   customerId: state.pathParameters['customerId']!,
                 ),
               ),
-              _voiceRoute(),
-              ..._notesRoutes(),
+              voiceRoute(),
+              ...notesRoutes(),
             ],
           ),
         ],
@@ -137,37 +136,3 @@ GoRouter buildRouter({String initialLocation = '/'}) {
     ],
   );
 }
-
-/// The voice note under a customer, room or picture: part of that task, not
-/// a level of its own (D-295, as D-271). Its subject is the picture, else
-/// the room, else the customer.
-GoRoute _voiceRoute() => GoRoute(
-  path: 'sprechen',
-  builder: (context, state) => VoiceScreen(
-    customerId: state.pathParameters['customerId']!,
-    roomId: state.pathParameters['roomId'],
-    pictureId: state.pathParameters['pictureId'],
-  ),
-);
-
-/// The note screens under a customer, room or picture: a new text note and
-/// one note, part of that task (D-299, as D-271).
-List<GoRoute> _notesRoutes() => <GoRoute>[
-  GoRoute(
-    path: 'notizen/neu',
-    builder: (context, state) => NoteScreen(
-      customerId: state.pathParameters['customerId']!,
-      roomId: state.pathParameters['roomId'],
-      pictureId: state.pathParameters['pictureId'],
-    ),
-  ),
-  GoRoute(
-    path: 'notizen/:noteId',
-    builder: (context, state) => NoteScreen(
-      customerId: state.pathParameters['customerId']!,
-      roomId: state.pathParameters['roomId'],
-      pictureId: state.pathParameters['pictureId'],
-      noteId: state.pathParameters['noteId'],
-    ),
-  ),
-];

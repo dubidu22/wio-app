@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../data/database.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
 import '../notes/notes_section.dart';
+import '../planning/place_screen.dart' show entryLocation;
+import '../planning/place_words.dart';
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -27,12 +30,17 @@ class VoiceScreen extends ConsumerStatefulWidget {
   const VoiceScreen({
     required this.customerId,
     this.roomId,
+    this.entryId,
     this.pictureId,
     super.key,
   });
 
   final String customerId;
   final String? roomId;
+
+  /// The entry the note is about, or the entry the picture was opened
+  /// from (plan 103).
+  final String? entryId;
   final String? pictureId;
 
   @override
@@ -48,6 +56,7 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
   late final VoiceTarget _target = (
     customerId: widget.customerId,
     roomId: widget.roomId,
+    entryId: widget.entryId,
     pictureId: widget.pictureId,
   );
 
@@ -223,7 +232,12 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
     }
     final c = '/customers/${widget.customerId}';
     final room = widget.roomId;
-    final base = room == null ? c : '$c/rooms/$room';
+    final entry = widget.entryId;
+    final base = entry != null
+        ? entryLocation(widget.customerId, entry)
+        : room == null
+        ? c
+        : '$c/rooms/$room';
     final picture = widget.pictureId;
     context.go(picture == null ? base : '$base/pictures/$picture');
   }
@@ -361,6 +375,13 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
 
   String _title(AppLocalizations l10n) {
     if (widget.pictureId != null) return l10n.voicePictureTitle;
+    final entry = widget.entryId;
+    if (entry != null) {
+      return switch (ref.watch(entryProvider(entry))) {
+        AsyncData(value: final Entry e) => entryName(l10n, e),
+        _ => '',
+      };
+    }
     final room = widget.roomId;
     if (room != null) {
       final view = ref.watch(

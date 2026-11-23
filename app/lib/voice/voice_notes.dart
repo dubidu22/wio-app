@@ -5,9 +5,15 @@ import '../data/database.dart';
 import '../data/media_writer.dart';
 import 'm4a_clean.dart';
 
-/// What a voice note is about (D-295): a picture, else a room, else the
-/// customer (the customer screen is the job's screen).
-typedef VoiceTarget = ({String customerId, String? roomId, String? pictureId});
+/// What a voice note is about (D-295): a picture, else an entry (plan 103),
+/// else a room, else the customer (the customer screen is the job's
+/// screen). A [roomId] never comes with an [entryId].
+typedef VoiceTarget = ({
+  String customerId,
+  String? roomId,
+  String? entryId,
+  String? pictureId,
+});
 
 /// The longest voice note; it then stops and saves by itself (D-292).
 const Duration voiceNoteLimit = Duration(minutes: 10);
@@ -19,6 +25,8 @@ const Duration voiceNoteMinimum = Duration(milliseconds: 500);
 ({String type, String id}) voiceSubject(VoiceTarget target) {
   final picture = target.pictureId;
   if (picture != null) return (type: 'picture', id: picture);
+  final entry = target.entryId;
+  if (entry != null) return (type: 'entry', id: entry);
   final room = target.roomId;
   if (room != null) return (type: 'room', id: room);
   return (type: 'customer', id: target.customerId);

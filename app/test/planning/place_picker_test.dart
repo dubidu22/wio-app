@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/customers/customer_screen.dart';
 import 'package:wio_app/data/database.dart';
+import 'package:wio_app/entries/entry_screen.dart';
 import 'package:wio_app/planning/place_screen.dart';
 import 'package:wio_app/planning/spot_screen.dart';
 
@@ -77,8 +78,8 @@ void main() {
     });
     final entry = await _entry(db, TestIds.kisteOhneOrt);
     expect(entry.roomId, TestIds.keller);
-    // Back to the entry, which shows the customer until #103.
-    expect(find.byType(CustomerScreen), findsOneWidget);
+    // Back to the entry.
+    expect(find.byType(EntryScreen), findsOneWidget);
   });
 
   testWidgets('Boden where the entry already lies writes nothing', (
@@ -95,7 +96,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(await _outbox(db), isEmpty);
-    expect(find.byType(CustomerScreen), findsOneWidget);
+    expect(find.byType(EntryScreen), findsOneWidget);
   });
 
   testWidgets('Nicht abgelegt: one move_entry with all fields null', (
@@ -248,10 +249,9 @@ void main() {
     expect(find.text('Boden'), findsNothing);
   });
 
-  testWidgets("the entry's own address shows the customer until #103", (
-    tester,
-  ) async {
+  testWidgets("the entry's own address shows the entry screen", (tester) async {
     await pumpWioApp(tester, db: db, location: '$_base/${TestIds.kiste}');
-    expect(find.byType(CustomerScreen), findsOneWidget);
+    expect(find.byType(EntryScreen), findsOneWidget);
+    expect(find.byType(CustomerScreen), findsNothing);
   });
 }
