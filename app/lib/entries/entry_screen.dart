@@ -38,9 +38,9 @@ class EntryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     // The entry's own live row gives name, code, place and target. The
-    // place picker's query (placeChoicesProvider) only names the rooms: it
-    // is not restarted after another screen was open on top of this one, so
-    // it must not carry the entry's fields (found by the plan 103 tests).
+    // place choices only name the rooms here. They once missed changes made
+    // on the screens above this one (issue 115, fixed in watchReads); the
+    // entry's own row stays the source of the entry's fields.
     final entry = ref.watch(entryProvider(entryId));
     final choices = ref.watch(
       placeChoicesProvider((customerId: customerId, entryId: entryId)),

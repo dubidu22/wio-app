@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../data/database.dart';
 import '../data/entry_writer.dart';
+import '../data/watch_reads.dart';
 
 /// One room the picker offers (plan 107).
 class RoomChoice {
@@ -72,13 +73,12 @@ Stream<PlaceChoices?> watchPlaceChoices(
   WioDatabase db,
   String customerId,
   String entryId,
-) => db
-    .customSelect(
-      'SELECT 1',
-      readsFrom: <TableInfo<Table, Object?>>{db.entries, db.sites, db.rooms},
-    )
-    .watch()
-    .asyncMap((_) => placeChoices(db, customerId, entryId));
+) => watchReads<PlaceChoices?>(
+  db,
+  name: 'place_choices',
+  tables: <TableInfo<Table, Object?>>{db.entries, db.sites, db.rooms},
+  read: () => placeChoices(db, customerId, entryId),
+);
 
 /// One read of [watchPlaceChoices].
 Future<PlaceChoices?> placeChoices(
