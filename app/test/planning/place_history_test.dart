@@ -11,7 +11,9 @@ import 'package:wio_app/data/entry_queries.dart';
 import 'package:wio_app/data/entry_writer.dart';
 import 'package:wio_app/data/local_writer.dart';
 import 'package:wio_app/l10n/app_localizations_de.dart';
+import 'package:wio_app/planning/place_choices.dart';
 import 'package:wio_app/planning/place_history.dart';
+import 'package:wio_app/planning/place_providers.dart';
 import 'package:wio_app/shell/providers.dart';
 
 import '../support/pump.dart';
@@ -22,7 +24,9 @@ Future<void> _pumpSection(
   WidgetTester tester,
   WioDatabase db, {
   String entryId = TestIds.kiste,
+  String customerId = TestIds.familieBeispiel,
   DateTime? now,
+  List<Override> overrides = const <Override>[],
 }) async {
   // Drift's stream timers must finish inside the test (as pumpWioApp).
   addTearDown(() async {
@@ -35,15 +39,13 @@ Future<void> _pumpSection(
       overrides: <Override>[
         databaseProvider.overrideWithValue(db),
         clockProvider.overrideWithValue(() => now ?? testNow),
+        ...overrides,
       ],
       child: Scaffold(
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
-            PlaceHistorySection(
-              customerId: TestIds.familieBeispiel,
-              entryId: entryId,
-            ),
+            PlaceHistorySection(customerId: customerId, entryId: entryId),
           ],
         ),
       ),
@@ -210,6 +212,31 @@ void main() {
       expect(find.text('Verlauf'), findsOneWidget);
       expect(find.text('Noch kein Verlauf.'), findsOneWidget);
       expect(rows(tester), isEmpty);
+    });
+
+    testWidgets('rooms that cannot be read: load-failed hint, no rows', (
+      tester,
+    ) async {
+      await _pumpSection(
+        tester,
+        db,
+        overrides: <Override>[
+          placeChoicesProvider((
+            customerId: TestIds.familieBeispiel,
+            entryId: TestIds.kiste,
+          )).overrideWith((ref) => Stream<PlaceChoices?>.error('broken')),
+        ],
+      );
+      expect(find.text(l10n.loadFailed), findsOneWidget);
+      expect(find.text('Raum gelöscht'), findsNothing);
+      expect(rows(tester), isEmpty);
+    });
+
+    testWidgets("another customer's entry shows no rows", (tester) async {
+      await _pumpSection(tester, db, customerId: TestIds.frauMuster);
+      expect(find.text('Verlauf'), findsOneWidget);
+      expect(rows(tester), isEmpty);
+      expect(find.text('Noch kein Verlauf.'), findsNothing);
     });
 
     testWidgets('read only: nothing to tap (D-54)', (tester) async {

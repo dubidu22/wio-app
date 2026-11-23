@@ -5,6 +5,7 @@ import '../data/entry_queries.dart';
 import '../l10n/app_localizations.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
+import 'place_choices.dart';
 import 'place_providers.dart';
 import 'place_words.dart';
 
@@ -52,53 +53,68 @@ class PlaceHistorySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final steps = ref.watch(placeHistoryProvider(entryId));
-    final choices = ref
-        .watch(placeChoicesProvider((customerId: customerId, entryId: entryId)))
-        .value;
+    final choices = ref.watch(
+      placeChoicesProvider((customerId: customerId, entryId: entryId)),
+    );
     final now = ref.watch(clockProvider)();
-    bool isLive(String id) => choices?.room(id) != null;
-    String? nameOf(String id) => choices?.room(id)?.name;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         SectionHeading(l10n.placeHistoryTitle),
-        switch (steps) {
-          AsyncData(value: final List<PlaceStep> list) =>
-            list.isEmpty
-                ? HintText(l10n.placeHistoryEmpty)
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      for (final step in list)
-                        _StepRow(
-                          from: placeWords(
-                            l10n,
-                            step.from,
-                            isLiveRoom: isLive,
-                            roomName: nameOf,
-                          ),
-                          to: placeWords(
-                            l10n,
-                            step.to,
-                            isLiveRoom: isLive,
-                            roomName: nameOf,
-                          ),
-                          when: placeStepTime(l10n, step, now),
-                          spoken: placeStepSpoken(
-                            l10n,
-                            step,
-                            now,
-                            isLiveRoom: isLive,
-                            roomName: nameOf,
-                          ),
-                        ),
-                    ],
-                  ),
-          AsyncError() => HintText(l10n.loadFailed),
+        // Rows only when both the history and the entry's rooms are known:
+        // without the rooms every room would read "Raum gelöscht", and an
+        // entry of another customer shows nothing (review of PR 112, M1).
+        switch ((steps, choices)) {
+          (AsyncError(), _) || (_, AsyncError()) => HintText(l10n.loadFailed),
+          (
+            AsyncData(value: final List<PlaceStep> list),
+            AsyncData(value: final PlaceChoices found?),
+          ) =>
+            _rows(l10n, list, found, now),
           _ => const SizedBox.shrink(),
         },
       ],
     );
+  }
+
+  Widget _rows(
+    AppLocalizations l10n,
+    List<PlaceStep> list,
+    PlaceChoices choices,
+    DateTime now,
+  ) {
+    bool isLive(String id) => choices.room(id) != null;
+    String? nameOf(String id) => choices.room(id)?.name;
+    return list.isEmpty
+        ? HintText(l10n.placeHistoryEmpty)
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              for (final step in list)
+                _StepRow(
+                  from: placeWords(
+                    l10n,
+                    step.from,
+                    isLiveRoom: isLive,
+                    roomName: nameOf,
+                  ),
+                  to: placeWords(
+                    l10n,
+                    step.to,
+                    isLiveRoom: isLive,
+                    roomName: nameOf,
+                  ),
+                  when: placeStepTime(l10n, step, now),
+                  spoken: placeStepSpoken(
+                    l10n,
+                    step,
+                    now,
+                    isLiveRoom: isLive,
+                    roomName: nameOf,
+                  ),
+                ),
+            ],
+          );
   }
 }
 
