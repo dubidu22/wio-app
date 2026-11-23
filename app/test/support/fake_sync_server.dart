@@ -64,6 +64,9 @@ class FakeSyncServer {
   Random? random;
   double lossRate = 0;
 
+  /// The `since` of every pull that reached the server, in order.
+  final List<int> pullSince = <int>[];
+
   /// Sizes of the push pages that reached the server, in order.
   final List<int> pushPages = <int>[];
 
@@ -486,6 +489,7 @@ class FakeSyncServer {
 
   http.Response _pull(http.Request request) {
     final since = int.parse(request.url.queryParameters['since']!);
+    pullSince.add(since);
     final limit = int.parse(request.url.queryParameters['limit'] ?? '500');
     final countdown = resyncOnPull;
     if (countdown != null) resyncOnPull = countdown - 1;
