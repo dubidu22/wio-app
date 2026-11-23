@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 
 import 'database.dart';
 import 'entry_writer.dart';
+import 'watch_reads.dart';
 
 /// One step of an entry's place history (D-54, D-440).
 class PlaceStep {
@@ -60,17 +61,17 @@ final List<OrderClauseGenerator<$EntriesTable>> _entryOrder =
 /// The place history of entry [entryId], newest first (D-440): the
 /// server's rows, then one pending step per unsent `move_entry`, "from"
 /// being the place before it (server copy, then earlier unsent moves).
-Stream<List<PlaceStep>> watchPlaceHistory(WioDatabase db, String entryId) => db
-    .customSelect(
-      'SELECT 1',
-      readsFrom: <TableInfo<Table, Object?>>{
+Stream<List<PlaceStep>> watchPlaceHistory(WioDatabase db, String entryId) =>
+    watchReads<List<PlaceStep>>(
+      db,
+      name: 'place_history',
+      tables: <TableInfo<Table, Object?>>{
         db.placeHistory,
         db.outbox,
         db.serverRecords,
       },
-    )
-    .watch()
-    .asyncMap((_) => placeHistory(db, entryId));
+      read: () => placeHistory(db, entryId),
+    );
 
 /// One read of [watchPlaceHistory].
 Future<List<PlaceStep>> placeHistory(WioDatabase db, String entryId) async {

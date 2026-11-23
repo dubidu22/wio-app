@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'database.dart';
+import 'watch_reads.dart';
 
 /// One row of the job list.
 class JobListItem {
@@ -124,20 +125,18 @@ Stream<JobList> watchJobList(WioDatabase db, String today) {
 
 /// Customer [customerId] with its live sites and rooms, or null when the
 /// customer does not exist or is tombstoned.
-Stream<CustomerView?> watchCustomer(WioDatabase db, String customerId) {
-  return db
-      .customSelect(
-        'SELECT 1',
-        readsFrom: <TableInfo<Table, Object?>>{
-          db.customers,
-          db.sites,
-          db.rooms,
-          db.pictures,
-        },
-      )
-      .watch()
-      .asyncMap((_) => _loadCustomer(db, customerId));
-}
+Stream<CustomerView?> watchCustomer(WioDatabase db, String customerId) =>
+    watchReads<CustomerView?>(
+      db,
+      name: 'customer_view',
+      tables: <TableInfo<Table, Object?>>{
+        db.customers,
+        db.sites,
+        db.rooms,
+        db.pictures,
+      },
+      read: () => _loadCustomer(db, customerId),
+    );
 
 Future<CustomerView?> _loadCustomer(WioDatabase db, String customerId) async {
   final customer =
