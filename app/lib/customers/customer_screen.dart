@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../camera/take_pictures_button.dart';
 import '../data/database.dart';
 import '../data/queries.dart';
+import '../entries/entry_list.dart';
 import '../l10n/app_localizations.dart';
 import '../notes/notes_section.dart';
 import '../pictures/picture_tile.dart';
@@ -18,8 +19,8 @@ import '../shell/providers.dart';
 /// the customer's pictures without a room; the main button "Fotos" takes
 /// such pictures (Q3, D-258, D-271), "Sprechen" a voice note about the
 /// customer (D-295), listed under "Notizen" (D-298). "Einträge" has
-/// **+ Eintrag** (D-465); the list of entries comes with #105. "Tag
-/// abschließen" comes in M5 and then takes the main place.
+/// **+ Eintrag** (D-465) and the customer's entries, not placed ones first
+/// (plan 105). "Tag abschließen" comes in M5 and then takes the main place.
 class CustomerScreen extends ConsumerWidget {
   const CustomerScreen({required this.customerId, super.key});
 
@@ -76,6 +77,7 @@ class _CustomerBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final textTheme = Theme.of(context).textTheme;
     final pictures = ref.watch(customerPicturesProvider(view.id));
+    final entries = ref.watch(customerEntriesProvider(view.id));
     return ContentWidth(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -101,8 +103,15 @@ class _CustomerBody extends ConsumerWidget {
               _RoomButton(customerId: view.id, room: room),
           ],
           SectionHeading(l10n.customerEntries),
-          HintText(l10n.customerEntriesEmpty),
+          // Above the list, so it stays in reach with any number of entries
+          // (plan 105, P4).
           NewEntryButton(from: (customerId: view.id, roomId: null)),
+          ...entryListChildren(
+            context,
+            entries: entries,
+            customerId: view.id,
+            emptyText: l10n.customerEntriesEmpty,
+          ),
           SectionHeading(l10n.customerPictures),
           switch (pictures) {
             AsyncData(value: final List<Picture> list) when list.isEmpty =>

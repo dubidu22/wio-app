@@ -140,6 +140,20 @@ final entryPicturesProvider = StreamProvider.family<List<Picture>, String>(
   (ref, entryId) => watchPicturesOfEntry(ref.watch(databaseProvider), entryId),
 );
 
+/// The customer's live entries with first picture and labels, not placed
+/// ones first (plan 105).
+final customerEntriesProvider = StreamProvider.family<EntryList, String>(
+  retry: _noRetry,
+  (ref, customerId) =>
+      watchEntryList(ref.watch(databaseProvider), customerId: customerId),
+);
+
+/// The live entries in one room, as [customerEntriesProvider] (plan 105).
+final roomEntriesProvider = StreamProvider.family<EntryList, String>(
+  retry: _noRetry,
+  (ref, roomId) => watchEntryList(ref.watch(databaseProvider), roomId: roomId),
+);
+
 /// Live entry [id]; null when it does not exist or is deleted.
 final entryProvider = StreamProvider.family<Entry?, String>(
   retry: _noRetry,

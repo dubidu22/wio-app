@@ -282,7 +282,7 @@ Stream<List<Picture>> watchAfterPictures(
                 p.customerId.equals(customerId) &
                 p.deletedAt.isNull(),
           )
-          ..orderBy(_pictureOrder))
+          ..orderBy(pictureOrder))
         .watch();
 
 /// [pictures] (oldest first) with each after picture moved right behind
@@ -323,14 +323,14 @@ List<Picture> withAfterPicturesBehind(List<Picture> pictures) {
 Stream<List<Picture>> watchPicturesOfRoom(WioDatabase db, String roomId) =>
     (db.select(db.pictures)
           ..where((p) => p.roomId.equals(roomId) & p.deletedAt.isNull())
-          ..orderBy(_pictureOrder))
+          ..orderBy(pictureOrder))
         .watch();
 
 /// Live pictures of entry [entryId], oldest first (entry screen, plan 103).
 Stream<List<Picture>> watchPicturesOfEntry(WioDatabase db, String entryId) =>
     (db.select(db.pictures)
           ..where((p) => p.entryId.equals(entryId) & p.deletedAt.isNull())
-          ..orderBy(_pictureOrder))
+          ..orderBy(pictureOrder))
         .watch();
 
 /// Live pictures of customer [customerId] that belong to no room and no
@@ -347,7 +347,7 @@ Stream<List<Picture>> watchPicturesOfCustomerWithoutRoom(
                 p.entryId.isNull() &
                 p.deletedAt.isNull(),
           )
-          ..orderBy(_pictureOrder))
+          ..orderBy(pictureOrder))
         .watch();
 
 /// Live notes about [subjectId] of [subjectType], oldest first; notes not
@@ -370,7 +370,8 @@ Stream<List<Note>> watchNotesOf(
           ]))
         .watch();
 
-final List<OrderClauseGenerator<$PicturesTable>> _pictureOrder =
+/// Pictures oldest first: taken, then created, then id; unknown times last.
+final List<OrderClauseGenerator<$PicturesTable>> pictureOrder =
     <OrderClauseGenerator<$PicturesTable>>[
       (p) => OrderingTerm.asc(p.takenAt, nulls: NullsOrder.last),
       (p) => OrderingTerm.asc(p.createdAt, nulls: NullsOrder.last),

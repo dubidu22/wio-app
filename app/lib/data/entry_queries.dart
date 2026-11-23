@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 
 import 'database.dart';
 import 'entry_writer.dart';
+import 'queries.dart' show pictureOrder, withAfterPicturesBehind;
 import 'watch_reads.dart';
 
 /// One step of an entry's place history (D-54, D-440).
@@ -315,3 +316,158 @@ Stream<List<PropertyKey>> watchPropertyKeys(WioDatabase db) =>
             (k) => OrderingTerm.asc(k.id),
           ]))
         .watch();
+
+/// One entry of a list (plan 105): the entry, its first picture and the
+/// names of its labels.
+class EntryListRow {
+  const EntryListRow({
+    required this.entry,
+    required this.picture,
+    required this.labels,
+  });
+
+  final Entry entry;
+
+  /// The first picture as the entry screen shows it (after pictures right
+  /// behind their before picture, D-281); null when it has none.
+  final Picture? picture;
+
+  /// Names of the live labels on the entry, by name.
+  final List<String> labels;
+
+  /// The entry has no room (plan 105, P2).
+  bool get unplaced => Place.of(entry).roomId == null;
+}
+
+/// The entries of a customer or of a room with what a list row shows (plan
+/// 105): entries without a room first, then the placed ones, each group
+/// newest first.
+class EntryList {
+  const EntryList({required this.rows, required this.rooms});
+
+  final List<EntryListRow> rows;
+
+  /// Live rooms the entries name: id to name (null for an unnamed room).
+  final Map<String, String?> rooms;
+
+  /// How many entries have no room; they are the first [unplaced] rows.
+  int get unplaced => rows.where((r) => r.unplaced).length;
+
+  bool isLiveRoom(String roomId) => rooms.containsKey(roomId);
+  String? roomName(String roomId) => rooms[roomId];
+}
+
+/// The live entries of customer [customerId], or of room [roomId] (give
+/// exactly one), as a list read in bulk (plan 105, P5). One watcher serves
+/// both: [watchReads] only needs the name to say which tables it hears, and
+/// they are the same for both.
+Stream<EntryList> watchEntryList(
+  WioDatabase db, {
+  String? customerId,
+  String? roomId,
+}) => watchReads<EntryList>(
+  db,
+  name: 'entry_list',
+  tables: <TableInfo<Table, Object?>>{
+    db.entries,
+    db.pictures,
+    db.labels,
+    db.entityLabels,
+    db.rooms,
+  },
+  read: () => entryList(db, customerId: customerId, roomId: roomId),
+);
+
+/// One read of [watchEntryList]: four queries however many entries.
+Future<EntryList> entryList(
+  WioDatabase db, {
+  String? customerId,
+  String? roomId,
+}) async {
+  assert((customerId == null) != (roomId == null), 'one scope, not both');
+  final entries =
+      await (db.select(db.entries)..where(
+            (e) =>
+                e.deletedAt.isNull() &
+                (customerId != null
+                    ? e.customerId.equals(customerId)
+                    : e.roomId.equals(roomId!)),
+          ))
+          .get();
+  // Newest first; an entry the server has not confirmed yet (no created_at)
+  // is the newest, ties go to the newer id (UUIDv7), as plan 104.
+  String stamp(Entry e) => e.createdAt ?? _pendingStamp;
+  entries.sort((a, b) {
+    final byTime = stamp(b).compareTo(stamp(a));
+    return byTime != 0 ? byTime : b.id.compareTo(a.id);
+  });
+  if (entries.isEmpty) {
+    return const EntryList(rows: <EntryListRow>[], rooms: <String, String?>{});
+  }
+  final ids = <String>[for (final e in entries) e.id];
+
+  final pictures =
+      await (db.select(db.pictures)
+            ..where((p) => p.entryId.isIn(ids) & p.deletedAt.isNull())
+            ..orderBy(pictureOrder))
+          .get();
+  final picturesOf = <String, List<Picture>>{};
+  for (final p in pictures) {
+    picturesOf.putIfAbsent(p.entryId!, () => <Picture>[]).add(p);
+  }
+
+  final links =
+      await (db.select(db.entityLabels).join(<Join<HasResultSet, Object?>>[
+              innerJoin(
+                db.labels,
+                db.labels.id.equalsExp(db.entityLabels.labelId),
+              ),
+            ])
+            ..where(
+              db.entityLabels.entityType.equals('entry') &
+                  db.entityLabels.entityId.isIn(ids) &
+                  db.entityLabels.deletedAt.isNull() &
+                  db.labels.deletedAt.isNull(),
+            )
+            ..orderBy(<OrderingTerm>[
+              OrderingTerm.asc(db.labels.name.lower()),
+              OrderingTerm.asc(db.labels.id),
+            ]))
+          .get();
+  final labelsOf = <String, List<String>>{};
+  for (final row in links) {
+    labelsOf
+        .putIfAbsent(row.readTable(db.entityLabels).entityId, () => <String>[])
+        .add(row.readTable(db.labels).name);
+  }
+
+  final roomIds = <String>{
+    for (final e in entries)
+      if (Place.of(e).roomId != null) Place.of(e).roomId!,
+  };
+  final rooms = roomIds.isEmpty
+      ? const <Room>[]
+      : await (db.select(
+          db.rooms,
+        )..where((r) => r.id.isIn(roomIds) & r.deletedAt.isNull())).get();
+
+  final rows = <EntryListRow>[
+    for (final e in entries)
+      EntryListRow(
+        entry: e,
+        picture: switch (picturesOf[e.id]) {
+          final List<Picture> list => withAfterPicturesBehind(list).first,
+          null => null,
+        },
+        labels: labelsOf[e.id] ?? const <String>[],
+      ),
+  ];
+  // A stable partition keeps the newest-first order inside both groups.
+  return EntryList(
+    rows: <EntryListRow>[
+      ...rows.where((r) => r.unplaced),
+      ...rows.where((r) => !r.unplaced),
+    ],
+    rooms: <String, String?>{for (final r in rooms) r.id: r.name},
+  );
+}
