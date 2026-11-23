@@ -1174,5 +1174,29 @@
         "isCustomDateFormat": "true"
       }
     }
-  }
+  },
+  "entryTitle": "Eintrag",
+  "@entryTitle": {"description": "Title of the entry screen (level 3, plan 103)."},
+  "entryCode": "Code: {code}",
+  "@entryCode": {"description": "The entry's code as text under its name (plan 103).", "placeholders": {"code": {"type": "String"}}},
+  "entryChangeTitle": "Titel ändern",
+  "@entryChangeTitle": {"description": "Button on the entry screen and title of the title screen: the entry's optional title (plan 103, D-23 rule 4)."},
+  "entryTitleField": "Titel",
+  "@entryTitleField": {"description": "Label of the optional title field; an empty field clears the title (plan 103)."},
+  "entryDone": "Fertig",
+  "@entryDone": {"description": "Top-left button of the title screen, in the place of Zurück: saves and goes back (plan 103)."},
+  "entryTitleNotSaved": "Der Titel konnte nicht gespeichert werden.",
+  "@entryTitleNotSaved": {"description": "Note when saving the title failed (plan 103)."},
+  "entryPictures": "Fotos",
+  "@entryPictures": {"description": "Heading above the entry's pictures (plan 103)."},
+  "entryPicturesEmpty": "Noch keine Fotos.",
+  "@entryPicturesEmpty": {"description": "Hint until the entry has pictures (plan 103, D-75)."},
+  "entryPlaceHeading": "Ort",
+  "@entryPlaceHeading": {"description": "Heading above the entry's place and target on the entry screen (plan 103)."},
+  "entryDelete": "Löschen",
+  "@entryDelete": {"description": "Button on the entry screen: deletes the entry at once, with Rückgängig for 8 seconds (plan 103, UX rule 9)."},
+  "entryDeleted": "Eintrag gelöscht.",
+  "@entryDeleted": {"description": "Note after Löschen on the entry screen, with Rückgängig for 8 seconds (plan 103)."},
+  "entryUndoFailed": "Rückgängig nicht möglich: Der Code ist schon vergeben.",
+  "@entryUndoFailed": {"description": "Note when undoing the delete fails because another live entry took the code (plan 103, D-51)."}
 }

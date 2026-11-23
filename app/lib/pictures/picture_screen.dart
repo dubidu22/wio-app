@@ -10,6 +10,7 @@ import '../media/local_picture.dart';
 import '../media/media_presence.dart';
 import '../media/media_store.dart';
 import '../notes/notes_section.dart';
+import '../planning/place_screen.dart' show entryLocation;
 import '../shell/back_button.dart';
 import '../shell/layout.dart';
 import '../shell/providers.dart';
@@ -37,6 +38,7 @@ class PictureScreen extends ConsumerWidget {
     required this.customerId,
     required this.pictureId,
     this.roomId,
+    this.entryId,
     super.key,
   });
 
@@ -44,10 +46,15 @@ class PictureScreen extends ConsumerWidget {
 
   /// The room it was opened from; null for a picture without a room.
   final String? roomId;
+
+  /// The entry it was opened from (plan 103); null otherwise.
+  final String? entryId;
   final String pictureId;
 
-  /// The room's or customer's screen this picture belongs to.
-  String get _base => roomId == null
+  /// The entry's, room's or customer's screen this picture belongs to.
+  String get _base => entryId != null
+      ? entryLocation(customerId, entryId!)
+      : roomId == null
       ? '/customers/$customerId'
       : '/customers/$customerId/rooms/$roomId';
 
@@ -58,6 +65,7 @@ class PictureScreen extends ConsumerWidget {
       pictureProvider((
         customerId: customerId,
         roomId: roomId,
+        entryId: entryId,
         pictureId: pictureId,
       )),
     );
@@ -334,6 +342,7 @@ class _Related extends ConsumerWidget {
             pictureProvider((
               customerId: customerId,
               roomId: null,
+              entryId: null,
               pictureId: beforeId,
             )),
           )

@@ -16,6 +16,7 @@ import 'package:wio_app/camera/capture_files.dart';
 import 'package:wio_app/camera/picture_processor.dart';
 import 'package:wio_app/customers/customer_screen.dart';
 import 'package:wio_app/data/database.dart';
+import 'package:wio_app/entries/entry_screen.dart';
 import 'package:wio_app/media/media_store.dart';
 import 'package:wio_app/pictures/picture_screen.dart';
 import 'package:wio_app/rooms/room_screen.dart';
@@ -381,8 +382,8 @@ void main() {
 
     await tester.tap(find.widgetWithText(TextButton, 'Fertig'));
     await tester.pumpAndSettle();
-    // The entry's own address; until #103 it shows the customer.
-    expect(find.byType(CustomerScreen), findsOneWidget);
+    // The entry's own address: the entry screen (#103).
+    expect(find.byType(EntryScreen), findsOneWidget);
   });
 
   testWidgets('no Fotos button where the app takes no pictures (web)', (

@@ -13,14 +13,16 @@ import 'note_player_platform.dart';
 /// What notes are about on a screen: subject type and id (D-298).
 typedef NoteSubject = ({String type, String id});
 
-/// The subject of a screen under [customerId]: the picture, else the room,
-/// else the customer (as the voice note, D-295).
+/// The subject of a screen under [customerId]: the picture, else the entry
+/// (plan 103), else the room, else the customer (as the voice note, D-295).
 NoteSubject noteSubjectOf({
   required String customerId,
   String? roomId,
+  String? entryId,
   String? pictureId,
 }) {
   if (pictureId != null) return (type: 'picture', id: pictureId);
+  if (entryId != null) return (type: 'entry', id: entryId);
   if (roomId != null) return (type: 'room', id: roomId);
   return (type: 'customer', id: customerId);
 }

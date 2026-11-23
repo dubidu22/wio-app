@@ -189,7 +189,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     if (context.canPop()) {
       context.pop();
     } else if (widget.entryId != null) {
-      context.go(entryLocation(widget.customerId, widget.entryId!));
+      final entry = entryLocation(widget.customerId, widget.entryId!);
+      final before = widget.afterOf;
+      context.go(before == null ? entry : '$entry/pictures/$before');
     } else {
       final room = widget.roomId;
       final base = room == null
@@ -306,6 +308,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
       pictureProvider((
         customerId: widget.customerId,
         roomId: widget.roomId,
+        entryId: widget.entryId,
         pictureId: id,
       )),
     );

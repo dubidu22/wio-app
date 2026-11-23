@@ -11,6 +11,7 @@ import 'package:wio_app/customers/customer_screen.dart';
 import 'package:wio_app/data/database.dart';
 import 'package:wio_app/data/entry_writer.dart';
 import 'package:wio_app/data/local_writer.dart';
+import 'package:wio_app/entries/entry_screen.dart';
 import 'package:wio_app/media/media_store.dart';
 import 'package:wio_app/rooms/room_screen.dart';
 import 'package:wio_app/scan/scan_screen.dart';
@@ -133,8 +134,8 @@ void main() {
 
     await tester.tap(find.widgetWithText(TextButton, 'Fertig'));
     await tester.pumpAndSettle();
-    // The entry's own address; until #103 it shows the customer.
-    expect(find.byType(CustomerScreen), findsOneWidget);
+    // The entry's own address shows the entry screen (#103).
+    expect(find.byType(EntryScreen), findsOneWidget);
   });
 
   testWidgets('from a room, the new entry is placed on its floor '
@@ -209,9 +210,8 @@ void main() {
     expect(await newEntries(), isEmpty);
     expect(await outbox(), isEmpty);
     expect(find.byType(CameraScreen), findsNothing);
-    // The entry's address under its customer; until #103 that customer.
-    expect(find.byType(CustomerScreen), findsOneWidget);
-    expect(find.text('Familie Beispiel'), findsOneWidget);
+    // The entry's address under its customer: the entry screen (#103).
+    expect(find.byType(EntryScreen), findsOneWidget);
     expect(find.byType(RoomScreen), findsNothing);
   });
 
@@ -224,7 +224,8 @@ void main() {
     await read(tester, 'MUSTER-1');
 
     expect(await newEntries(), isEmpty);
-    expect(find.text('Frau Muster'), findsOneWidget);
+    expect(find.byType(EntryScreen), findsOneWidget);
+    expect(find.text('Kiste Muster'), findsOneWidget);
   });
 
   testWidgets('a code over 255 bytes is not taken; scanning goes on (D-469)', (
@@ -322,6 +323,6 @@ void main() {
     final entry = (await newEntries()).single;
     expect(entry.code, isNull);
     expect(entry.roomId, isNull);
-    expect(find.byType(CustomerScreen), findsOneWidget);
+    expect(find.byType(EntryScreen), findsOneWidget);
   });
 }
