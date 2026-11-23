@@ -414,8 +414,11 @@ Future<void> seedUploads(
 /// (Alte Wohnung) with the Wohnzimmer as its target; a second entry of
 /// Familie Beispiel has no place, no target and no title; Frau Muster has
 /// one entry. Typed rows only, as the server sent them (no outbox).
-Future<void> seedWithEntries(WioDatabase db) async {
-  await seedTestData(db);
+Future<void> seedWithEntries(
+  WioDatabase db, {
+  Future<void> Function(WioDatabase db) base = seedTestData,
+}) async {
+  await base(db);
   await db.batch((b) {
     b.insert(
       db.rooms,
@@ -464,8 +467,11 @@ Future<void> seedWithEntries(WioDatabase db) async {
 /// [seedWithEntries] plus the place history of Kiste Geschirr (plan 108):
 /// not placed → Küche, Küche → Wohnzimmer, Wohnzimmer → Küche, newest last
 /// (19, 20 and 21 Nov 2026, UTC). Typed rows only, as the server sent them.
-Future<void> seedWithHistory(WioDatabase db) async {
-  await seedWithEntries(db);
+Future<void> seedWithHistory(
+  WioDatabase db, {
+  Future<void> Function(WioDatabase db) base = seedTestData,
+}) async {
+  await seedWithEntries(db, base: base);
   PlaceHistoryCompanion step(
     String id,
     String movedAt, {
@@ -533,8 +539,11 @@ Future<void> seedWithHistory(WioDatabase db) async {
 
 /// [seedWithHistory] plus what the entry screen shows (plan 103): a picture
 /// of Kiste Geschirr with an after picture, and a text note about it.
-Future<void> seedWithEntryContent(WioDatabase db) async {
-  await seedWithHistory(db);
+Future<void> seedWithEntryContent(
+  WioDatabase db, {
+  Future<void> Function(WioDatabase db) base = seedTestData,
+}) async {
+  await seedWithHistory(db, base: base);
   await db.batch((b) {
     b.insertAll(db.pictures, <PicturesCompanion>[
       _picture(
@@ -569,8 +578,11 @@ Future<void> seedWithEntryContent(WioDatabase db) async {
 /// place, used 09:00) and Küche (never used); keys Gewicht (unit kg, 12 on
 /// Kiste Geschirr, 08:40), Material (text, "Porzellan" on the entry without
 /// place, 09:10) and Farbe (never used). Typed rows, as the server sent them.
-Future<void> seedWithVocabulary(WioDatabase db) async {
-  await seedWithEntryContent(db);
+Future<void> seedWithVocabulary(
+  WioDatabase db, {
+  Future<void> Function(WioDatabase db) base = seedTestData,
+}) async {
+  await seedWithEntryContent(db, base: base);
   EntityLabelsCompanion link(
     String id,
     String label,
@@ -665,3 +677,9 @@ Future<void> seedWithVocabulary(WioDatabase db) async {
     ]);
   });
 }
+
+/// [seedWithVocabulary] over [seedWithNotes] (plan 105): the customer and
+/// room screens with entries (one without a place, one in the Küche with a
+/// picture and a label) next to the room pictures and notes.
+Future<void> seedWithEntryLists(WioDatabase db) =>
+    seedWithVocabulary(db, base: seedWithNotes);

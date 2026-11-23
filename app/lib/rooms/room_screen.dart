@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../camera/take_pictures_button.dart';
 import '../data/database.dart';
 import '../data/queries.dart';
+import '../entries/entry_list.dart';
 import '../l10n/app_localizations.dart';
 import '../notes/notes_section.dart';
 import '../pictures/picture_tile.dart';
@@ -15,7 +16,8 @@ import '../shell/providers.dart';
 /// Level 3: one room with its pictures (KB workflows.md "Take pictures of a
 /// room", D-259). The main button "Fotos" opens the camera (D-258, D-271),
 /// "Sprechen" a voice note about the room (D-295). Its notes are listed
-/// under "Notizen" (D-298).
+/// under "Notizen" (D-298), the entries placed in it under "Einträge in
+/// diesem Raum" (plan 105).
 class RoomScreen extends ConsumerWidget {
   const RoomScreen({required this.customerId, required this.roomId, super.key});
 
@@ -77,6 +79,7 @@ class _RoomBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final textTheme = Theme.of(context).textTheme;
     final pictures = ref.watch(roomPicturesProvider(view.id));
+    final entries = ref.watch(roomEntriesProvider(view.id));
     return ContentWidth(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -90,6 +93,12 @@ class _RoomBody extends ConsumerWidget {
           ),
           SectionHeading(l10n.roomEntries),
           NewEntryButton(from: (customerId: customerId, roomId: view.id)),
+          ...entryListChildren(
+            context,
+            entries: entries,
+            customerId: customerId,
+            emptyText: l10n.roomEntriesEmpty,
+          ),
           SectionHeading(l10n.roomPictures),
           switch (pictures) {
             AsyncData(value: final List<Picture> list) when list.isEmpty =>

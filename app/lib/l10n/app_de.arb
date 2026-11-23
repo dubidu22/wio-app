@@ -81,7 +81,7 @@
   },
   "customerEntriesEmpty": "Noch keine Einträge.",
   "@customerEntriesEmpty": {
-    "description": "Hint until entries exist (D-75)."
+    "description": "Hint on the customer screen while the customer has no entries (D-75)."
   },
   "customerPictures": "Fotos",
   "@customerPictures": {
@@ -1101,6 +1101,28 @@
   "roomEntries": "Einträge in diesem Raum",
   "@roomEntries": {
     "description": "Heading of the room screen's entries section."
+  },
+  "roomEntriesEmpty": "Noch keine Einträge in diesem Raum.",
+  "@roomEntriesEmpty": {
+    "description": "Hint on the room screen while no entry is in the room (plan 105)."
+  },
+  "entryListUnplaced": "{count, plural, =1{1 Eintrag ist noch nicht abgelegt.} other{{count} Einträge sind noch nicht abgelegt.}}",
+  "@entryListUnplaced": {
+    "description": "Plain hint above the customer's entry list: how many entries have no room yet (plan 105, UX rule 7).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "entryListLabels": "Labels: {labels}",
+  "@entryListLabels": {
+    "description": "Third line of an entry in a list: its labels by name, separated by commas (plan 105).",
+    "placeholders": {
+      "labels": {
+        "type": "String"
+      }
+    }
   },
   "scanTitle": "Neuer Eintrag",
   "@scanTitle": {
