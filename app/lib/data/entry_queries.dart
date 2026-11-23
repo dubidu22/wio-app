@@ -214,7 +214,8 @@ const String _pendingStamp = '9999-12-31T23:59:59.999Z';
 /// The workspace's live labels, most recently used first (plan 104, P3): a
 /// label is used when it sits on any subject; the newest link counts, a
 /// link without `created_at` (not confirmed yet) is the newest of all, ties
-/// go to the newer link id (UUIDv7). Labels never used follow, newest
+/// go to the newer link id (UUIDv7). Removed links count too, so a chip
+/// does not jump when its label is taken off. Labels never used follow, newest
 /// first, then by name.
 Stream<List<Label>> watchLabelChoices(WioDatabase db) => db
     .customSelect(

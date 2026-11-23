@@ -1,14 +1,27 @@
 // Labels and properties on the entry screen (plan 104, P1..P8).
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/data/database.dart';
+import 'package:wio_app/data/entry_writer.dart';
+import 'package:wio_app/data/local_writer.dart';
 import 'package:wio_app/entries/entry_screen.dart';
 import 'package:wio_app/entries/label_new_screen.dart';
 import 'package:wio_app/entries/property_screen.dart';
+import 'package:wio_app/shell/providers.dart';
 
 import '../support/pump.dart';
 import '../support/test_data.dart';
 import '../support/ux_guidelines.dart';
+
+/// A writer whose removal of a property value fails.
+class _FailingWriter extends EntryWriter {
+  _FailingWriter(WioDatabase db) : super(db, LocalWriter(db));
+
+  @override
+  Future<void> removeProperty(String linkId) =>
+      Future<void>.error(StateError('no'));
+}
 
 const String _kiste =
     '/customers/${TestIds.familieBeispiel}/entries/${TestIds.kiste}';
@@ -345,6 +358,81 @@ void main() {
       await pump(tester, '$_kiste/eigenschaft/neu');
       expect(find.byType(PropertyScreen), findsOneWidget);
       await expectMeetsUxRules(tester);
+    });
+
+    testWidgets('a number typed for a key without values makes it numeric', (
+      tester,
+    ) async {
+      await pump(tester, '$_kiste/eigenschaft/neu');
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(0), 'Anzahl');
+      await tester.enterText(fields.at(2), '3');
+      await tester.tap(find.text('Fertig'));
+      await tester.pumpAndSettle();
+      final all = await values(tester);
+      final anzahl = (await tester.runAsync(
+        () => db.select(db.propertyKeys).get(),
+      ))!.firstWhere((k) => k.name == 'Anzahl');
+      final value = all.firstWhere((p) => p.keyId == anzahl.id);
+      expect(value.valueNumber, '3');
+      expect(value.valueText, isNull);
+    });
+
+    testWidgets('such a key opens with the number pad next time', (
+      tester,
+    ) async {
+      await pump(tester, '$_kiste/eigenschaft/${TestIds.keyFarbe}');
+      await tester.enterText(find.byType(TextField), '7');
+      await tester.tap(find.text('Fertig'));
+      await tester.pumpAndSettle();
+      await scrollTo(tester, _chip('Farbe: 7'));
+      await tester.tap(_chip('Farbe: 7'));
+      await tester.pumpAndSettle();
+      expect(
+        keyboard(tester),
+        const TextInputType.numberWithOptions(decimal: true, signed: true),
+      );
+    });
+
+    testWidgets('text for a key without values stays text', (tester) async {
+      await pump(tester, '$_kiste/eigenschaft/${TestIds.keyFarbe}');
+      await tester.enterText(find.byType(TextField), 'Rot 3');
+      await tester.tap(find.text('Fertig'));
+      await tester.pumpAndSettle();
+      final red = (await values(tester))
+          .firstWhere((p) => p.keyId == TestIds.keyFarbe);
+      expect(red.valueText, 'Rot 3');
+      expect(red.valueNumber, isNull);
+    });
+
+    testWidgets('typing the name of a number key switches the keyboard', (
+      tester,
+    ) async {
+      await pump(tester, '$_kiste/eigenschaft/neu');
+      final fields = find.byType(TextField);
+      expect(keyboard(tester), TextInputType.text);
+      await tester.enterText(fields.at(0), 'gewicht');
+      await tester.pumpAndSettle();
+      expect(
+        keyboard(tester),
+        const TextInputType.numberWithOptions(decimal: true, signed: true),
+      );
+    });
+
+    testWidgets('a failed Entfernen says so and stays', (tester) async {
+      await pumpWioApp(
+        tester,
+        db: db,
+        location: '$_kiste/eigenschaft/${TestIds.keyGewicht}',
+        overrides: <Override>[
+          entryWriterProvider.overrideWithValue(_FailingWriter(db)),
+        ],
+      );
+      await tester.tap(_button('Entfernen'));
+      await tester.pumpAndSettle();
+      expect(find.text('Nicht gespeichert.'), findsOneWidget);
+      expect(find.byType(PropertyScreen), findsOneWidget);
+      expect((await values(tester)).single.deletedAt, isNull);
     });
   });
 }

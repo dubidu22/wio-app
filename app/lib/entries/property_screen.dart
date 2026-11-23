@@ -64,6 +64,7 @@ class _PropertyScreenState extends ConsumerState<PropertyScreen> {
     super.initState();
     _writer = ref.read(entryWriterProvider);
     _unit.addListener(() => setState(() {}));
+    _name.addListener(() => setState(() {}));
   }
 
   @override
@@ -109,7 +110,14 @@ class _PropertyScreenState extends ConsumerState<PropertyScreen> {
       numeric = twin?.numeric ?? unit.isNotEmpty;
     }
     String? number;
-    if (raw.isNotEmpty && numeric) {
+    if (raw.isNotEmpty &&
+        !numeric &&
+        (choice == null || choice.liveValues == 0)) {
+      // No unit and no value yet: a number typed on the text keyboard is
+      // stored as a number, so the key becomes numeric (D-429, "only
+      // numbers so far"). Other text stays text.
+      number = parseNumber(raw);
+    } else if (raw.isNotEmpty && numeric) {
       number = parseNumber(raw);
       if (number == null) {
         setState(() => _error = _l10n.propertyNumberNeeded);
@@ -173,9 +181,11 @@ class _PropertyScreenState extends ConsumerState<PropertyScreen> {
     final linkId = on.value.id;
     try {
       await writer.removeProperty(linkId);
-    } on Object {
+    } on Object catch (error) {
+      debugPrint('wio entry: property not removed: $error');
       _busy = false;
-      rethrow;
+      messenger.showSnackBar(SnackBar(content: Text(l10n.vocabularyNotSaved)));
+      return;
     }
     router.go(entryLocation(widget.customerId, widget.entryId));
     messenger.showSnackBar(

@@ -22,9 +22,9 @@ import 'entry_properties_section.dart';
 
 /// Level 3: one entry (KB workflows.md, plan 103). Shows its name and code,
 /// **Titel ändern**, its pictures (each opens the picture view under the
-/// entry), its notes, its labels and properties as chips (plan 104), the place with **Ort ändern**, the target with
-/// **Ziel**, the place history **Verlauf** (plan 108) and **Löschen** with
-/// **Rückgängig** (UX rule 9). The main button is **Fotos**, **Sprechen**
+/// entry), its notes, its labels and properties as chips (plan 104), the
+/// place with **Ort ändern**, the target with **Ziel**, the place history
+/// **Verlauf** (plan 108) and **Löschen** with **Rückgängig** (UX rule 9). The main button is **Fotos**, **Sprechen**
 /// sits beside it (D-295).
 class EntryScreen extends ConsumerWidget {
   const EntryScreen({
