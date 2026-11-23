@@ -39,8 +39,14 @@ class FakeQrScanner implements QrScanner {
     ),
   );
 
+  /// When set, [close] waits for it, as the real camera waits for its
+  /// controller to let go (PR 113 M1).
+  Completer<void>? closeGate;
+
   @override
   Future<void> close() async {
+    final gate = closeGate;
+    if (gate != null) await gate.future;
     closed++;
   }
 }

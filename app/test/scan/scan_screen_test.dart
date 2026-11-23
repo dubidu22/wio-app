@@ -1,15 +1,20 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wio_app/camera/camera_screen.dart';
 import 'package:wio_app/camera/capture_camera.dart';
 import 'package:wio_app/customers/customer_screen.dart';
 import 'package:wio_app/data/database.dart';
+import 'package:wio_app/data/entry_writer.dart';
+import 'package:wio_app/data/local_writer.dart';
 import 'package:wio_app/media/media_store.dart';
 import 'package:wio_app/rooms/room_screen.dart';
 import 'package:wio_app/scan/scan_screen.dart';
+import 'package:wio_app/shell/providers.dart';
 
 import '../support/fake_qr_scanner.dart';
 import '../support/pump.dart';
@@ -23,6 +28,21 @@ class _NoMediaStore extends MediaStore {
 
   @override
   bool get supported => false;
+}
+
+/// A writer whose creates fail with an error that is not about a missing
+/// customer or room (PR 113 S1).
+class _BrokenWriter extends EntryWriter {
+  _BrokenWriter(WioDatabase db) : super(db, LocalWriter(db));
+
+  @override
+  Future<String> createEntry({
+    required String workspaceId,
+    String? customerId,
+    String? code,
+    String? title,
+    Place place = Place.none,
+  }) => Future<String>.error(StateError('database is locked'));
 }
 
 Finder _newEntry() => find.widgetWithText(OutlinedButton, '+ Eintrag');
@@ -45,12 +65,16 @@ void main() {
     WidgetTester tester,
     String location, {
     MediaStore? mediaStore,
+    EntryWriter? writer,
   }) => pumpWioApp(
     tester,
     db: db,
     location: location,
     qrScanner: () => scanner,
     mediaStore: mediaStore,
+    overrides: <Override>[
+      if (writer != null) entryWriterProvider.overrideWithValue(writer),
+    ],
   );
 
   Future<List<Entry>> newEntries() =>
@@ -137,6 +161,40 @@ void main() {
     expect(move['room_id'], TestIds.kueche);
     expect(move['floor_x_cm'], isNull);
     expect(find.byType(CameraScreen), findsOneWidget);
+  });
+
+  testWidgets('the photo camera opens only after the scanner let the camera '
+      'go (PR 113 M1)', (tester) async {
+    await pumpAt(tester, '$_customer/eintrag');
+    final gate = Completer<void>();
+    scanner.closeGate = gate;
+    await read(tester, 'WIO-0200');
+
+    expect((await newEntries()).single.code, 'WIO-0200');
+    expect(find.byType(ScanScreen), findsOneWidget);
+    expect(find.byType(CameraScreen), findsNothing);
+    expect(scanner.closed, 0);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(scanner.closed, 1);
+    expect(find.byType(CameraScreen), findsOneWidget);
+  });
+
+  testWidgets('any failure shows a plain hint and Ohne Code works again '
+      '(PR 113 S1)', (tester) async {
+    await pumpAt(tester, '$_customer/eintrag', writer: _BrokenWriter(db));
+    await tester.tap(_withoutCode());
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Das ging nicht. Bitte noch einmal versuchen.'),
+      findsOneWidget,
+    );
+    expect(find.byType(ScanScreen), findsOneWidget);
+    final button = tester.widget<FilledButton>(_withoutCode());
+    expect(button.onPressed, isNotNull);
+    expect(scanner.isOpen, isTrue);
   });
 
   testWidgets('a known code opens its entry, nothing new is written (D-428)', (

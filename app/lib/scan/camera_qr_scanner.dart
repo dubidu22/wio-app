@@ -36,6 +36,9 @@ class CameraQrScanner implements QrScanner {
   final StreamController<String> _codes = StreamController<String>.broadcast();
   bool _busy = false;
 
+  /// Set by [close]: a decode still running then emits nothing.
+  bool _closed = false;
+
   static const Set<String> _deniedCodes = <String>{
     'CameraAccessDenied',
     'CameraAccessDeniedWithoutPrompt',
@@ -47,6 +50,7 @@ class CameraQrScanner implements QrScanner {
 
   @override
   Future<void> open() async {
+    _closed = false;
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) throw const CameraUnavailable('no camera');
@@ -73,21 +77,29 @@ class CameraQrScanner implements QrScanner {
   void _onFrame(CameraImage image) {
     if (_busy || image.planes.isEmpty) return;
     final plane = image.planes.first;
-    _busy = true;
     // A copy: the plugin reuses the frame's buffer once this returns.
-    final frame = (
+    onFrame((
       y: Uint8List.fromList(plane.bytes),
       width: image.width,
       height: image.height,
       stride: plane.bytesPerRow,
-    );
+    ));
+  }
+
+  /// Takes one brightness frame: dropped while another is being decoded
+  /// (one in flight), else decoded; a code read is emitted unless the
+  /// scanner was closed meanwhile.
+  @visibleForTesting
+  void onFrame(BrightnessFrame frame) {
+    if (_busy || _closed) return;
+    _busy = true;
     unawaited(_read(frame));
   }
 
   Future<void> _read(BrightnessFrame frame) async {
     try {
       final text = await _decode(frame);
-      if (text != null && _controller != null) _codes.add(text);
+      if (text != null && !_closed) _codes.add(text);
     } on Object {
       // A frame that cannot be read is like a frame without a code.
     } finally {
@@ -106,6 +118,7 @@ class CameraQrScanner implements QrScanner {
 
   @override
   Future<void> close() async {
+    _closed = true;
     final controller = _controller;
     _controller = null;
     if (controller == null) return;

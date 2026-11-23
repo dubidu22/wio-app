@@ -30,7 +30,7 @@ class _NewEntryButtonState extends ConsumerState<NewEntryButton> {
     if (_busy) return;
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
-    final failed = AppLocalizations.of(context).scanFailed;
+    final l10n = AppLocalizations.of(context);
     try {
       final found = await findOrCreateEntry(
         ref.read(databaseProvider),
@@ -38,8 +38,15 @@ class _NewEntryButtonState extends ConsumerState<NewEntryButton> {
         widget.from,
       );
       if (mounted) context.go(entryLocation(found.customerId, found.entryId));
-    } on ArgumentError {
-      messenger.showSnackBar(SnackBar(content: Text(failed)));
+    } on Object catch (error) {
+      // As the scan screen (PR 113 S1).
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            error is ArgumentError ? l10n.scanFailed : l10n.scanRetry,
+          ),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }

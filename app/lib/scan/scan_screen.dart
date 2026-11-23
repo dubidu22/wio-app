@@ -149,7 +149,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     if (_busy) return;
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
-    final failed = AppLocalizations.of(context).scanFailed;
+    final l10n = AppLocalizations.of(context);
     final EntryFound found;
     try {
       found = await findOrCreateEntry(
@@ -158,14 +158,25 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
         _from,
         code: code,
       );
-    } on ArgumentError {
-      messenger.showSnackBar(SnackBar(content: Text(failed)));
+    } on Object catch (error) {
+      // A customer or room gone meanwhile has its own words; anything
+      // else (a database error) is a plain "try again" (PR 113 S1).
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            error is ArgumentError ? l10n.scanFailed : l10n.scanRetry,
+          ),
+        ),
+      );
       if (mounted) setState(() => _busy = false);
       return;
     }
     if (!mounted) return;
+    // The scanner lets the camera go before the photo camera takes it
+    // (PR 113 M1).
     _opening++;
-    unawaited(_release());
+    await _release();
+    if (!mounted) return;
     context.go(
       found.created
           ? entryCameraLocation(found.customerId, found.entryId)

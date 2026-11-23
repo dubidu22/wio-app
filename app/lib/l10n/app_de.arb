@@ -1118,6 +1118,10 @@
   "@scanCodeTooLong": {
     "description": "Hint when the QR code read is longer than 255 bytes; scanning goes on (D-469)."
   },
+  "scanRetry": "Das ging nicht. Bitte noch einmal versuchen.",
+  "@scanRetry": {
+    "description": "Shown when creating or finding an entry failed for another reason than a deleted customer or room (PR 113 S1)."
+  },
   "scanFailed": "Das ging nicht. Diesen Kunden oder Raum gibt es nicht mehr.",
   "@scanFailed": {
     "description": "Shown when the customer or room was deleted before the entry was created."
