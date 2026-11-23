@@ -41,7 +41,16 @@ const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
   ),
   'lib/entries/entry_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}/entries/${TestIds.kiste}',
-    seed: seedWithEntryContent,
+    seed: seedWithVocabulary,
+  ),
+  'lib/entries/label_new_screen.dart': CatalogScreen(
+    '/customers/${TestIds.familieBeispiel}/entries/${TestIds.kiste}/label',
+    seed: seedWithVocabulary,
+  ),
+  'lib/entries/property_screen.dart': CatalogScreen(
+    '/customers/${TestIds.familieBeispiel}/entries/${TestIds.kiste}'
+    '/eigenschaft/${TestIds.keyGewicht}',
+    seed: seedWithVocabulary,
   ),
   'lib/entries/entry_title_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}/entries/${TestIds.kiste}/titel',

@@ -208,6 +208,93 @@ Stream<List<PropertyOn>> watchPropertiesOf(WioDatabase db, Subject subject) {
   );
 }
 
+/// The sort stamp of a link that no server has confirmed yet: newer than
+/// any stamp the server gives (plan 104, P3).
+const String _pendingStamp = '9999-12-31T23:59:59.999Z';
+
+/// The workspace's live labels, most recently used first (plan 104, P3): a
+/// label is used when it sits on any subject; the newest link counts, a
+/// link without `created_at` (not confirmed yet) is the newest of all, ties
+/// go to the newer link id (UUIDv7). Removed links count too, so a chip
+/// does not jump when its label is taken off. Labels never used follow, newest
+/// first, then by name.
+Stream<List<Label>> watchLabelChoices(WioDatabase db) => db
+    .customSelect(
+      'SELECT l.* FROM labels l '
+      'LEFT JOIN entity_labels el ON el.label_id = l.id '
+      'WHERE l.deleted_at IS NULL '
+      'GROUP BY l.id '
+      'ORDER BY MAX(el.id) IS NULL, '
+      "MAX(COALESCE(el.created_at, '$_pendingStamp')) DESC, "
+      'MAX(el.id) DESC, '
+      "COALESCE(l.created_at, '$_pendingStamp') DESC, "
+      'lower(l.name), l.id',
+      readsFrom: <TableInfo<Table, Object?>>{db.labels, db.entityLabels},
+    )
+    .watch()
+    .map((rows) => <Label>[for (final row in rows) db.labels.map(row.data)]);
+
+/// A live property key with what the workspace has put under it (D-429).
+class KeyChoice {
+  const KeyChoice({
+    required this.key,
+    required this.liveValues,
+    required this.textValues,
+  });
+
+  final PropertyKey key;
+
+  /// Live values of the key on any subject.
+  final int liveValues;
+
+  /// How many of them are text, not a number.
+  final int textValues;
+
+  /// The number pad is used (D-429, plan 104 P6): the key has a unit, or it
+  /// has values and all of them are numbers.
+  bool get numeric {
+    final unit = key.unit;
+    return (unit != null && unit.trim().isNotEmpty) ||
+        (liveValues > 0 && textValues == 0);
+  }
+}
+
+/// The workspace's live property keys, most recently used first (as
+/// [watchLabelChoices]), with the counts that decide the keyboard.
+Stream<List<KeyChoice>> watchKeyChoices(WioDatabase db) => db
+    .customSelect(
+      'SELECT k.*, '
+      'COALESCE(SUM(CASE WHEN ep.id IS NOT NULL AND ep.deleted_at IS NULL '
+      'THEN 1 ELSE 0 END), 0) '
+      'AS live_values, '
+      'COALESCE(SUM(CASE WHEN ep.id IS NOT NULL AND ep.deleted_at IS NULL '
+      'AND ep.value_number IS NULL THEN 1 ELSE 0 END), 0) AS text_values '
+      'FROM property_keys k '
+      'LEFT JOIN entity_properties ep ON ep.key_id = k.id '
+      'WHERE k.deleted_at IS NULL '
+      'GROUP BY k.id '
+      'ORDER BY MAX(ep.id) IS NULL, '
+      "MAX(COALESCE(ep.created_at, '$_pendingStamp')) DESC, "
+      'MAX(ep.id) DESC, '
+      "COALESCE(k.created_at, '$_pendingStamp') DESC, "
+      'lower(k.name), k.id',
+      readsFrom: <TableInfo<Table, Object?>>{
+        db.propertyKeys,
+        db.entityProperties,
+      },
+    )
+    .watch()
+    .map(
+      (rows) => <KeyChoice>[
+        for (final row in rows)
+          KeyChoice(
+            key: db.propertyKeys.map(row.data),
+            liveValues: row.read<int>('live_values'),
+            textValues: row.read<int>('text_values'),
+          ),
+      ],
+    );
+
 /// The workspace's live labels by name, ignoring case (SQLite `lower`,
 /// ASCII letters; PR 109 review S1) ("most recently used" is #104).
 Stream<List<Label>> watchLabels(WioDatabase db) =>
