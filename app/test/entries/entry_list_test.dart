@@ -8,6 +8,7 @@ import 'package:wio_app/entries/entry_list.dart';
 import 'package:wio_app/entries/entry_screen.dart';
 import 'package:wio_app/rooms/room_screen.dart';
 
+import '../support/fake_api.dart';
 import '../support/media.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
@@ -27,10 +28,13 @@ void main() {
   });
   tearDown(() => db.close());
 
+  // Signed out: the owner's add and change buttons move the lists down
+  // (plan 106); add_places_test covers the owner.
   Future<void> pump(WidgetTester tester, String location) => pumpWioApp(
     tester,
     db: db,
     location: location,
+    store: FakeTokenStore(),
     mediaFolder: demoMediaFolder(),
   );
 

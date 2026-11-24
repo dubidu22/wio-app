@@ -21,6 +21,14 @@ const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
     '/customers/${TestIds.familieBeispiel}',
     seed: seedWithEntryLists,
   ),
+  // Changing a site: the field holds the name, Löschen is there (plan 106).
+  'lib/customers/name_screen.dart': CatalogScreen(
+    '/customers/${TestIds.familieBeispiel}/ort/${TestIds.alteWohnung}',
+  ),
+  // A new job: today preselected (plan 106).
+  'lib/customers/job_screen.dart': CatalogScreen(
+    '/customers/${TestIds.familieBeispiel}/auftrag/neu',
+  ),
   'lib/rooms/room_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}/rooms/${TestIds.kueche}',
     seed: seedWithEntryLists,

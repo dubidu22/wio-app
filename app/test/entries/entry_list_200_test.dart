@@ -7,6 +7,7 @@ import 'package:wio_app/data/database.dart';
 import 'package:wio_app/entries/entry_list.dart';
 
 import '../support/demo_workspace.dart';
+import '../support/fake_api.dart';
 import '../support/media.dart';
 import '../support/pump.dart';
 import '../support/test_data.dart';
@@ -48,6 +49,7 @@ void main() {
       tester,
       db: demo,
       location: '/customers/$customer',
+      store: FakeTokenStore(),
       mediaFolder: demoMediaFolder(),
     );
 
@@ -59,7 +61,10 @@ void main() {
 
     await tester.scrollUntilVisible(
       find.text('Kiste Letzte'),
-      2000,
+      // Small steps: other sections follow the list, so the end of the
+      // scroll no longer leaves the last row on screen.
+      300,
+      maxScrolls: 200,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();

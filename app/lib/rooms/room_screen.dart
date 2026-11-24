@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../camera/take_pictures_button.dart';
+import '../customers/owner_button.dart';
 import '../data/database.dart';
 import '../data/queries.dart';
 import '../entries/entry_list.dart';
@@ -118,6 +119,10 @@ class _RoomBody extends ConsumerWidget {
           NotesSection(
             subject: (type: 'room', id: view.id),
             base: '/customers/$customerId/rooms/${view.id}',
+          ),
+          OwnerButton(
+            label: l10n.changeRoom,
+            location: '/customers/$customerId/rooms/${view.id}/aendern',
           ),
         ],
       ),

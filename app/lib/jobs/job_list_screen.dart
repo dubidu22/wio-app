@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../auth/session.dart';
 import '../auth/session_provider.dart';
+import '../customers/owner_button.dart';
 import '../data/queries.dart';
 import '../l10n/app_localizations.dart';
 import '../media/media_presence.dart';
@@ -86,6 +87,9 @@ class _JobListBody extends StatelessWidget {
             HintText(l10n.jobsTodayEmpty)
           else
             for (final job in list.today) _JobButton(job: job, showDate: false),
+          // At the end of "Heute" (plan 106, P4); a new customer gets a job
+          // today, so it stays on this list (P3).
+          OwnerButton(label: l10n.addCustomer, location: '/kunde/neu'),
           SectionHeading(l10n.jobsUpcoming),
           if (list.upcoming.isEmpty)
             HintText(l10n.jobsUpcomingEmpty)
