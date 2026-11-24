@@ -16,7 +16,11 @@ class CatalogScreen {
 /// same screens, with the demo picture files in the media folder (D-263).
 const Map<String, CatalogScreen> screenCatalog = <String, CatalogScreen>{
   'lib/auth/sign_in_screen.dart': CatalogScreen('/anmelden'),
-  'lib/jobs/job_list_screen.dart': CatalogScreen('/'),
+  // With customers under Weitere Kunden (plan 120).
+  'lib/jobs/job_list_screen.dart': CatalogScreen(
+    '/',
+    seed: seedWithOtherCustomers,
+  ),
   'lib/customers/customer_screen.dart': CatalogScreen(
     '/customers/${TestIds.familieBeispiel}',
     seed: seedWithEntryLists,

@@ -19,6 +19,8 @@ abstract final class TestIds {
   static const String frauMuster = '01970000-0000-7000-8000-0000000000c2';
   static const String herrProbe = '01970000-0000-7000-8000-0000000000c3';
   static const String geloescht = '01970000-0000-7000-8000-0000000000c4';
+  static const String herrVorbei = '01970000-0000-7000-8000-0000000000c5';
+  static const String ohneAuftrag = '01970000-0000-7000-8000-0000000000c6';
   static const String alteWohnung = '01970000-0000-7000-8000-0000000000a1';
   static const String neueWohnung = '01970000-0000-7000-8000-0000000000a2';
   static const String fremderOrt = '01970000-0000-7000-8000-0000000000a3';
@@ -199,6 +201,30 @@ Future<void> seedTestData(WioDatabase db) async {
         deletedAt: const Value<String?>('2026-11-11T08:00:00.000Z'),
       ),
     ]);
+  });
+}
+
+/// [seedTestData] plus two customers under "Weitere Kunden" (plan 120):
+/// Herr Vorbei with only a past job, and a customer without a name or job.
+Future<void> seedWithOtherCustomers(WioDatabase db) async {
+  await seedTestData(db);
+  await db.batch((b) {
+    b.insertAll(db.customers, <CustomersCompanion>[
+      _customer(TestIds.herrVorbei, 'Herr Vorbei'),
+      CustomersCompanion.insert(
+        id: TestIds.ohneAuftrag,
+        workspaceId: TestIds.workspace,
+        revision: const Value<int?>(1),
+      ),
+    ]);
+    b.insert(
+      db.jobs,
+      _job(
+        '01970000-0000-7000-8000-0000000000d8',
+        TestIds.herrVorbei,
+        '2026-11-12',
+      ),
+    );
   });
 }
 

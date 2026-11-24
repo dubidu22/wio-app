@@ -17,8 +17,9 @@ import '../sync/sync_runner.dart';
 import '../update/app_too_old.dart';
 import '../update/update_required_screen.dart';
 
-/// Level 1, "Aufträge": today's and later jobs (KB workflows.md). Tapping a
-/// job opens its customer. The "Quellcode" button sits top right (D-73).
+/// Level 1, "Aufträge": today's and later jobs (KB workflows.md), then
+/// "Weitere Kunden" without such a job (plan 120). Tapping a job or a
+/// customer opens the customer. The "Quellcode" button sits top right (D-73).
 /// Signed out, a plain hint with "Anmelden" sits on top and the list stays
 /// usable (D-130); signed in, "Abmelden" sits at the end (D-132). While the
 /// app is too old, the update hint takes the top instead (D-155). Refused
@@ -96,6 +97,7 @@ class _JobListBody extends StatelessWidget {
           else
             for (final job in list.upcoming)
               _JobButton(job: job, showDate: true),
+          const _OtherCustomers(),
           const _SyncStatusLine(),
           if (session case AsyncData(value: final Session signedIn))
             _SignOutFooter(session: signedIn),
@@ -115,7 +117,62 @@ class _JobButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    return _CustomerButton(
+      customerId: job.customerId,
+      name: job.customerName,
+      second: showDate ? l10n.jobDate(DateTime.parse(job.date)) : null,
+    );
+  }
+}
+
+/// "Weitere Kunden" (plan 120): every live customer without a job from
+/// today on, so none is lost once its day has passed or its only job was
+/// deleted (D-517). Latest job first (D-518). Left out when empty, and no
+/// add or change buttons (D-519).
+class _OtherCustomers extends ConsumerWidget {
+  const _OtherCustomers();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final customers = ref.watch(otherCustomersProvider).value;
+    if (customers == null || customers.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        SectionHeading(l10n.customersOther),
+        for (final customer in customers)
+          _CustomerButton(
+            customerId: customer.customerId,
+            name: customer.customerName,
+            second: switch (customer.lastJobDate) {
+              final String date => l10n.customerLastJob(DateTime.parse(date)),
+              null => null,
+            },
+          ),
+      ],
+    );
+  }
+}
+
+/// A full-width button with the customer's name and an optional second
+/// line; it opens the customer (UX rules 1, 3).
+class _CustomerButton extends StatelessWidget {
+  const _CustomerButton({
+    required this.customerId,
+    required this.name,
+    required this.second,
+  });
+
+  final String customerId;
+  final String? name;
+  final String? second;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final second = this.second;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: OutlinedButton(
@@ -124,20 +181,16 @@ class _JobButton extends StatelessWidget {
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         ),
-        onPressed: () => context.go('/customers/${job.customerId}'),
+        onPressed: () => context.go('/customers/$customerId'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
-              job.customerName ?? l10n.unnamedCustomer,
+              name ?? l10n.unnamedCustomer,
               style: theme.textTheme.titleLarge,
             ),
-            if (showDate)
-              Text(
-                l10n.jobDate(DateTime.parse(job.date)),
-                style: theme.textTheme.bodyLarge,
-              ),
+            if (second != null) Text(second, style: theme.textTheme.bodyLarge),
           ],
         ),
       ),

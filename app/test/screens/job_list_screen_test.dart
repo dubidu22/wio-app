@@ -97,8 +97,101 @@ void main() {
     now = DateTime(2026, 11, 20, 0, 0, 2);
     await tester.pump(const Duration(minutes: 1, seconds: 2));
     await tester.pumpAndSettle();
-    expect(find.text('Familie Beispiel'), findsNothing);
     expect(find.widgetWithText(OutlinedButton, 'Frau Muster'), findsOneWidget);
     expect(find.text('Fr., 20. Nov.'), findsNothing, reason: 'now today');
+    // Yesterday's customer stays reachable under Weitere Kunden (D-517).
+    await scrollTo(tester, find.text('Weitere Kunden'));
+    expect(
+      find.widgetWithText(OutlinedButton, 'Familie Beispiel'),
+      findsOneWidget,
+    );
+    expect(find.text('Letzter Auftrag: 19. Nov. 2026'), findsOneWidget);
   });
+
+  group('Weitere Kunden (plan 120)', () {
+    testWidgets('is left out while every customer has a job from today on', (
+      tester,
+    ) async {
+      await pumpWioApp(tester, db: db);
+      await scrollTo(tester, find.text('Abmelden'));
+      expect(find.text('Weitere Kunden'), findsNothing);
+      expect(find.textContaining('Letzter Auftrag'), findsNothing);
+    });
+
+    testWidgets('lists customers whose jobs passed, latest first, and opens '
+        'them', (tester) async {
+      await pumpWioApp(tester, db: db, now: DateTime(2026, 11, 21, 9));
+      await scrollTo(tester, find.text('Weitere Kunden'));
+      // Herr Probe has a job on 23 Nov, so he stays under Kommend only.
+      expect(find.text('Herr Probe'), findsOneWidget);
+      await scrollTo(tester, find.text('Letzter Auftrag: 19. Nov. 2026'));
+      expect(find.text('Letzter Auftrag: 20. Nov. 2026'), findsOneWidget);
+      final muster = tester.getTopLeft(find.text('Frau Muster')).dy;
+      final beispiel = tester.getTopLeft(find.text('Familie Beispiel')).dy;
+      expect(muster, lessThan(beispiel), reason: 'latest job first');
+
+      await tester.tap(find.text('Familie Beispiel'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CustomerScreen), findsOneWidget);
+      expect(find.text('Alte Wohnung'), findsOneWidget);
+    });
+
+    testWidgets('a customer whose only job is deleted comes back there', (
+      tester,
+    ) async {
+      await pumpWioApp(
+        tester,
+        db: db,
+        location: '/customers/${TestIds.familieBeispiel}',
+      );
+      await scrollTo(tester, find.text('Do., 19. Nov.'));
+      await tester.tap(find.text('Do., 19. Nov.'));
+      await tester.pumpAndSettle();
+      await scrollTo(tester, find.widgetWithText(OutlinedButton, 'Löschen'));
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Löschen'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CustomerScreen), findsOneWidget);
+
+      await tester.tap(find.text('Zurück'));
+      await tester.pumpAndSettle();
+      expect(find.text('Heute keine Aufträge.'), findsOneWidget);
+      await scrollTo(tester, find.text('Weitere Kunden'));
+      expect(
+        find.widgetWithText(OutlinedButton, 'Familie Beispiel'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Letzter Auftrag'), findsNothing);
+    });
+
+    testWidgets('a customer without a name or a job is listed too', (
+      tester,
+    ) async {
+      final other = memoryDatabase();
+      addTearDown(other.close);
+      await seedWithOtherCustomers(other);
+      await pumpWioApp(tester, db: other);
+      await scrollTo(tester, find.text('Kunde ohne Namen'));
+      expect(find.text('Letzter Auftrag: 12. Nov. 2026'), findsOneWidget);
+      final vorbei = tester.getTopLeft(find.text('Herr Vorbei')).dy;
+      final ohne = tester.getTopLeft(find.text('Kunde ohne Namen')).dy;
+      expect(vorbei, lessThan(ohne), reason: 'customers with a job first');
+    });
+
+    testWidgets('a deleted customer is not listed', (tester) async {
+      await pumpWioApp(tester, db: db, now: DateTime(2026, 11, 30, 9));
+      await scrollTo(tester, find.text('Abmelden'));
+      expect(find.text('Weitere Kunden'), findsOneWidget);
+      expect(find.text('Gelöschte Kundin'), findsNothing);
+    });
+  });
+}
+
+Future<void> scrollTo(WidgetTester tester, Finder finder) async {
+  final scrollable = find.byType(Scrollable).first;
+  for (var i = 0; i < 40 && finder.evaluate().isEmpty; i++) {
+    await tester.drag(scrollable, const Offset(0, -200));
+    await tester.pump();
+  }
+  await tester.ensureVisible(finder.first);
+  await tester.pumpAndSettle();
 }

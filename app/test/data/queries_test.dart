@@ -216,4 +216,97 @@ void main() {
     expect(await watchCustomer(db, 'no-such-id').first, isNull);
     expect(await watchCustomer(db, TestIds.geloescht).first, isNull);
   });
+
+  group('other customers (plan 120, D-517, D-518)', () {
+    Future<void> writeCustomer(String id, String? name) => LocalWriter(db)
+        .write(
+          entity: 'customers',
+          id: id,
+          fields: <String, Object?>{
+            'workspace_id': TestIds.workspace,
+            'name': ?name,
+          },
+        );
+
+    test(
+      'is empty while every live customer has a job from today on',
+      () async {
+        expect(await watchOtherCustomers(db, '2026-11-19').first, isEmpty);
+      },
+    );
+
+    test(
+      'lists customers without a job from today on, latest job first',
+      () async {
+        final list = await watchOtherCustomers(db, '2026-11-21').first;
+        expect(list.map((c) => c.customerName), <String>[
+          'Frau Muster',
+          'Familie Beispiel',
+        ]);
+        expect(list.map((c) => c.lastJobDate), <String>[
+          '2026-11-20',
+          '2026-11-19',
+        ]);
+        expect(list.last.customerId, TestIds.familieBeispiel);
+      },
+    );
+
+    test('a deleted job does not count as the last one', () async {
+      // Frau Muster's deleted job on 19 Nov is ignored; her live one is 20 Nov.
+      final list = await watchOtherCustomers(db, '2026-11-30').first;
+      expect(list.map((c) => c.customerName), <String>[
+        'Herr Probe',
+        'Frau Muster',
+        'Familie Beispiel',
+      ]);
+      expect(list.map((c) => c.lastJobDate).first, '2026-11-23');
+    });
+
+    test(
+      'customers without any job come after, by name, unnamed last',
+      () async {
+        await writeCustomer('01970000-0000-7000-8000-0000000000e3', null);
+        await writeCustomer(
+          '01970000-0000-7000-8000-0000000000e2',
+          'Anna Ohne',
+        );
+        final list = await watchOtherCustomers(db, '2026-11-21').first;
+        expect(list.map((c) => c.customerName), <String?>[
+          'Frau Muster',
+          'Familie Beispiel',
+          'Anna Ohne',
+          null,
+        ]);
+        expect(list[2].lastJobDate, isNull);
+      },
+    );
+
+    test('leaves out deleted customers and follows a new job', () async {
+      final seen = <List<String>>[];
+      final subscription = watchOtherCustomers(
+        db,
+        '2026-11-21',
+      ).listen((list) => seen.add(list.map((c) => c.customerId).toList()));
+      addTearDown(subscription.cancel);
+      Future<void> waitFor(int count) async {
+        for (var i = 0; i < 100 && seen.length < count; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
+      }
+
+      await waitFor(1);
+      expect(seen.last, isNot(contains(TestIds.geloescht)));
+      await LocalWriter(db).write(
+        entity: 'jobs',
+        id: '01970000-0000-7000-8000-0000000000e4',
+        fields: <String, Object?>{
+          'workspace_id': TestIds.workspace,
+          'customer_id': TestIds.frauMuster,
+          'date': '2026-11-25',
+        },
+      );
+      await waitFor(2);
+      expect(seen.last, <String>[TestIds.familieBeispiel]);
+    });
+  });
 }
