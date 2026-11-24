@@ -6,7 +6,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart'
+    show ApplyInterceptor, QueryExecutor, QueryInterceptor, Value;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -20,7 +22,6 @@ import 'package:wio_app/sync/sync_engine.dart';
 
 import '../support/fake_api.dart';
 import '../support/fake_sync_server.dart';
-import '../support/test_data.dart';
 
 const String ws = FakeSyncServer.defaultWorkspace;
 const String customer = '01970000-0000-7000-8000-0000000000c1';
@@ -38,7 +39,11 @@ Uint8List fileBytes(int size, int seed) =>
 
 /// One phone with its media folder, download worker and engine.
 class Phone {
-  Phone(this.server, this.folder) : db = memoryDatabase() {
+  Phone(FakeSyncServer server, Directory folder)
+    : this._(server, folder, Recorder());
+
+  Phone._(this.server, this.folder, this.recorder)
+    : db = WioDatabase(NativeDatabase.memory().interceptWith(recorder)) {
     api = buildApiServer(
       fakeApiBase,
       server.clientFor('b'),
@@ -74,6 +79,7 @@ class Phone {
 
   final FakeSyncServer server;
   final Directory folder;
+  final Recorder recorder;
   final WioDatabase db;
   late final Server api;
   late final MediaStore media;
@@ -107,7 +113,30 @@ class Phone {
   }
 
   bool has(String sha) => file(sha).existsSync();
+
+  /// The selects run on [db] since the last `selects.clear()`.
+  List<String> get selects => recorder.selects;
 }
+
+/// Records every select's statement text (#122, D-525).
+class Recorder extends QueryInterceptor {
+  final List<String> selects = <String>[];
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    selects.add(statement);
+    return super.runSelect(executor, statement, args);
+  }
+}
+
+/// Whether [statement] reads the fields of the outbox, refused changes or
+/// server copies: the scan #122 keeps out of a run with nothing to release.
+bool readsOtherTables(String statement) =>
+    RegExp(r'\bfields\b').hasMatch(statement);
 
 void main() {
   late FakeSyncServer server;
@@ -567,5 +596,114 @@ void main() {
     expect(sha256Of(phone.file(old.sha).readAsBytesSync()), old.sha);
     expect(phone.present, contains(old.sha));
     expect(server.downloads, isNotEmpty);
+  });
+
+  group('the release reads other tables only for files on the device '
+      '(#122, D-525..D-528)', () {
+    int otherTableReads() => phone.selects.where(readsOtherTables).length;
+
+    test('once a file is gone, the next release reads no other table and '
+        'asks nothing (T2, D-525)', () async {
+      final old = picture(fileBytes(3000, 60));
+      final live = picture(fileBytes(3100, 61), deletedAt: null);
+      phone
+        ..keep(server.files[old.sha]!)
+        ..keep(server.files[live.sha]!);
+      await phone.engine.run();
+      phone.now = after31Days;
+      expect(await phone.release(), 1);
+      expect(phone.has(old.sha), isFalse);
+      final asked = stateRequests();
+
+      phone.selects.clear();
+      expect(await phone.release(), 0);
+      expect(stateRequests(), asked);
+      expect(otherTableReads(), 0, reason: phone.selects.join('\n'));
+      expect(phone.has(live.sha), isTrue);
+    });
+
+    test('an old deleted file that is not on the device reads no other '
+        'table and asks nothing (T3, D-525)', () async {
+      picture(fileBytes(3000, 62));
+      final live = picture(fileBytes(3100, 63), deletedAt: null);
+      phone.keep(server.files[live.sha]!);
+      await phone.engine.run();
+      phone.now = after31Days;
+      phone.selects.clear();
+      expect(await phone.release(), 0);
+      expect(stateRequests(), 0);
+      expect(otherTableReads(), 0, reason: phone.selects.join('\n'));
+    });
+
+    test('a hash anywhere in another server copy keeps the file, also '
+        'inside a longer hex run (T4, D-526)', () async {
+      final midText = picture(fileBytes(3000, 64));
+      final inRun = picture(fileBytes(3001, 65));
+      final free = picture(fileBytes(3002, 66));
+      for (final p in <({String id, String sha})>[midText, inRun, free]) {
+        phone.keep(server.files[p.sha]!);
+      }
+      server
+        ..put('customers', nextId(), <String, Object?>{
+          'name': 'Siehe Bild ${midText.sha} im Flur',
+        })
+        ..put('customers', nextId(), <String, Object?>{
+          'name': 'ab${inRun.sha}cd',
+        });
+      await phone.engine.run();
+      phone.now = after31Days;
+      expect(
+        (await releasableMediaHashes(phone.db, phone.now)).map((c) => c.sha256),
+        <String>[free.sha],
+      );
+      expect(await phone.release(), 1);
+      expect(stateRequests(), 1);
+      expect(phone.has(midText.sha), isTrue);
+      expect(phone.has(inRun.sha), isTrue);
+      expect(phone.has(free.sha), isFalse);
+    });
+
+    test('with 25 files on the device, at most 20 are looked up in the other '
+        'tables (T5, D-526)', () async {
+      final shas = <String>{};
+      for (var i = 0; i < 25; i++) {
+        final p = picture(fileBytes(600 + i, 70 + i));
+        phone.keep(server.files[p.sha]!);
+        shas.add(p.sha);
+      }
+      await phone.engine.run();
+      phone.now = after31Days;
+      phone.selects.clear();
+      final found = await releasableMediaHashes(
+        phone.db,
+        phone.now,
+        among: shas,
+        limit: mediaReleasePerRun,
+      );
+      expect(found, hasLength(20));
+      expect(otherTableReads(), 20);
+    });
+
+    test('the read before deleting looks up only the confirmed files '
+        '(T6, D-527)', () async {
+      final confirmed = picture(fileBytes(3000, 80));
+      final partial = picture(fileBytes(3001, 81));
+      phone
+        ..keep(server.files[confirmed.sha]!)
+        ..keep(server.files[partial.sha]!);
+      await phone.engine.run();
+      final bytes = server.files.remove(partial.sha)!;
+      server.partFiles[partial.sha] = (
+        total: bytes.length,
+        bytes: BytesBuilder()..add(bytes.sublist(0, 100)),
+      );
+      phone.now = after31Days;
+      phone.selects.clear();
+      expect(await phone.release(), 1);
+      expect(stateRequests(), 2);
+      expect(otherTableReads(), 3, reason: '2 candidates, then 1 confirmed');
+      expect(phone.has(confirmed.sha), isFalse);
+      expect(phone.has(partial.sha), isTrue);
+    });
   });
 }
