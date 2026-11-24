@@ -79,6 +79,38 @@ void main() {
     expect(container.read(mediaPresenceProvider).loading, isEmpty);
   });
 
+  test('a released file is no longer present; an unknown hash changes '
+      'nothing (D-515, PR 121 S1)', () async {
+    final folder = Directory.systemTemp.createTempSync('presence');
+    addTearDown(() => folder.deleteSync(recursive: true));
+    File('${folder.path}/$a').writeAsStringSync('a');
+    final db = memoryDatabase();
+    addTearDown(db.close);
+    final container = ProviderContainer(
+      overrides: <Override>[
+        databaseProvider.overrideWithValue(db),
+        mediaStoreProvider.overrideWithValue(
+          MediaStore(() async => folder.parent.path),
+        ),
+        mediaFolderProvider.overrideWith((ref) async => folder.path),
+      ],
+    );
+    addTearDown(container.dispose);
+    final sub = container.listen(mediaPresenceProvider, (_, _) {});
+    addTearDown(sub.close);
+    await _rest();
+    expect(container.read(mediaPresenceProvider).of(a), MediaFileState.present);
+    final notifier = container.read(mediaPresenceProvider.notifier);
+
+    final before = container.read(mediaPresenceProvider);
+    notifier.markMissing(b);
+    expect(container.read(mediaPresenceProvider), same(before));
+
+    notifier.markMissing(a);
+    expect(container.read(mediaPresenceProvider).of(a), MediaFileState.missing);
+    expect(container.read(mediaPresenceProvider).present, isEmpty);
+  });
+
   test('no media folder: everything missing, nothing unknown', () async {
     final db = memoryDatabase();
     addTearDown(db.close);

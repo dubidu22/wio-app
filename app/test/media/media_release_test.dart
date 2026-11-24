@@ -309,6 +309,83 @@ void main() {
     expect(stateRequests(), 1);
   });
 
+  test('two deleted rows naming the same file with different sizes keep it '
+      'and ask nothing (D-511, PR 121 N2)', () async {
+    final bytes = fileBytes(3000, 15);
+    picture(bytes);
+    picture(bytes, rowBytes: 2999);
+    phone.keep(bytes);
+    await phone.engine.run();
+    phone.now = after31Days;
+    expect(await releasableMediaHashes(phone.db, phone.now), isEmpty);
+    expect(await phone.release(), 0);
+    expect(stateRequests(), 0);
+    expect(phone.has(sha256Of(bytes)), isTrue);
+  });
+
+  test('a restore queued while the server answers keeps the files: the '
+      'candidates are read again before deleting (D-516, PR 121 M1)', () async {
+    final first = picture(fileBytes(3000, 16));
+    final second = picture(fileBytes(3001, 17));
+    phone
+      ..keep(server.files[first.sha]!)
+      ..keep(server.files[second.sha]!);
+    await phone.engine.run();
+    phone.now = after31Days;
+    expect(await releasableMediaHashes(phone.db, phone.now), hasLength(2));
+    var queued = false;
+    server.afterRequest = (key) {
+      if (queued || !key.endsWith('/state')) return;
+      queued = true;
+      final db = phone.db;
+      for (final (i, p) in <({String id, String sha})>[first, second].indexed) {
+        unawaited(
+          db
+              .into(db.outbox)
+              .insert(
+                OutboxCompanion.insert(
+                  changeId: 'restore-$i',
+                  entity: 'pictures',
+                  entityId: p.id,
+                  op: const Value<String>('restore'),
+                  fields: '{}',
+                  deviceTime: '2026-12-03T08:00:00Z',
+                ),
+              ),
+        );
+      }
+    };
+    expect(await phone.release(), 0);
+    expect(queued, isTrue);
+    expect(stateRequests(), 2, reason: 'both confirmed by the server');
+    expect(phone.has(first.sha), isTrue);
+    expect(phone.has(second.sha), isTrue);
+    expect(phone.present, containsAll(<String>[first.sha, second.sha]));
+  });
+
+  test('a run without files releases nothing (D-513, PR 121 S2)', () async {
+    final old = picture(fileBytes(3000, 18));
+    phone.keep(server.files[old.sha]!);
+    phone.now = after31Days;
+    var releases = 0;
+    final metered = SyncEngine(
+      db: phone.db,
+      api: SyncApi(phone.api),
+      workspaceId: ws,
+      tooOld: () => false,
+      clock: () => phone.now,
+      files: false,
+      releaseMedia: () async {
+        releases++;
+        await phone.release();
+      },
+    );
+    expect((await metered.run()).stop, SyncStop.done);
+    expect(releases, 0);
+    expect(stateRequests(), 0);
+    expect(phone.has(old.sha), isTrue);
+  });
+
   group('any answer but "complete, same size" keeps the file (T4, D-512)', () {
     late ({String id, String sha}) old;
 
