@@ -204,10 +204,6 @@ Future<void> seedTestData(WioDatabase db) async {
   });
 }
 
-/// [seedTestData] plus pictures (D-263): the Küche has three pictures with
-/// files in the demo media folder (one an after picture), one whose file is
-/// on no device and one tombstoned; the Keller has none; one picture of
-/// Familie Beispiel belongs to no room.
 /// [seedTestData] plus two customers under "Weitere Kunden" (plan 120):
 /// Herr Vorbei with only a past job, and a customer without a name or job.
 Future<void> seedWithOtherCustomers(WioDatabase db) async {
@@ -232,6 +228,10 @@ Future<void> seedWithOtherCustomers(WioDatabase db) async {
   });
 }
 
+/// [seedTestData] plus pictures (D-263): the Küche has three pictures with
+/// files in the demo media folder (one an after picture), one whose file is
+/// on no device and one tombstoned; the Keller has none; one picture of
+/// Familie Beispiel belongs to no room.
 Future<void> seedWithPictures(WioDatabase db) async {
   await seedTestData(db);
   await db.batch((b) {
