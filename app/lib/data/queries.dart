@@ -28,6 +28,23 @@ class JobList {
   final List<JobListItem> upcoming;
 }
 
+/// A customer without a job from today on, for "Weitere Kunden" on the job
+/// list (plan 120, D-517).
+class CustomerListItem {
+  const CustomerListItem({
+    required this.customerId,
+    required this.customerName,
+    required this.lastJobDate,
+  });
+
+  final String customerId;
+  final String? customerName;
+
+  /// Local calendar date of its latest live job, `YYYY-MM-DD`; null when it
+  /// has none.
+  final String? lastJobDate;
+}
+
 /// A site with its rooms, for the customer screen.
 class SiteView {
   const SiteView({
@@ -122,6 +139,46 @@ Stream<JobList> watchJobList(WioDatabase db, String today) {
     return JobList(today: today_, upcoming: upcoming);
   });
 }
+
+/// Live customers without a live job from [today] (`YYYY-MM-DD`) on, so
+/// every customer stays reachable from the job list (plan 120, D-517).
+/// Latest past job first, then customers without any job; ties by name
+/// (unnamed last) and id (D-518).
+Stream<List<CustomerListItem>> watchOtherCustomers(
+  WioDatabase db,
+  String today,
+) => db
+    .customSelect(
+      _otherCustomersSql,
+      variables: <Variable<Object>>[Variable<String>(today)],
+      readsFrom: <ResultSetImplementation<Object?, Object?>>{
+        db.customers,
+        db.jobs,
+      },
+    )
+    .watch()
+    .map(
+      (rows) => <CustomerListItem>[
+        for (final row in rows)
+          CustomerListItem(
+            customerId: row.read<String>('id'),
+            customerName: row.read<String?>('name'),
+            lastJobDate: row.read<String?>('last_job_date'),
+          ),
+      ],
+    );
+
+const String _otherCustomersSql = '''
+SELECT c.id AS id, c.name AS name,
+  (SELECT MAX(j.date) FROM jobs j
+    WHERE j.customer_id = c.id AND j.deleted_at IS NULL) AS last_job_date
+FROM customers c
+WHERE c.deleted_at IS NULL
+  AND NOT EXISTS (SELECT 1 FROM jobs j
+    WHERE j.customer_id = c.id AND j.deleted_at IS NULL AND j.date >= ?1)
+ORDER BY last_job_date IS NULL, last_job_date DESC,
+  c.name IS NULL, c.name, c.id
+''';
 
 /// Customer [customerId] with its live sites and rooms, or null when the
 /// customer does not exist or is tombstoned.

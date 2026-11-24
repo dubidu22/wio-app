@@ -1318,5 +1318,19 @@
         "format": "yMMMEd"
       }
     }
+  },
+  "customersOther": "Weitere Kunden",
+  "@customersOther": {
+    "description": "Heading after Kommend on Auftr\u00e4ge: live customers without a job from today on, so every customer stays reachable (plan 120, D-517)."
+  },
+  "customerLastJob": "Letzter Auftrag: {date}",
+  "@customerLastJob": {
+    "description": "Second line of a customer under Weitere Kunden: the date of its latest job, e.g. 'Letzter Auftrag: 19. Nov. 2026' (D-518).",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
   }
 }

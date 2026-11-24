@@ -72,6 +72,20 @@ final jobListProvider = StreamProvider<JobList>(retry: _noRetry, (ref) {
   return watchJobList(db, calendarDate(now));
 });
 
+/// Level 1, "Weitere Kunden": live customers without a job from today on
+/// (plan 120, D-517). Rebuilds after local midnight like [jobListProvider].
+final otherCustomersProvider = StreamProvider<List<CustomerListItem>>(
+  retry: _noRetry,
+  (ref) {
+    final db = ref.watch(databaseProvider);
+    final now = ref.watch(clockProvider)();
+    final nextDay = DateTime(now.year, now.month, now.day + 1, 0, 0, 1);
+    final timer = Timer(nextDay.difference(now), ref.invalidateSelf);
+    ref.onDispose(timer.cancel);
+    return watchOtherCustomers(db, calendarDate(now));
+  },
+);
+
 /// Level 2: one customer with sites and rooms; null when it does not exist.
 final customerProvider = StreamProvider.family<CustomerView?, String>(
   retry: _noRetry,
