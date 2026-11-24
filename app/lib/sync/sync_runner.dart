@@ -7,6 +7,7 @@ import 'package:wio_api/wio_api.dart';
 import '../auth/session_provider.dart';
 import '../media/media_presence.dart';
 import '../media/media_store.dart';
+import '../media/media_sweep.dart';
 import '../shell/providers.dart';
 import '../update/app_too_old.dart';
 import 'download_queue.dart';
@@ -326,6 +327,7 @@ class SyncNotifier extends Notifier<SyncActivity> {
           stopped: stopped,
         ),
         downloads: _downloads(server, tooOld, stopped),
+        releaseMedia: () => _releaseMedia(server, tooOld, stopped),
       ).run();
     } on Object {
       result = const SyncResult(SyncStop.failed);
@@ -346,6 +348,27 @@ class SyncNotifier extends Notifier<SyncActivity> {
       state = SyncActivity.idle;
     }
     return result;
+  }
+
+  /// Files of pictures and notes deleted more than 30 days ago leave the
+  /// phone once the server confirms it holds them (#99, D-511..D-516).
+  Future<void> _releaseMedia(
+    Server server,
+    bool Function() tooOld,
+    bool Function() stopped,
+  ) async {
+    final presence = ref.read(mediaPresenceProvider.notifier);
+    await releaseOldMedia(
+      ref.read(databaseProvider),
+      ref.read(mediaStoreProvider),
+      FilesApi(server),
+      clock: ref.read(clockProvider),
+      stopped: stopped,
+      tooOld: tooOld,
+      released: (sha) {
+        if (ref.mounted) presence.markMissing(sha);
+      },
+    );
   }
 
   DownloadWorker _downloads(
