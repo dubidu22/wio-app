@@ -95,6 +95,15 @@ class MediaStore {
     r'^(?:([0-9a-f]{64})(?:\.part)?|\d+-\d+\.tmp)$',
   );
 
+  /// Deletes the file with [sha256] and an unfinished download of it, if
+  /// there (D-511): only for files the server confirmed it holds (D-512).
+  Future<void> delete(String sha256) async {
+    final dir = await folder();
+    for (final file in <File>[File('$dir/$sha256'), _part(dir, sha256)]) {
+      if (file.existsSync()) await file.delete();
+    }
+  }
+
   /// The media folder itself, created when missing (D-240).
   Future<String> folder() async => (await _folder()).path;
 

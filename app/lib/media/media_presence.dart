@@ -115,6 +115,12 @@ class MediaPresenceNotifier extends Notifier<MediaPresence> {
     );
   }
 
+  /// The file [sha256] left the device (D-515): a restore fetches it again.
+  void markMissing(String sha256) {
+    if (!state.present.contains(sha256)) return;
+    state = state.copyWith(present: <String>{...state.present}..remove(sha256));
+  }
+
   /// The files queued or coming in now (D-333); empty when the step ends.
   void setLoading(Set<String> loading) {
     if (setEquals(loading, state.loading)) return;

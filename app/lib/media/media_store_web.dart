@@ -42,6 +42,9 @@ class MediaStore {
   /// The web keeps no files on disk, so there is nothing to sweep (D-421).
   Future<void> sweep(Set<String> keep, {required DateTime before}) async {}
 
+  /// The web keeps no files on disk, so none leave it (D-516).
+  Future<void> delete(String sha256) async {}
+
   Future<String> folder() async => _unsupported();
 
   Future<String> pathOf(String sha256) async => _unsupported();

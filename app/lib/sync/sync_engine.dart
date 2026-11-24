@@ -81,6 +81,7 @@ class SyncEngine {
     this.uploads,
     this.downloads,
     this.files = true,
+    this.releaseMedia,
     bool Function()? stopped,
     DateTime Function()? clock,
   }) : stopped = stopped ?? _never,
@@ -105,11 +106,17 @@ class SyncEngine {
   /// metered network does not (D-378).
   final bool files;
 
+  /// Lets files of long-deleted pictures and notes leave the device after
+  /// a run that ended `done` with nothing more to do (D-513); none in tests
+  /// of the record loop. Its errors never change the run's result.
+  final Future<void> Function()? releaseMedia;
+
   /// True once the run should end at its next safe point: before a push
   /// page, a pull page, an upload chunk or a download range (D-375).
   final bool Function() stopped;
 
-  /// Push, then pull, then uploads, then downloads (D-201, D-208, D-326).
+  /// Push, then pull, then uploads, then downloads (D-201, D-208, D-326),
+  /// then the release of old deleted files (D-513).
   Future<SyncResult> run() async {
     final pushed = await push();
     if (pushed.stop != SyncStop.done) return pushed;
@@ -119,7 +126,20 @@ class SyncEngine {
     final sent = await uploads?.run() ?? SyncResult.done;
     // New changes wait: the next run pushes them before any download.
     if (sent.stop != SyncStop.done || sent.more) return sent;
-    return await downloads?.run() ?? SyncResult.done;
+    final fetched = await downloads?.run() ?? SyncResult.done;
+    if (fetched.stop == SyncStop.done && !fetched.more) await _release();
+    return fetched;
+  }
+
+  /// Runs [releaseMedia] unless the run should stop or the app is too old.
+  Future<void> _release() async {
+    final release = releaseMedia;
+    if (release == null || stopped() || tooOld()) return;
+    try {
+      await release();
+    } on Object {
+      // Files that did not go stay until a later run; the run is done.
+    }
   }
 
   // ---------------------------------------------------------------- push
