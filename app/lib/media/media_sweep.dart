@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Variable;
 import 'package:tonik_util/tonik_util.dart';
 import 'package:wio_api/wio_api.dart';
 
@@ -82,13 +83,27 @@ typedef ReleasableMedia = ({String sha256, int bytes, DateTime deletedAt});
 /// uploads, or any other server copy). The tombstones' own server copies
 /// do not count as naming. Empty while a 410 resync is unfinished (D-459).
 /// [namedMediaHashes] stays unchanged for the start-up sweep (D-514).
+///
+/// The checks run cheapest first (#122, D-525, D-526): only rows whose
+/// file a deleted row names are read; with [among], only those hashes are
+/// kept (the files on the device, or the ones the server confirmed,
+/// D-527); then each remaining hash, oldest first, is looked for in the
+/// other tables by SQL, until [limit] candidates are found. When nothing
+/// is left after [among], no other table is read.
 Future<List<ReleasableMedia>> releasableMediaHashes(
   WioDatabase db,
-  DateTime now,
-) => db.transaction(() async {
+  DateTime now, {
+  Set<String>? among,
+  int? limit,
+}) => db.transaction(() async {
   if (await resyncUnfinished(db)) return const <ReleasableMedia>[];
-  final limit = now.toUtc().subtract(mediaReleaseAfter);
+  final limitTime = now.toUtc().subtract(mediaReleaseAfter);
   final rows = await db.customSelect('''
+    WITH deleted(sha) AS (
+      SELECT file_sha256 FROM pictures WHERE deleted_at IS NOT NULL
+      UNION SELECT audio_sha256 FROM notes
+        WHERE deleted_at IS NOT NULL AND audio_sha256 IS NOT NULL
+    )
     SELECT 'pictures' AS entity, p.id AS id, p.file_sha256 AS sha,
       p.file_bytes AS bytes, p.deleted_at AS local_deleted,
       s.deleted_at AS server_deleted,
@@ -96,6 +111,7 @@ Future<List<ReleasableMedia>> releasableMediaHashes(
         WHERE o.entity = 'pictures' AND o.entity_id = p.id) AS queued
     FROM pictures p
     LEFT JOIN server_records s ON s.entity = 'pictures' AND s.id = p.id
+    WHERE p.file_sha256 IN (SELECT sha FROM deleted)
     UNION ALL
     SELECT 'notes', n.id, n.audio_sha256, n.audio_bytes, n.deleted_at,
       s.deleted_at,
@@ -103,11 +119,12 @@ Future<List<ReleasableMedia>> releasableMediaHashes(
         WHERE o.entity = 'notes' AND o.entity_id = n.id)
     FROM notes n
     LEFT JOIN server_records s ON s.entity = 'notes' AND s.id = n.id
-    WHERE n.audio_sha256 IS NOT NULL
+    WHERE n.audio_sha256 IN (SELECT sha FROM deleted)
   ''').get();
   final byHash = <String, List<_Tombstone?>>{};
   for (final row in rows) {
     final sha = row.read<String>('sha');
+    if (among != null && !among.contains(sha)) continue;
     final bytes = row.read<int?>('bytes');
     final local = row.read<String?>('local_deleted');
     final server = DateTime.tryParse(row.read<String?>('server_deleted') ?? '');
@@ -116,7 +133,7 @@ Future<List<ReleasableMedia>> releasableMediaHashes(
         server != null &&
         bytes != null &&
         !row.read<bool>('queued') &&
-        !server.toUtc().isAfter(limit);
+        !server.toUtc().isAfter(limitTime);
     (byHash[sha] ??= <_Tombstone?>[]).add(
       old
           ? (
@@ -128,52 +145,68 @@ Future<List<ReleasableMedia>> releasableMediaHashes(
           : null,
     );
   }
-  final candidates = <String, List<_Tombstone>>{
-    for (final MapEntry(:key, :value) in byHash.entries)
-      if (key != _emptyFileSha256 && value.every((t) => t != null))
-        key: value.cast<_Tombstone>(),
-  };
-  if (candidates.isEmpty) return const <ReleasableMedia>[];
-  final own = <String>{
-    for (final tombstones in candidates.values)
-      for (final t in tombstones) '${t.entity}/${t.id}',
-  };
-  final others = <String>{};
-  final uploads = await db.customSelect('SELECT sha256 FROM uploads').get();
-  for (final row in uploads) {
-    others.add(row.read<String>('sha256'));
-  }
-  final fields = await db.customSelect('''
-    SELECT NULL AS entity, NULL AS id, fields FROM outbox
-    UNION ALL SELECT NULL, NULL, fields FROM rejected_changes
-    UNION ALL SELECT entity, id, fields FROM server_records
-  ''').get();
-  for (final row in fields) {
-    final entity = row.read<String?>('entity');
-    if (entity != null && own.contains('$entity/${row.read<String>('id')}')) {
-      continue;
-    }
-    for (final match in _hash.allMatches(row.read<String>('fields'))) {
-      others.add(match.group(0)!);
-    }
-  }
-  final result = <ReleasableMedia>[];
-  for (final MapEntry(key: sha, value: tombstones) in candidates.entries) {
-    if (others.contains(sha)) continue;
+  final candidates = <ReleasableMedia, List<_Tombstone>>{};
+  for (final MapEntry(key: sha, value: rowsOfHash) in byHash.entries) {
+    if (sha == _emptyFileSha256 || rowsOfHash.any((t) => t == null)) continue;
+    final tombstones = rowsOfHash.cast<_Tombstone>();
     final bytes = tombstones.first.bytes;
     if (tombstones.any((t) => t.bytes != bytes)) continue;
     var newest = tombstones.first.deletedAt;
     for (final t in tombstones) {
       if (t.deletedAt.isAfter(newest)) newest = t.deletedAt;
     }
-    result.add((sha256: sha, bytes: bytes, deletedAt: newest));
+    candidates[(sha256: sha, bytes: bytes, deletedAt: newest)] = tombstones;
   }
-  result.sort((a, b) {
-    final byTime = a.deletedAt.compareTo(b.deletedAt);
-    return byTime != 0 ? byTime : a.sha256.compareTo(b.sha256);
-  });
+  final ordered = candidates.keys.toList()
+    ..sort((a, b) {
+      final byTime = a.deletedAt.compareTo(b.deletedAt);
+      return byTime != 0 ? byTime : a.sha256.compareTo(b.sha256);
+    });
+  final result = <ReleasableMedia>[];
+  for (final candidate in ordered) {
+    if (limit != null && result.length >= limit) break;
+    if (await _namedElsewhere(db, candidate.sha256, candidates[candidate]!)) {
+      continue;
+    }
+    result.add(candidate);
+  }
   return result;
 });
+
+/// Whether anything but [own] names [sha256] (D-511, D-526): an upload
+/// row, or the hash anywhere in the fields of an outbox row, a refused
+/// change or a server copy other than [own]'s. `instr` finds the hash at
+/// any place in the text, so it keeps at least every file a scan for
+/// 64-hex runs keeps.
+Future<bool> _namedElsewhere(
+  WioDatabase db,
+  String sha256,
+  List<_Tombstone> own,
+) async {
+  final skip = own.isEmpty
+      ? ''
+      : 'AND NOT (${List<String>.filled(own.length, '(s.entity = ? AND s.id = ?)').join(' OR ')})';
+  final row = await db
+      .customSelect(
+        '''
+    SELECT
+      EXISTS (SELECT 1 FROM uploads WHERE sha256 = ?1)
+      OR EXISTS (SELECT 1 FROM outbox WHERE instr(fields, ?1) > 0)
+      OR EXISTS (SELECT 1 FROM rejected_changes WHERE instr(fields, ?1) > 0)
+      OR EXISTS (SELECT 1 FROM server_records s
+        WHERE instr(s.fields, ?1) > 0 $skip) AS named
+  ''',
+        variables: <Variable>[
+          Variable<String>(sha256),
+          for (final t in own) ...<Variable>[
+            Variable<String>(t.entity),
+            Variable<String>(t.id),
+          ],
+        ],
+      )
+      .getSingle();
+  return row.read<bool>('named');
+}
 
 typedef _Tombstone = ({
   String entity,
@@ -211,21 +244,38 @@ Future<int> releaseOldMedia(
   Duration timeout = syncRequestTimeout,
 }) async {
   if (!store.supported) return 0;
-  final candidates = await releasableMediaHashes(db, clock());
+  // Files already gone drop out here, before any other table is read
+  // (D-525). A listing that fails releases nothing this run.
+  Set<String> onDevice;
+  try {
+    onDevice = await store.hashes();
+  } on Object {
+    return 0;
+  }
+  if (onDevice.isEmpty) return 0;
+  final candidates = await releasableMediaHashes(
+    db,
+    clock(),
+    among: onDevice,
+    limit: mediaReleasePerRun,
+  );
   final confirmed = <String, int>{};
-  var asked = 0;
   for (final candidate in candidates) {
-    if (asked >= mediaReleasePerRun) break;
     if (stopped() || tooOld()) return 0;
     if (!await store.has(candidate.sha256)) continue;
-    asked++;
     final holds = await _serverHolds(api, candidate, timeout);
     if (holds == null) break;
     if (holds) confirmed[candidate.sha256] = candidate.bytes;
   }
   if (confirmed.isEmpty || stopped()) return 0;
+  // Read again, only for the confirmed files (D-527).
   final still = <String, int>{
-    for (final c in await releasableMediaHashes(db, clock())) c.sha256: c.bytes,
+    for (final c in await releasableMediaHashes(
+      db,
+      clock(),
+      among: confirmed.keys.toSet(),
+    ))
+      c.sha256: c.bytes,
   };
   var count = 0;
   for (final MapEntry(key: sha, value: bytes) in confirmed.entries) {

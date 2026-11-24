@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:path_provider/path_provider.dart';
 
+import 'media_files_native.dart' show listMediaFolder;
+
 /// The device's lasting copies of picture and recording files, in
 /// `<Application Support>/media/<sha256>` (D-240). The name is the hash of
 /// the bytes, so no table is needed; downloads (#62) use the same folder.
@@ -103,6 +105,9 @@ class MediaStore {
       if (file.existsSync()) await file.delete();
     }
   }
+
+  /// The finished files in the media folder, by hash: one listing (D-525).
+  Future<Set<String>> hashes() async => listMediaFolder(await folder());
 
   /// The media folder itself, created when missing (D-240).
   Future<String> folder() async => (await _folder()).path;
