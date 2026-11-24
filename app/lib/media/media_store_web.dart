@@ -45,6 +45,9 @@ class MediaStore {
   /// The web keeps no files on disk, so none leave it (D-516).
   Future<void> delete(String sha256) async {}
 
+  /// The web keeps no files on disk (D-525).
+  Future<Set<String>> hashes() async => const <String>{};
+
   Future<String> folder() async => _unsupported();
 
   Future<String> pathOf(String sha256) async => _unsupported();
