@@ -15,7 +15,7 @@
     "test:web-headers": "node --test ci/test/web-headers.test.mjs"
   },
   "devDependencies": {
-    "@redocly/cli": "2.80.0",
-    "playwright": "1.63.0"
+    "@redocly/cli": "2.82.0",
+    "playwright": "1.65.1"
   }
 }
